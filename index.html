@@ -2,32 +2,59 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>3D Hypercube Viewer</title>
+  <title>3D PubMed Viewer</title>
+  <link rel="icon" href="data:,"> <!-- Disable favicon -->
   <script type="importmap">
-  {
-    "imports": {
-      "three": "https://unpkg.com/three@0.158.0/build/three.module.js",
-      "three/examples/jsm/": "https://unpkg.com/three@0.158.0/examples/jsm/"
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.158.0/build/three.module.js",
+        "three/examples/jsm/": "https://unpkg.com/three@0.158.0/examples/jsm/"
+      }
     }
-  }
   </script>
-  <script type="module" src="script.js"></script>
   <style>
-    body { margin: 0; overflow: hidden; }
-    #popup {
-      position: absolute;
-      top: 20px;
-      left: 20px;
-      background: white;
-      border: 1px solid #ccc;
-      padding: 10px;
-      max-width: 300px;
-      display: none;
-      z-index: 10;
+    body { margin: 0; font-family: Arial, sans-serif; }
+    #ui { 
+      position: absolute; 
+      top: 10px; 
+      left: 10px; 
+      background: rgba(255,255,255,0.8); 
+      padding: 10px; 
+      border-radius: 5px;
+      max-height: 90vh;
+      overflow-y: auto;
+      width: 300px;
+    }
+    #data-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    #data-table tr:hover {
+      background: #eee;
+      cursor: pointer;
+    }
+    #data-table tr.selected {
+      background: #ffeb3b;
+    }
+    .highlighted {
+      outline: 2px solid yellow;
+      outline-offset: 2px;
     }
   </style>
 </head>
 <body>
-  <div id="popup"></div>
+  <div id="ui">
+    <h2>PubMed Data</h2>
+    <table id="data-table">
+      <thead>
+        <tr>
+          <th>PMID</th>
+          <th>Title</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+  <script type="module" src="script.js"></script>
 </body>
 </html>
