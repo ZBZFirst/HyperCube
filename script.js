@@ -34,7 +34,7 @@ async function init() {
             }
         },
         onEdit: (pmid) => showEditModal(pmid)
-    });
+    })};
 
     // Create cubes
     createCubesFromData(data, scene);
