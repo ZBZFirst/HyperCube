@@ -80,10 +80,11 @@ export function updateCubeVisibility(cube) {
 export function highlightCubeByPmid(pmid) {
     if (selectedCube) {
         selectedCube.material.emissive.setHex(0x000000);
-    } 
+    }
     selectedCube = cubes.find(c => c.userData.pmid === pmid);
     if (selectedCube) {
         selectedCube.material.emissive.setHex(0xffff00);
+        updateButtonStates();
     }
     return selectedCube;
 }
