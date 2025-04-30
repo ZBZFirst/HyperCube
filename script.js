@@ -11,22 +11,17 @@ import { initCamera, centerCameraOnCube } from './cameraManager.js';
 let scene, renderer;
 
 async function init() {
-    // Initialize scene
     const sceneObjects = createScene();
     scene = sceneObjects.scene;
     initCamera(sceneObjects.camera);
     renderer = sceneObjects.renderer;
     const clock = new THREE.Clock();
-
-    // Load data and create visualization
     const data = await loadData("pubmed_data.csv");
     createCubesFromData(data, scene);
     populateDataTable(data, (pmid) => {
         const cube = highlightCubeByPmid(pmid);
         if (cube) centerCameraOnCube(cube);
     });
-
-    // Animation loop
     function animate() {
         requestAnimationFrame(animate);
         sceneObjects.updateControls(clock.getDelta());
