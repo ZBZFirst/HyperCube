@@ -4,6 +4,7 @@ import { createCube } from './createCube.js';
 
 let cubes = [];
 let selectedCube = null;
+let camera;
 
 export function createCubesFromData(data, scene) {
     cubes.forEach(cube => scene.remove(cube));
@@ -22,7 +23,7 @@ export function createCubesFromData(data, scene) {
     return cubes;
 }
 
-function positionCubes() {
+export function positionCubes() {
     const includedCubes = cubes.filter(c => c.userData.includeArticle === "true");
     const gridSize = Math.ceil(Math.sqrt(includedCubes.length));
     const spacing = 2.5;
@@ -59,7 +60,7 @@ export function toggleIncludeArticle(pmid) {
     }
 }
 
-function updateCubeVisibility(cube) {
+export function updateCubeVisibility(cube) {
     cube.material.opacity = cube.userData.includeArticle === "true" ? 0.9 : 0.3;
     cube.material.transparent = true;
     cube.material.needsUpdate = true;
@@ -87,4 +88,6 @@ export function centerCameraOnCube(cube) {
     camera.position.lerp(targetPosition, 0.1);
     camera.lookAt(cube.position);
 }
+
+
 // cubeManager.js end
