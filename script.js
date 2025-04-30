@@ -25,21 +25,32 @@ async function init() {
     
     // Setup UI
     const ui = createUI(data, {
-        onSelect: (pmid) => highlightCubeByPmid(pmid),
-        onExport: () => exportFilteredData(),
+        onSelect: (pmid) => {
+            const cube = highlightCubeByPmid(pmid);
+            if (cube) centerCameraOnCube(cube);
+        },
+        onSearch: (term) => {
+            console.log("Searching for:", term);
+            // Implement search filtering
+        },
+        onExport: () => {
+            exportFilteredData();
+        },
         onDelete: () => {
             deleteSelectedCube();
-            ui.updateTable(getData().filter(d => 
-                cubes.some(c => c.userData.pmid === d.PMID)
+            ui.updateTable(data.filter(d => 
+                getCubes().some(c => c.userData.pmid === d.PMID)
             );
         },
         onToggleInclude: () => {
-            if (selectedCube) {
+            if (getCubes().find(c => c.userData.pmid === selectedCube?.userData.pmid)) {
                 toggleIncludeArticle(selectedCube.userData.pmid);
-                ui.updateTable(getData());
+                ui.updateTable(data);
             }
         },
-        onEdit: (pmid) => showEditModal(pmid)
+        onEdit: (pmid) => {
+            showEditModal(pmid);
+        }
     });
 
     // Create cubes
