@@ -1,19 +1,6 @@
     // createCube.js start
 import * as THREE from 'three';
 
-export function applyPropertiesToCube(cube, properties) {
-    if (properties.color) {
-        try {
-            cube.material.color.set(properties.color);
-        } catch {
-            console.warn("Invalid color. Reverting to default.");
-            cube.material.color.set(0xcccccc);
-        }
-    }
-
-    cube.userData = properties;
-}
-
 export function createCube(data) {
   const geometry = new THREE.BoxGeometry(1, 1, 1);
   const material = new THREE.MeshStandardMaterial({ 
