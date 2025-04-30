@@ -40,11 +40,56 @@
       outline: 2px solid yellow;
       outline-offset: 2px;
     }
+    #spotify-player {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      z-index: 9999;
+      background: rgba(0,0,0,0.7);
+      border-radius: 8px;
+      overflow: hidden;
+      resize: both;
+      display: flex;
+      flex-direction: column;
+      min-width: 200px;
+      min-height: 80px;
+      max-width: 500px;
+      max-height: 200px;
+      padding: 5px;
+      box-shadow: 0 0 10px #000;
+    }
+    
+    #spotify-player iframe {
+      flex: 1;
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+    
+    #resize-handle {
+      width: 10px;
+      height: 10px;
+      background: white;
+      position: absolute;
+      bottom: 0;
+      right: 0;
+      cursor: se-resize;
+    }
+
+    
   </style>
 </head>
 <body>
   <div id="ui">
     <h2>PubMed Data</h2>
+    <div id="spotify-player">
+    <iframe src="https://open.spotify.com/embed/playlist/137E6KBEACEjDWve3W6cgq?utm_source=generator"
+          width="300" height="80" frameBorder="0"
+          allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+          loading="lazy"></iframe>
+    <div id="resize-handle"></div>
+    </div>
+
     <table id="data-table">
       <thead>
         <tr>
@@ -56,5 +101,29 @@
     </table>
   </div>
   <script type="module" src="script.js"></script>
+  <script>
+  const spotify = document.getElementById("spotify-player");
+
+  let isDragging = false, offsetX, offsetY;
+
+  spotify.addEventListener("mousedown", (e) => {
+    if (e.target.id === 'resize-handle') return; // don't drag on resize handle
+    isDragging = true;
+    offsetX = e.clientX - spotify.offsetLeft;
+    offsetY = e.clientY - spotify.offsetTop;
+  });
+
+  document.addEventListener("mousemove", (e) => {
+    if (isDragging) {
+      spotify.style.left = (e.clientX - offsetX) + "px";
+      spotify.style.top = (e.clientY - offsetY) + "px";
+    }
+  });
+
+  document.addEventListener("mouseup", () => {
+    isDragging = false;
+  });
+  </script>
+
 </body>
 </html>
