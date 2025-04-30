@@ -13,7 +13,7 @@ async function init() {
   camera.position.z = 200;
 
   // 2. Load CSV and convert to JSON
-  const response = await fetch('data.csv');
+  const response = await fetch('pubmed_data.csv');
   const csvText = await response.text();
   articleData = parseCSVToJSON(csvText);
 
