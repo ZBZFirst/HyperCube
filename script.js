@@ -10,7 +10,7 @@ import { PointerLockControls } from 'three/examples/jsm/controls/PointerLockCont
 async function init() {
     const { scene, camera, renderer, updateControls } = createScene();
 
-
+    const clock = new THREE.Clock(); // Add this line
     const data = await d3.csv("pubmed_data.csv");
     const cube = createCube();
     scene.add(cube);
