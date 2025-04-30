@@ -13,90 +13,142 @@
     }
   </script>
   <style>
-    body { margin: 0; font-family: Arial, sans-serif;overflow: hidden; }
+    /* Base Styles */
+    body { 
+      margin: 0; 
+      font-family: Arial, sans-serif;
+      overflow: hidden;
+      height: 100vh;
+    }
+    
+    /* 3D Canvas */
+    canvas {
+      display: block;
+      position: fixed;
+      top: 0;
+      left: 0;
+      pointer-events: auto; /* Will be controlled by JavaScript */
+    }
+    
+    /* UI Container */
     #ui { 
       position: absolute; 
       top: 10px; 
       left: 10px; 
-      background: rgba(255,255,255,0.8); 
-      padding: 10px; 
-      border-radius: 5px;
+      background: rgba(255,255,255,0.95);
+      padding: 15px;
+      border-radius: 8px;
       max-height: 90vh;
       overflow-y: auto;
-      width: 300px;
+      width: 320px;
       z-index: 100;
-      pointer-events: auto; /* Allow clicks on UI */
+      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+      pointer-events: auto;
     }
+    
+    /* UI Interactive Elements */
     #ui * {
-        pointer-events: auto; /* Allow clicks on all UI children */
+      pointer-events: auto;
     }
     
-    canvas {
-        pointer-events: none; /* Disable clicks on 3D canvas */
-    }
-    
-    #ui:hover ~ canvas {
-        pointer-events: none; /* Keep canvas disabled when interacting with UI */
-    }
-      
-    #data-table {
-        width: 100%;
-        margin-top: 10px;
-    }
-    
-    #data-table th {
-        background: #f2f2f2;
-        text-align: left;
-        padding: 8px;
-    }
-    
-    #data-table td {
-        padding: 8px;
-        border-bottom: 1px solid #ddd;
-    }
-    #data-table tr:hover {
-      background: #eee;
-      cursor: pointer;
-    }
-    #data-table tr.selected {
-      background: #ffeb3b;
-    }
-    .highlighted {
-      outline: 2px solid yellow;
-      outline-offset: 2px;
-    }
-    body {
-        margin: 0;
-        overflow: hidden;
-    }
+    /* Control Buttons */
     .controls {
-        display: flex;
-        gap: 10px;
-        margin-bottom: 10px;
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
     }
     
     .controls button {
-        padding: 5px 10px;
-        background: #4CAF50;
-        color: white;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
+      padding: 6px 12px;
+      background: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: background 0.2s;
+      flex: 1;
     }
     
     .controls button:hover {
-        background: #45a049;
+      background: #3e8e41;
+    }
+    
+    .controls button:active {
+      transform: translateY(1px);
+    }
+    
+    /* Data Table */
+    #data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+    
+    #data-table th {
+      background: #f2f2f2;
+      text-align: left;
+      padding: 10px;
+      position: sticky;
+      top: 0;
+    }
+    
+    #data-table td {
+      padding: 8px 10px;
+      border-bottom: 1px solid #e0e0e0;
+    }
+    
+    #data-table tr:hover {
+      background: #f5f5f5;
+    }
+    
+    #data-table tr.selected {
+      background: #fff9c4;
+    }
+    
+    /* Title */
+    #ui h2 {
+      margin-top: 0;
+      color: #333;
+      font-size: 1.4em;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #eee;
+    }
+    
+    /* Scrollbar */
+    #ui::-webkit-scrollbar {
+      width: 8px;
+    }
+    
+    #ui::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 4px;
+    }
+    
+    #ui::-webkit-scrollbar-thumb {
+      background: #ccc;
+      border-radius: 4px;
+    }
+    
+    #ui::-webkit-scrollbar-thumb:hover {
+      background: #aaa;
     }
   </style>
 </head>
 <body>
+  <!-- UI Container -->
   <div id="ui">
     <h2>PubMed Data</h2>
+    <div class="controls">
+      <button id="download-btn">Download CSV</button>
+      <button id="delete-btn">Delete Selected</button>
+    </div>
     <table id="data-table">
       <thead>
         <tr>
           <th>PMID</th>
           <th>Title</th>
+          <th>Included</th>
         </tr>
       </thead>
       <tbody></tbody>
@@ -104,7 +156,14 @@
   </div>
 
   <script type="module" src="script.js"></script>
-
-
+  <script>
+    // Ensure UI elements don't propagate clicks to 3D canvas
+    document.querySelectorAll('#ui, #ui *').forEach(el => {
+      el.addEventListener('pointerdown', e => e.stopPropagation());
+      el.addEventListener('pointerup', e => e.stopPropagation());
+      el.addEventListener('mousedown', e => e.stopPropagation());
+      el.addEventListener('mouseup', e => e.stopPropagation());
+    });
+  </script>
 </body>
 </html>
