@@ -1,5 +1,5 @@
     // createScene.js start
-import * as THREE from 'https://unpkg.com/three@0.158.0/build/three.module.js';
+import * as THREE from 'three'; // Replace CDN URL with 'three'
 
 export function createScene() {
     const scene = new THREE.Scene();
