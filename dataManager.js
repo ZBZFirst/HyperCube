@@ -43,15 +43,26 @@ export function getData() {
 }
 
 export function exportFilteredData() {
+    if (!data.length) {
+        alert("No data available to export");
+        return;
+    }
+    
     const filteredData = data.filter(item => 
         getCubes().some(cube => cube.userData.pmid === item.PMID)
     );
+    
+    if (!filteredData.length) {
+        alert("No articles remaining to export");
+        return;
+    }
+
     const csvContent = d3.csvFormat(filteredData);
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.setAttribute('href', url);
-    link.setAttribute('download', 'filtered_articles.csv');
+    link.setAttribute('download', `pubmed_export_${new Date().toISOString().slice(0,10)}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
