@@ -4,6 +4,16 @@ import { PointerLockControls } from 'three/examples/jsm/controls/PointerLockCont
 
 export function createScene() {
     const scene = new THREE.Scene();
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5); // Soft white light
+    scene.add(ambientLight);
+    
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    directionalLight.position.set(1, 1, 1);
+    scene.add(directionalLight);
+    
+    const hemisphereLight = new THREE.HemisphereLight(0xffffbb, 0x080820, 0.5);
+    scene.add(hemisphereLight);
+    
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
     camera.position.set(0, 1.6, 5); // Initial position (x, y, z)
     
