@@ -19,14 +19,21 @@ async function init() {
     
     // Setup UI
     const ui = createUI(data, {
-        onSelect: (pmid) => {
-            const cube = highlightCubeByPmid(pmid);
-            if (cube) centerCameraOnCube(cube);
+        onSelect: (pmid) => highlightCubeByPmid(pmid),
+        onExport: () => exportFilteredData(),
+        onDelete: () => {
+            deleteSelectedCube();
+            ui.updateTable(getData().filter(d => 
+                cubes.some(c => c.userData.pmid === d.PMID)
+            );
         },
-        onSearch: (term) => {
-            console.log("Searching for:", term);
-            // Implement search filtering
-        }
+        onToggleInclude: () => {
+            if (selectedCube) {
+                toggleIncludeArticle(selectedCube.userData.pmid);
+                ui.updateTable(getData());
+            }
+        },
+        onEdit: (pmid) => showEditModal(pmid)
     });
 
     // Create cubes
@@ -40,6 +47,55 @@ async function init() {
         renderer.render(scene, sceneObjects.camera);
     }
     animate();
+}
+
+function showEditModal(pmid) {
+    const cube = cubes.find(c => c.userData.pmid === pmid);
+    if (!cube) return;
+
+    const modal = document.createElement('div');
+    modal.style.position = 'absolute';
+    modal.style.top = '50%';
+    modal.style.left = '50%';
+    modal.style.transform = 'translate(-50%, -50%)';
+    modal.style.background = 'white';
+    modal.style.padding = '20px';
+    modal.style.zIndex = '1000';
+    
+    modal.innerHTML = `
+        <h3>Edit Article</h3>
+        <div>
+            <label>
+                <input type="checkbox" ${cube.userData.includeArticle === "true" ? 'checked' : ''}>
+                Include Article
+            </label>
+        </div>
+        <div>
+            <label>Rationale:</label>
+            <textarea>${cube.userData.rationale || ''}</textarea>
+        </div>
+        <div>
+            <label>Tags (semicolon separated):</label>
+            <input type="text" value="${cube.userData.tags || ''}">
+        </div>
+        <button id="save-changes">Save</button>
+        <button id="close-modal">Close</button>
+    `;
+
+    document.body.appendChild(modal);
+
+    document.getElementById('save-changes').addEventListener('click', () => {
+        cube.userData.includeArticle = modal.querySelector('input[type="checkbox"]').checked ? "true" : "false";
+        cube.userData.rationale = modal.querySelector('textarea').value;
+        cube.userData.tags = modal.querySelector('input[type="text"]').value;
+        updateCubeVisibility(cube);
+        positionCubes();
+        document.body.removeChild(modal);
+    });
+
+    document.getElementById('close-modal').addEventListener('click', () => {
+        document.body.removeChild(modal);
+    });
 }
 
 init();
