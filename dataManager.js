@@ -16,7 +16,6 @@ export async function loadData(url) {
 export function populateDataTable(data, onRowClick) {
     const table = d3.select('#data-table tbody');
     table.selectAll('tr').remove();
-
     const rows = table.selectAll('tr')
         .data(data)
         .enter()
@@ -26,13 +25,10 @@ export function populateDataTable(data, onRowClick) {
             d3.select(this).classed('selected', true);
             onRowClick(d.PMID);
         });
-
     rows.append('td').text(d => d.PMID);
     rows.append('td').text(d => d.Title?.substring(0, 30) + '...');
-    
     return table;
 }
-
 export function getData() {
     return data;
 }
