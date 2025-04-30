@@ -45,7 +45,9 @@ export function deleteSelectedCube() {
     
     const index = cubes.indexOf(selectedCube);
     if (index !== -1) {
-        selectedCube.parent.remove(selectedCube);
+        // Remove from Three.js scene
+        scene.remove(selectedCube);
+        // Remove from cubes array
         cubes.splice(index, 1);
         selectedCube = null;
     }
