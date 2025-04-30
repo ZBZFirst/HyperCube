@@ -2,6 +2,9 @@ import { createScene } from './createScene.js';
 import { createCube } from './createCube.js';
 import { applyPropertiesToCube } from './changeCube.js';
 
+import * as THREE from 'https://unpkg.com/three@0.158.0/build/three.module.js';
+import * as d3 from 'https://cdn.jsdelivr.net/npm/d3@7/+esm';
+
 async function init() {
     const { scene, camera, renderer } = createScene();
     
