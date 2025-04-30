@@ -21,6 +21,12 @@ export function createScene() {
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
 
+    const gridHelper = new THREE.GridHelper(20, 20);
+    scene.add(gridHelper);
+
+    const axesHelper = new THREE.AxesHelper(5);
+    scene.add(axesHelper);
+    
     // Controls
     const controls = new PointerLockControls(camera, renderer.domElement);
     scene.add(controls.getObject());
