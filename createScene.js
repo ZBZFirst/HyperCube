@@ -21,7 +21,7 @@ export function createScene() {
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
 
-    const gridHelper = new THREE.GridHelper(20, 20);
+    const gridHelper = new THREE.GridHelper(60, 20);
     scene.add(gridHelper);
 
     const axesHelper = new THREE.AxesHelper(5);
