@@ -4,16 +4,11 @@ import { PointerLockControls } from 'three/examples/jsm/controls/PointerLockCont
 
 export function setupCameraControls(camera, renderer) {
     const controls = new PointerLockControls(camera, renderer.domElement);
-    
-    // Movement state
     const keysPressed = {};
     const velocity = new THREE.Vector3();
     const speed = 5;
     const altitudeSpeed = 3;
-
-    // Control setup
     document.addEventListener('click', () => controls.lock());
-    
     document.addEventListener('keydown', (e) => {
         keysPressed[e.key.toLowerCase()] = true;
         if (e.key === ' ' || e.key === 'Control') e.preventDefault();
@@ -25,23 +20,16 @@ export function setupCameraControls(camera, renderer) {
 
     function update(delta) {
         velocity.set(0, 0, 0);
-
-        // Ground movement
         if (keysPressed['w']) velocity.z -= speed * delta;
         if (keysPressed['s']) velocity.z += speed * delta;
         if (keysPressed['a']) velocity.x -= speed * delta;
         if (keysPressed['d']) velocity.x += speed * delta;
-
-        // Altitude control
         if (keysPressed[' ']) velocity.y += altitudeSpeed * delta;
         if (keysPressed['control']) velocity.y -= altitudeSpeed * delta;
-
-        // Apply movement
         controls.moveRight(velocity.x);
         controls.moveForward(velocity.z);
         camera.position.y = Math.max(0.5, camera.position.y + velocity.y);
     }
-
     return { controls, update };
 }
 // cameraControls.js end
