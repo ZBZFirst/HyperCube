@@ -2,29 +2,41 @@
 import * as THREE from 'three';
 import * as d3 from 'https://cdn.jsdelivr.net/npm/d3@7/+esm';
 import { createScene } from './createScene.js';
-import { createCube } from './createCube.js';
-import { applyPropertiesToCube } from './changeCube.js';
-import { createCubesFromData, highlightCubeByPmid } from './cubeManager.js';
-import { loadData, populateDataTable } from './dataManager.js';
-import { initCamera, centerCameraOnCube } from './cameraManager.js';
+import { createUI } from './uiManager.js';
+import { loadData } from './dataManager.js';
+import { createCubesFromData } from './cubeManager.js';
 
 let scene, renderer;
 
 async function init() {
+    // Initialize scene with controls
     const sceneObjects = createScene();
     scene = sceneObjects.scene;
-    initCamera(sceneObjects.camera);
     renderer = sceneObjects.renderer;
-    const clock = new THREE.Clock();
+
+    // Load data
     const data = await loadData("pubmed_data.csv");
-    createCubesFromData(data, scene);
-    populateDataTable(data, (pmid) => {
-        const cube = highlightCubeByPmid(pmid);
-        if (cube) centerCameraOnCube(cube);
+    
+    // Setup UI
+    const ui = createUI(data, {
+        onSelect: (pmid) => {
+            const cube = highlightCubeByPmid(pmid);
+            if (cube) centerCameraOnCube(cube);
+        },
+        onSearch: (term) => {
+            console.log("Searching for:", term);
+            // Implement search filtering
+        }
     });
+
+    // Create cubes
+    createCubesFromData(data, scene);
+    ui.updateTable(data);
+
+    // Animation loop
     function animate() {
         requestAnimationFrame(animate);
-        sceneObjects.updateControls(clock.getDelta());
+        sceneObjects.updateControls(0.016); // Fixed delta for simplicity
         renderer.render(scene, sceneObjects.camera);
     }
     animate();
