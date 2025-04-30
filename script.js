@@ -11,7 +11,8 @@ import {
     toggleIncludeArticle,
     getCubes,
     updateCubeVisibility,
-    positionCubes
+    positionCubes,
+    centerCameraOnCube
 } from './cubeManager.js';
 
 let scene, renderer, sceneObjects;
@@ -71,14 +72,6 @@ async function init() {
         renderer.render(scene, sceneObjects.camera);
     }
     animate();
-}
-
-function centerCameraOnCube(cube) {
-    const targetPosition = cube.position.clone();
-    targetPosition.y += 1;
-    targetPosition.z += 5;
-    sceneObjects.camera.position.lerp(targetPosition, 0.1);
-    sceneObjects.camera.lookAt(cube.position);
 }
 
 function showEditModal(pmid, ui, data) {
