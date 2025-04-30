@@ -1,5 +1,5 @@
 // changeCube.js start
-import * as THREE from 'three'; // Replace CDN URL with 'three'
+import * as THREE from 'three';
 
 export function applyPropertiesToCube(cube, properties) {
     if (properties.color) {
@@ -10,7 +10,6 @@ export function applyPropertiesToCube(cube, properties) {
             cube.material.color.set(0xcccccc);
         }
     }
-
     cube.userData = properties;
 }
     // changeCube.js end
