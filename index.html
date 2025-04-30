@@ -90,14 +90,20 @@
   <script>
   const spotify = document.getElementById("spotify-player");
   let isDragging = false, offsetX, offsetY;
-
+  
+  spotify.addEventListener("mousedown", (e) => {
+    isDragging = true;
+    offsetX = e.clientX - spotify.offsetLeft;
+    offsetY = e.clientY - spotify.offsetTop;
+  });
+  
   document.addEventListener("mousemove", (e) => {
     if (isDragging) {
       spotify.style.left = (e.clientX - offsetX) + "px";
       spotify.style.top = (e.clientY - offsetY) + "px";
     }
   });
-
+  
   document.addEventListener("mouseup", () => {
     isDragging = false;
   });
