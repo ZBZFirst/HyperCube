@@ -1,3 +1,4 @@
+    // createScene.js start
 import * as THREE from 'https://unpkg.com/three@0.158.0/build/three.module.js';
 
 export function createScene() {
@@ -39,3 +40,4 @@ export function createScene() {
 
     return { scene, camera, renderer, updateControls };
 }
+    // createScene.js end
