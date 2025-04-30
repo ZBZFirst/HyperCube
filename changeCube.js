@@ -1,3 +1,4 @@
+    // changeCube.js start
 import * as THREE from 'https://unpkg.com/three@0.158.0/build/three.module.js';
 
 export function applyPropertiesToCube(cube, properties) {
@@ -12,3 +13,4 @@ export function applyPropertiesToCube(cube, properties) {
 
     cube.userData = properties;
 }
+    // changeCube.js end
