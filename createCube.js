@@ -1,3 +1,4 @@
+    // createCube.js start
 import * as THREE from 'https://unpkg.com/three@0.158.0/build/three.module.js';
 
 export function createCube(data) {
@@ -8,3 +9,4 @@ export function createCube(data) {
     cube.userData = data;
     return cube;
 }
+    // createCube.js end
