@@ -43,14 +43,23 @@ export function positionCubes() {
 export function deleteSelectedCube() {
     if (!selectedCube) return;
     
-    const index = cubes.indexOf(selectedCube);
-    if (index !== -1) {
-        // Remove from Three.js scene
-        scene.remove(selectedCube);
-        // Remove from cubes array
-        cubes.splice(index, 1);
-        selectedCube = null;
+    // Find and remove from data array
+    const dataIndex = data.findIndex(d => d.PMID === selectedCube.userData.pmid);
+    if (dataIndex !== -1) {
+        data.splice(dataIndex, 1);
     }
+    
+    // Remove from Three.js scene
+    scene.remove(selectedCube);
+    
+    // Remove from cubes array
+    const cubeIndex = cubes.indexOf(selectedCube);
+    if (cubeIndex !== -1) {
+        cubes.splice(cubeIndex, 1);
+    }
+    
+    selectedCube = null;
+    positionCubes(); // Reorganize remaining cubes
 }
 
 export function toggleIncludeArticle(pmid) {
