@@ -1,4 +1,4 @@
-function applyPropertiesToCube(cube, properties) {
+export function applyPropertiesToCube(cube, properties) {
     if (properties.color) {
         try {
             cube.material.color.set(properties.color);
