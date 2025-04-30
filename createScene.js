@@ -1,5 +1,6 @@
     // createScene.js start
 import * as THREE from 'three'; // Replace CDN URL with 'three'
+import { PointerLockControls } from 'three/examples/jsm/controls/PointerLockControls.js';
 
 export function createScene() {
     const scene = new THREE.Scene();
