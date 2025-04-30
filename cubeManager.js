@@ -33,6 +33,7 @@ export function highlightCubeByPmid(pmid) {
     }
     return selectedCube;
 }
+
 export function getCubes() {
     return cubes;
 }
