@@ -58,6 +58,22 @@ async function init() {
         }
     });
 
+    // Add this after UI initialization in your init() function
+    document.getElementById('download-btn').addEventListener('click', () => {
+        exportFilteredData();
+    });
+    
+    document.getElementById('delete-btn').addEventListener('click', () => {
+        if (!selectedCube) {
+            alert("Please select an article first by clicking on it in the table");
+            return;
+        }
+        deleteSelectedCube();
+        ui.updateTable(getData().filter(d => 
+            getCubes().some(c => c.userData.pmid === d.PMID)
+        ));
+    });
+    
     // Create cubes
     cubes = createCubesFromData(data, scene);
     populateDataTable(data, (pmid) => {
