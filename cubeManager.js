@@ -101,5 +101,12 @@ export function centerCameraOnCube(cube) {
     camera.lookAt(cube.position);
 }
 
-
+function updateButtonStates() {
+    const deleteBtn = document.getElementById('delete-btn');
+    if (selectedCube) {
+        deleteBtn.disabled = false;
+    } else {
+        deleteBtn.disabled = true;
+    }
+}
 // cubeManager.js end
