@@ -1,6 +1,6 @@
     // createScene.js start
 import * as THREE from 'three';
-import { setupCameraControls } from './cameraControls.js';
+import { PointerLockControls } from 'three/examples/jsm/controls/PointerLockControls.js';
 
 export function createScene() {
     const scene = new THREE.Scene();
@@ -25,15 +25,55 @@ export function createScene() {
     renderer.shadowMap.enabled = true;
     document.body.appendChild(renderer.domElement);
 
-    // Setup controls
-    const { controls, update } = setupCameraControls(camera, renderer);
-    scene.add(controls.getObject());
+    // Setup controls with UI protection
+    const controls = new PointerLockControls(camera, renderer.domElement);
+    
+    // Only activate pointer lock when clicking outside UI
+    document.addEventListener('click', (event) => {
+        const uiElement = document.getElementById('ui');
+        if (!uiElement.contains(event.target)) {
+            controls.lock().catch(e => {
+                console.log("Pointer lock error:", e);
+            });
+        }
+    });
+
+    // Movement state
+    const keysPressed = {};
+    document.addEventListener('keydown', (e) => {
+        keysPressed[e.key.toLowerCase()] = true;
+        if (e.key === ' ' || e.key === 'Control') e.preventDefault();
+    });
+    
+    document.addEventListener('keyup', (e) => {
+        keysPressed[e.key.toLowerCase()] = false;
+    });
+
+    function updateControls(delta) {
+        const velocity = new THREE.Vector3();
+        const speed = 5;
+        const altitudeSpeed = 3;
+
+        if (keysPressed['w']) velocity.z -= speed * delta;
+        if (keysPressed['s']) velocity.z += speed * delta;
+        if (keysPressed['a']) velocity.x -= speed * delta;
+        if (keysPressed['d']) velocity.x += speed * delta;
+        if (keysPressed[' ']) velocity.y += altitudeSpeed * delta;
+        if (keysPressed['control']) velocity.y -= altitudeSpeed * delta;
+
+        if (controls.isLocked) {
+            controls.moveRight(velocity.x);
+            controls.moveForward(velocity.z);
+            camera.position.y += velocity.y;
+        }
+    }
 
     return { 
         scene,
         camera,
         renderer,
-        updateControls: update
+        controls,
+        updateControls
     };
 }
 
