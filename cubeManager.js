@@ -1,7 +1,6 @@
 // cubeManager.js start
 import * as THREE from 'three';
 import { createCube } from './createCube.js';
-import { applyPropertiesToCube } from './changeCube.js';
 
 let cubes = [];
 let selectedCube = null;
@@ -9,18 +8,61 @@ let selectedCube = null;
 export function createCubesFromData(data, scene) {
     cubes.forEach(cube => scene.remove(cube));
     cubes = [];
-    const gridSize = Math.ceil(Math.sqrt(data.length));
-    const spacing = 2.5;
+    
     data.forEach((row, i) => {
-        const x = (i % gridSize - gridSize/2) * spacing;
-        const z = Math.floor(i / gridSize - gridSize/2) * spacing;
         const cube = createCube(row, data);
-        cube.position.set(x, 0, z);
         cube.userData.pmid = row.PMID;
+        cube.userData.includeArticle = row.includeArticle || "true";
         scene.add(cube);
         cubes.push(cube);
+        updateCubeVisibility(cube);
     });
+    
+    positionCubes();
     return cubes;
+}
+
+function positionCubes() {
+    const includedCubes = cubes.filter(c => c.userData.includeArticle === "true");
+    const gridSize = Math.ceil(Math.sqrt(includedCubes.length));
+    const spacing = 2.5;
+    
+    includedCubes.forEach((cube, i) => {
+        const x = (i % gridSize - gridSize/2) * spacing;
+        const z = Math.floor(i / gridSize - gridSize/2) * spacing;
+        cube.position.set(x, 0, z);
+        cube.visible = true;
+    });
+    
+    cubes.filter(c => c.userData.includeArticle !== "true").forEach(cube => {
+        cube.visible = false;
+    });
+}
+
+export function deleteSelectedCube() {
+    if (!selectedCube) return;
+    
+    const index = cubes.indexOf(selectedCube);
+    if (index !== -1) {
+        selectedCube.parent.remove(selectedCube);
+        cubes.splice(index, 1);
+        selectedCube = null;
+    }
+}
+
+export function toggleIncludeArticle(pmid) {
+    const cube = cubes.find(c => c.userData.pmid === pmid);
+    if (cube) {
+        cube.userData.includeArticle = cube.userData.includeArticle === "true" ? "false" : "true";
+        updateCubeVisibility(cube);
+        positionCubes();
+    }
+}
+
+function updateCubeVisibility(cube) {
+    cube.material.opacity = cube.userData.includeArticle === "true" ? 0.9 : 0.3;
+    cube.material.transparent = true;
+    cube.material.needsUpdate = true;
 }
 
 export function highlightCubeByPmid(pmid) {
