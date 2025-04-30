@@ -66,6 +66,14 @@ async function init() {
     animate();
 }
 
+function centerCameraOnCube(cube) {
+    const targetPosition = cube.position.clone();
+    targetPosition.y += 1;
+    targetPosition.z += 5;
+    sceneObjects.camera.position.lerp(targetPosition, 0.1);
+    sceneObjects.camera.lookAt(cube.position);
+}
+
 function showEditModal(pmid) {
     const cube = cubes.find(c => c.userData.pmid === pmid);
     if (!cube) return;
