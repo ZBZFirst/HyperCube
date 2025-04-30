@@ -3,6 +3,21 @@ import * as d3 from 'https://cdn.jsdelivr.net/npm/d3@7/+esm';
 
 export function createUI(data, callbacks) {
     const uiContainer = d3.select('#ui');
+    uiContainer.selectAll('*').remove();
+
+    // Control buttons
+    const controls = uiContainer.append('div').attr('class', 'controls');
+    controls.append('button')
+        .text('Export Selected')
+        .on('click', callbacks.onExport);
+    
+    controls.append('button')
+        .text('Delete Selected')
+        .on('click', callbacks.onDelete);
+    
+    controls.append('button')
+        .text('Toggle Include')
+        .on('click', callbacks.onToggleInclude);
     
     // Clear existing UI
     uiContainer.selectAll('*').remove();
@@ -54,13 +69,18 @@ export function createUI(data, callbacks) {
             const rows = tbody.selectAll('tr')
                 .data(filteredData)
                 .join('tr')
-                .on('click', (_, d) => callbacks.onSelect(d.PMID));
+                .on('dblclick', (_, d) => callbacks.onEdit(d.PMID)); // Double-click to edit
 
             rows.selectAll('td')
-                .data(d => [d.PMID, d.Title?.substring(0, 30) + '...', d.PubYear, d.Citations || 'N/A'])
+                .data(d => [d.PMID, d.Title?.substring(0, 30) + '...', 
+                      d.includeArticle === "true" ? "✓" : "✗"])
                 .join('td')
                 .text(d => d);
         }
     };
 }
+
+
+
+
 // uiManager.js end
