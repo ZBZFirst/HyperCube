@@ -1,5 +1,6 @@
 import { createScene } from './createScene.js';
 import { createCube } from './createCube.js';
+import { applyPropertiesToCube } from './changeCube.js';
 
 async function init() {
     const { scene, camera, renderer } = createScene();
