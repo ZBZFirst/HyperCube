@@ -3,8 +3,14 @@ import * as THREE from 'three';
 import * as d3 from 'https://cdn.jsdelivr.net/npm/d3@7/+esm';
 import { createScene } from './createScene.js';
 import { createUI } from './uiManager.js';
-import { loadData } from './dataManager.js';
-import { createCubesFromData } from './cubeManager.js';
+import { loadData, exportFilteredData } from './dataManager.js';
+import { 
+    createCubesFromData, 
+    highlightCubeByPmid, 
+    deleteSelectedCube,
+    toggleIncludeArticle,
+    getCubes
+} from './cubeManager.js';
 
 let scene, renderer;
 
