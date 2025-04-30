@@ -82,14 +82,6 @@
 <body>
   <div id="ui">
     <h2>PubMed Data</h2>
-    <div id="spotify-player">
-    <iframe src="https://open.spotify.com/embed/playlist/137E6KBEACEjDWve3W6cgq?utm_source=generator"
-          width="300" height="80" frameBorder="0"
-          allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-          loading="lazy"></iframe>
-    <div id="resize-handle"></div>
-    </div>
-
     <table id="data-table">
       <thead>
         <tr>
@@ -100,6 +92,13 @@
       <tbody></tbody>
     </table>
   </div>
+  <div id="spotify-player">
+  <iframe src="https://open.spotify.com/embed/playlist/137E6KBEACEjDWve3W6cgq?utm_source=generator"
+        width="300" height="80" frameBorder="0"
+        allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+        loading="lazy"></iframe>
+  <div id="resize-handle"></div>
+  </div>  
   <script type="module" src="script.js"></script>
   <script>
   const spotify = document.getElementById("spotify-player");
