@@ -19,73 +19,152 @@ let scene, renderer, sceneObjects;
 let cubes = [];
 
 async function init() {
-    // Initialize scene with controls
-    sceneObjects = createScene();
-    scene = sceneObjects.scene;
-    renderer = sceneObjects.renderer;
+    try {
+        // Initialize 3D scene and renderer
+        sceneObjects = createScene();
+        scene = sceneObjects.scene;
+        renderer = sceneObjects.renderer;
+        
+        // Show loading state
+        const loadingIndicator = showLoadingIndicator();
 
-    // Load data
-    const data = await loadData("pubmed_data.csv");
-    
-    // Setup UI
-    const ui = createUI(data, {
-        onSelect: (pmid) => {
-            const cube = highlightCubeByPmid(pmid);
-            if (cube) centerCameraOnCube(cube);
-        },
-        onSearch: (term) => {
-            console.log("Searching for:", term);
-            // Implement search filtering
-        },
-        onExport: () => {
-            exportFilteredData();
-        },
-        onDelete: () => {
-            deleteSelectedCube();
-            ui.updateTable(data.filter(d => 
-                getCubes().some(c => c.userData.pmid === d.PMID)
-            ));
-        },
-        onToggleInclude: () => {
-            const selectedCube = getCubes().find(c => c === highlightCubeByPmid());
-            if (selectedCube) {
-                toggleIncludeArticle(selectedCube.userData.pmid);
-                ui.updateTable(data);
-            }
-        },
-        onEdit: (pmid) => {
-            showEditModal(pmid, ui, data);
+        // Load and prepare data
+        const data = await loadData("pubmed_data.csv");
+        if (!data || data.length === 0) {
+            throw new Error("No data loaded or empty dataset");
         }
-    });
 
-    // Add this after UI initialization in your init() function
-    document.getElementById('download-btn').addEventListener('click', () => {
-        exportFilteredData();
+        // Initialize UI components
+        const ui = initializeUI(data);
+        setupButtonHandlers(ui, data);
+        
+        // Create 3D cubes and populate table
+        cubes = createCubesFromData(data, scene);
+        updateTableData(ui, data);
+        updateButtonStates();
+        
+        // Hide loading indicator
+        removeLoadingIndicator(loadingIndicator);
+
+        // Start animation loop
+        startAnimationLoop();
+
+    } catch (error) {
+        console.error("Initialization failed:", error);
+        showErrorToUser(error.message);
+        // Fallback scene if needed
+        createFallbackScene();
+    }
+}
+
+// Helper functions
+function initializeUI(data) {
+    return createUI(data, {
+        onSelect: handleSelect,
+        onExport: () => exportFilteredData(),
+        onDelete: handleDelete,
+        // ... other callbacks
+    });
+}
+
+function setupButtonHandlers(ui, data) {
+    document.getElementById('download-btn').addEventListener('click', async () => {
+        try {
+            this.disabled = true;
+            await exportFilteredData();
+        } finally {
+            this.disabled = false;
+        }
     });
     
     document.getElementById('delete-btn').addEventListener('click', () => {
         if (!selectedCube) {
-            alert("Please select an article first by clicking on it in the table");
+            showAlert("Please select an article first");
             return;
         }
-        deleteSelectedCube();
-        ui.updateTable(getData().filter(d => 
-            getCubes().some(c => c.userData.pmid === d.PMID)
-        ));
+        handleDelete(ui, data);
     });
-    
-    // Create cubes
-    cubes = createCubesFromData(data, scene);
-    populateDataTable(data, (pmid) => {
-        const cube = highlightCubeByPmid(pmid);
-        if (cube) centerCameraOnCube(cube);
-    });
+}
 
-    // Animation loop
+function handleSelect(pmid) {
+    selectedCube = highlightCubeByPmid(pmid);
+    if (selectedCube) {
+        centerCameraOnCube(selectedCube);
+        updateButtonStates();
+    }
+}
+
+function handleDelete(ui, data) {
+    deleteSelectedCube();
+    updateTableData(ui, data);
+    updateButtonStates();
+    positionCubes(); // Reorganize remaining cubes
+}
+
+function updateTableData(ui, data) {
+    ui.updateTable(data.filter(d => 
+        getCubes().some(c => c.userData.pmid === d.PMID)
+    ));
+}
+
+function updateButtonStates() {
+    document.getElementById('delete-btn').disabled = !selectedCube;
+}
+
+function startAnimationLoop() {
     function animate() {
         requestAnimationFrame(animate);
         sceneObjects.updateControls(0.016);
         renderer.render(scene, sceneObjects.camera);
+    }
+    animate();
+}
+
+// UI feedback functions
+function showLoadingIndicator() {
+    const loader = document.createElement('div');
+    loader.id = 'loading-indicator';
+    loader.style.position = 'fixed';
+    loader.style.top = '20px';
+    loader.style.right = '20px';
+    loader.style.padding = '10px';
+    loader.style.background = 'rgba(0,0,0,0.7)';
+    loader.style.color = 'white';
+    loader.style.borderRadius = '5px';
+    loader.textContent = 'Loading...';
+    document.body.appendChild(loader);
+    return loader;
+}
+
+function removeLoadingIndicator(loader) {
+    if (loader && loader.parentNode) {
+        loader.parentNode.removeChild(loader);
+    }
+}
+
+function showErrorToUser(message) {
+    alert(`Error: ${message}`);
+}
+
+function createFallbackScene() {
+    // Basic fallback visualization
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera();
+    const renderer = new THREE.WebGLRenderer();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
+    
+    const geometry = new THREE.BoxGeometry();
+    const material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+    const cube = new THREE.Mesh(geometry, material);
+    scene.add(cube);
+    camera.position.z = 5;
+    
+    function animate() {
+        requestAnimationFrame(animate);
+        cube.rotation.x += 0.01;
+        cube.rotation.y += 0.01;
+        renderer.render(scene, camera);
     }
     animate();
 }
