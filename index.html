@@ -25,7 +25,20 @@
       overflow-y: auto;
       width: 300px;
       z-index: 100;
+      pointer-events: auto; /* Allow clicks on UI */
     }
+    #ui * {
+        pointer-events: auto; /* Allow clicks on all UI children */
+    }
+    
+    canvas {
+        pointer-events: none; /* Disable clicks on 3D canvas */
+    }
+    
+    #ui:hover ~ canvas {
+        pointer-events: none; /* Keep canvas disabled when interacting with UI */
+    }
+      
     #data-table {
         width: 100%;
         margin-top: 10px;
