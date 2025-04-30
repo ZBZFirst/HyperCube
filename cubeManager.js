@@ -1,4 +1,4 @@
-// cubeManager.js
+// cubeManager.js start
 import * as THREE from 'three';
 import { createCube } from './createCube.js';
 import { applyPropertiesToCube } from './changeCube.js';
@@ -45,3 +45,4 @@ export function highlightCubeByPmid(pmid) {
 export function getCubes() {
     return cubes;
 }
+// cubeManager.js end
