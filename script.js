@@ -11,30 +11,50 @@ let data = []; // Store CSV data
 let selectedCube = null;
 
 async function init() {
-  // Initialize scene
+  // Initialize scene first
   const sceneObjects = createScene();
   scene = sceneObjects.scene;
   camera = sceneObjects.camera;
   renderer = sceneObjects.renderer;
   const clock = new THREE.Clock();
 
-  // Load and process data
-  data = await d3.csv("pubmed_data.csv");
-  createCubesFromData(data);
-  populateDataTable(data);
+  try {
+    // Load and process data
+    data = await d3.csv("pubmed_data.csv");
+    
+    // Create cubes AFTER data is loaded
+    createCubesFromData(data);
+    populateDataTable(data);
 
-  // Animation loop
-  function animate() {
-    requestAnimationFrame(animate);
-    cubes.forEach(cube => {
-      cube.rotation.x += 0.005;
-      cube.rotation.y += 0.01;
-    });
-    const delta = clock.getDelta();
-    sceneObjects.updateControls(delta);
-    renderer.render(scene, camera);
+    // Animation loop
+    function animate() {
+      requestAnimationFrame(animate);
+      
+      // Only rotate cubes if they exist
+      if (cubes.length > 0) {
+        cubes.forEach(cube => {
+          cube.rotation.x += 0.005;
+          cube.rotation.y += 0.01;
+        });
+      }
+      
+      const delta = clock.getDelta();
+      sceneObjects.updateControls(delta);
+      renderer.render(scene, camera);
+    }
+    
+    animate();
+  } catch (error) {
+    console.error("Error loading data:", error);
+    // Fallback - create at least one cube if data fails to load
+    const fallbackCube = createCube({
+      PMID: "000000",
+      Title: "Data failed to load",
+      PubYear: new Date().getFullYear()
+    }, []);
+    scene.add(fallbackCube);
+    cubes.push(fallbackCube);
   }
-  animate();
 }
 
 function createCubesFromData(data) {
@@ -46,16 +66,16 @@ function createCubesFromData(data) {
   const gridSize = Math.ceil(Math.sqrt(data.length));
   const spacing = 2.5;
 
-  data.forEach((row, i) => {
-    const x = (i % gridSize - gridSize/2) * spacing;
-    const z = Math.floor(i / gridSize - gridSize/2) * spacing;
-    
-    const cube = createCube(row);
-    cube.position.set(x, 0, z);
-    cube.userData.pmid = row.PMID; // Store unique identifier
-    scene.add(cube);
-    cubes.push(cube);
-  });
+  // Create new cubes from data
+  if (data && data.length > 0) {
+    cubes = data.map(row => {
+      const cube = createCube(row, data);
+      scene.add(cube);
+      return cube;
+    });
+  } else {
+    console.warn("No data available to create cubes");
+  }
 }
 
 function populateDataTable(data) {
