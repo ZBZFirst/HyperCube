@@ -4,6 +4,7 @@ import * as d3 from 'https://cdn.jsdelivr.net/npm/d3@7/+esm';
 import { createScene } from './createScene.js';
 import { createCube } from './createCube.js';
 import { applyPropertiesToCube } from './changeCube.js';
+import { PointerLockControls } from 'https://unpkg.com/three@0.158.0/examples/jsm/controls/PointerLockControls.js';
 
 async function init() {
     const { scene, camera, renderer, updateControls } = createScene();
