@@ -1,28 +1,28 @@
-    // script.js start
 import * as THREE from 'three';
 import * as d3 from 'https://cdn.jsdelivr.net/npm/d3@7/+esm';
 import { createScene } from './createScene.js';
 import { createUI } from './uiManager.js';
-import { loadData, exportFilteredData, populateDataTable, updateTextZone, deleteFromData } from './dataManager.js';
+import { loadData, exportFilteredData, populateDataTable, updateTextZone, deleteFromData, getData } from './dataManager.js';
 import { 
     createCubesFromData, 
     deleteSelectedCube,
     getCubes,
-    updateCubeVisibility,
-    positionCubes,
+    highlightCubeByPmid,
     centerCameraOnCube,
-    highlightCubeByPmid
+    initCubeManager
 } from './cubeManager.js';
 
-let scene, renderer, sceneObjects;
-let cubes = [];
+// Global state
+let sceneObjects;
+let selectedCube = null;
 
 async function init() {
     try {
-        // 1. First create the scene and renderer
+        showLoadingIndicator();
+        
+        // 1. Initialize scene
         sceneObjects = createScene();
-        scene = sceneObjects.scene;
-        renderer = sceneObjects.renderer;
+        initCubeManager(sceneObjects.scene, sceneObjects.camera);
         
         // 2. Load data
         const data = await loadData("pubmed_data.csv");
@@ -31,65 +31,85 @@ async function init() {
         }
 
         // 3. Create cubes
-        cubes = createCubesFromData(data, scene);
+        createCubesFromData(data, sceneObjects.scene);
         
         // 4. Initialize UI
-        populateDataTable(
-          data, 
-          (pmid) => {
-            selectedCube = highlightCubeByPmid(pmid, true);
-            if (selectedCube) {
-              centerCameraOnCube(selectedCube);
-            }
-          }, 
-          highlightCubeByPmid // Pass the highlight function as third parameter
-        );
+        setupUI(data);
         
-        // 5. Start animation
+        // 5. Setup event handlers
+        setupEventHandlers();
+        
+        // 6. Start animation
         startAnimationLoop();
 
     } catch (error) {
         console.error("Initialization failed:", error);
-        alert(`Error: ${error.message}`);
+        showErrorToUser(error.message);
         createFallbackScene();
+    } finally {
+        removeLoadingIndicator();
     }
 }
 
 // Helper functions
-function initializeUI(data) {
-    return createUI(data, {
-        onSelect: handleSelect,
-        onExport: () => exportFilteredData(),
-        onDelete: handleDelete,
-        // ... other callbacks
+function setupUI(data) {
+    populateDataTable(data, (pmid, isSelected) => {
+        selectedCube = highlightCubeByPmid(pmid, isSelected);
+        if (selectedCube && isSelected) {
+            centerCameraOnCube(selectedCube);
+            updateTextZone(selectedCube.userData);
+        }
     });
 }
 
-function handleSelect(pmid) {
-    selectedCube = highlightCubeByPmid(pmid);
-    if (selectedCube) {
-        centerCameraOnCube(selectedCube);
-    }
-}
+function setupEventHandlers() {
+    // Delete button
+    document.getElementById('delete-btn').addEventListener('click', () => {
+        if (!selectedCube) {
+            alert("Please select an article first");
+            return;
+        }
+        
+        const pmid = selectedCube.userData.pmid;
+        
+        // Remove from data
+        deleteFromData(pmid);
+        
+        // Remove cube from scene
+        deleteSelectedCube();
+        
+        // Refresh table
+        populateDataTable(
+            getData(),
+            (pmid, isSelected) => {
+                const cubes = getCubes();
+                const cube = cubes.find(c => c.userData.pmid === pmid);
+                if (cube) {
+                    selectedCube = highlightCubeByPmid(pmid, isSelected);
+                    if (isSelected) centerCameraOnCube(cube);
+                }
+            }
+        );
+        
+        selectedCube = null;
+    });
 
-function handleDelete(ui, data) {
-    deleteSelectedCube();
-    updateTableData(ui, data);
-    positionCubes(); // Reorganize remaining cubes
+    // Download button
+    document.getElementById('download-btn').addEventListener('click', async () => {
+        try {
+            await exportFilteredData();
+        } catch (error) {
+            console.error("Export failed:", error);
+            showErrorToUser("Failed to export data");
+        }
+    });
 }
-
-function updateTableData(ui, data) {
-    ui.updateTable(data.filter(d => 
-        getCubes().some(c => c.userData.pmid === d.PMID)
-    ));
-}
-
 
 function startAnimationLoop() {
     function animate() {
         requestAnimationFrame(animate);
         sceneObjects.updateControls(0.016);
-        renderer.render(scene, sceneObjects.camera);
+        sceneObjects.renderer.render(sceneObjects.scene, sceneObjects.camera);
     }
     animate();
 }
@@ -107,13 +127,11 @@ function showLoadingIndicator() {
     loader.style.borderRadius = '5px';
     loader.textContent = 'Loading...';
     document.body.appendChild(loader);
-    return loader;
 }
 
-function removeLoadingIndicator(loader) {
-    if (loader && loader.parentNode) {
-        loader.parentNode.removeChild(loader);
-    }
+function removeLoadingIndicator() {
+    const loader = document.getElementById('loading-indicator');
+    if (loader) loader.remove();
 }
 
 function showErrorToUser(message) {
@@ -121,7 +139,6 @@ function showErrorToUser(message) {
 }
 
 function createFallbackScene() {
-    // Basic fallback visualization
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera();
     const renderer = new THREE.WebGLRenderer();
@@ -143,47 +160,4 @@ function createFallbackScene() {
     animate();
 }
 
-// Setup button handlers
-// Delete button handler
-document.getElementById('delete-btn').addEventListener('click', () => {
-    if (!selectedCube) {
-        alert("Please select an article first");
-        return;
-    }
-    
-    const pmid = selectedCube.userData.pmid;
-    
-    // Remove from data
-    deleteFromData(pmid);
-    
-    // Remove cube from scene
-    deleteSelectedCube();
-    
-    // Refresh the table view
-    populateDataTable(
-        getData(),
-        (pmid) => {
-            const cube = cubes.find(c => c.userData.pmid === pmid);
-            if (cube) {
-                selectedCube = highlightCubeByPmid(pmid, true);
-                centerCameraOnCube(cube);
-            }
-        },
-        highlightCubeByPmid
-    );
-    
-    selectedCube = null;
-});
-
-// Download button handler (no changes needed)
-document.getElementById('download-btn').addEventListener('click', async () => {
-    try {
-        await exportFilteredData();
-    } catch (error) {
-        console.error("Export failed:", error);
-    }
-});
-
-
 init();
-    // script.js end
