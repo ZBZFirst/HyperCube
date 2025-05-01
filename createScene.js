@@ -1,115 +1,117 @@
 import * as THREE from 'three';
 import { PointerLockControls } from 'three/examples/jsm/controls/PointerLockControls.js';
 
-export function createScene() {
+function setupScene() {
     const scene = new THREE.Scene();
     
-    // Lighting
     scene.add(new THREE.AmbientLight(0xffffff, 0.5));
     const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
     directionalLight.position.set(1, 1, 1);
     scene.add(directionalLight);
     scene.add(new THREE.HemisphereLight(0xffffbb, 0x080820, 0.5));
     
-    // Helpers
     scene.add(new THREE.GridHelper(20, 20));
     scene.add(new THREE.AxesHelper(5));
-
-    // Camera and Renderer
-    const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
-    camera.position.set(0, 1.6, 5);
-
-    // Get the graphics container element
-    const container = document.getElementById('graphics-container');
     
-    // Create renderer and attach to container
+    return scene;
+}
+
+function setupCamera(container) {
+    const width = container.clientWidth;
+    const height = container.clientHeight;
+    const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
+    camera.position.set(0, 1.6, 5);
+    return camera;
+}
+
+function setupRenderer(container) {
     const renderer = new THREE.WebGLRenderer({ 
         antialias: true,
-        // Ensure canvas fills container
-        width: container.clientWidth,
-        height: container.clientHeight
+        canvas: container.querySelector('canvas')
     });
-
-    // Clear any existing canvas and add the new one
-    container.innerHTML = '';
-    container.appendChild(renderer.domElement);
+    
+    const updateSize = () => {
+        const width = container.clientWidth;
+        const height = container.clientHeight;
+        const pixelRatio = Math.min(window.devicePixelRatio, 2);
+        
+        renderer.setSize(width, height, false);
+        renderer.setPixelRatio(pixelRatio);
+        return { width, height };
+    };
+    
+    updateSize();
+    window.addEventListener('resize', updateSize);
     
     renderer.shadowMap.enabled = true;
+    return renderer;
+}
 
-    
-    // Setup controls with UI protection
-    let controls;
+function setupControls(camera, renderer) {
     try {
-        controls = new PointerLockControls(camera, renderer.domElement);
+        const controls = new PointerLockControls(camera, renderer.domElement);
+        
+        const keysPressed = {};
+        
+        document.addEventListener('keydown', (e) => {
+            keysPressed[e.key.toLowerCase()] = true;
+            if (e.key === ' ' || e.key === 'Control') e.preventDefault();
+        });
+        
+        document.addEventListener('keyup', (e) => {
+            keysPressed[e.key.toLowerCase()] = false;
+        });
+
+        const updateControls = (delta) => {
+            if (!controls.isLocked) return;
+            
+            const velocity = new THREE.Vector3();
+            const speed = 5;
+            const altitudeSpeed = 3;
+
+            if (keysPressed['w']) velocity.z -= speed * delta;
+            if (keysPressed['s']) velocity.z += speed * delta;
+            if (keysPressed['a']) velocity.x -= speed * delta;
+            if (keysPressed['d']) velocity.x += speed * delta;
+            if (keysPressed[' ']) velocity.y += altitudeSpeed * delta;
+            if (keysPressed['control']) velocity.y -= altitudeSpeed * delta;
+
+            controls.moveRight(velocity.x);
+            controls.moveForward(velocity.z);
+            camera.position.y += velocity.y;
+        };
+
+        return { controls, updateControls };
     } catch (error) {
-        console.error("Failed to initialize PointerLockControls:", error);
-        // Provide fallback controls or disable movement
-        return {
-            scene,
-            camera,
-            renderer,
-            controls: null,
-            updateControls: () => {} // No-op function
+        console.error("Controls initialization failed:", error);
+        return { 
+            controls: null, 
+            updateControls: () => {} 
         };
     }
+}
 
-    // Add resize handler
-    window.addEventListener('resize', () => {
-        camera.aspect = container.clientWidth / container.clientHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(container.clientWidth, container.clientHeight);
-    });
-
-    
-    // Only activate pointer lock when clicking outside UI
+function setupPointerLock(controls, renderer) {
     document.addEventListener('click', (event) => {
         const uiElement = document.getElementById('data-container');
         if (!uiElement.contains(event.target) && controls) {
-            try {
-                const lockPromise = controls.lock();
-                if (lockPromise) {
-                    lockPromise.then(() => {
-                        console.log("Pointer lock acquired");
-                    }).catch(e => {
-                        console.log("Pointer lock error:", e);
-                    });
-                } else {
-                    console.warn("Pointer lock API not available");
-                }
-            } catch (e) {
-                console.error("Error attempting pointer lock:", e);
-            }
+            controls.lock().catch(e => {
+                console.log("Pointer lock error:", e);
+            });
         }
     });
+}
+
+export function createScene() {
+    const container = document.getElementById('graphics-container');
     
-    // Movement state
-    const keysPressed = {};
-    document.addEventListener('keydown', (e) => {
-        keysPressed[e.key.toLowerCase()] = true;
-        if (e.key === ' ' || e.key === 'Control') e.preventDefault();
-    });
+    const scene = setupScene();
+    const camera = setupCamera(container);
+    const renderer = setupRenderer(container);
+    const { controls, updateControls } = setupControls(camera, renderer);
     
-    document.addEventListener('keyup', (e) => {
-        keysPressed[e.key.toLowerCase()] = false;
-    });
-
-    function updateControls(delta) {
-        if (!controls || !controls.isLocked) return;
-        
-        const velocity = new THREE.Vector3();
-        const speed = 5;
-        const altitudeSpeed = 3;
-
-        if (keysPressed['w']) velocity.z -= speed * delta;
-        if (keysPressed['s']) velocity.z += speed * delta;
-        if (keysPressed['a']) velocity.x -= speed * delta;
-        if (keysPressed['d']) velocity.x += speed * delta;
-        if (keysPressed[' ']) velocity.y += altitudeSpeed * delta;
-        if (keysPressed['control']) velocity.y -= altitudeSpeed * delta;
-
-        controls.moveRight(velocity.x);
-        controls.moveForward(velocity.z);
-        camera.position.y += velocity.y;
+    if (controls) {
+        setupPointerLock(controls, renderer);
     }
 
     return { 
