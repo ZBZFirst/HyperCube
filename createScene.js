@@ -18,12 +18,25 @@ export function createScene() {
     // Camera and Renderer
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
     camera.position.set(0, 1.6, 5);
-    
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.shadowMap.enabled = true;
-    document.body.appendChild(renderer.domElement);
 
+    // Get the graphics container element
+    const container = document.getElementById('graphics-container');
+    
+    // Create renderer and attach to container
+    const renderer = new THREE.WebGLRenderer({ 
+        antialias: true,
+        // Ensure canvas fills container
+        width: container.clientWidth,
+        height: container.clientHeight
+    });
+
+    // Clear any existing canvas and add the new one
+    container.innerHTML = '';
+    container.appendChild(renderer.domElement);
+    
+    renderer.shadowMap.enabled = true;
+
+    
     // Setup controls with UI protection
     let controls;
     try {
@@ -39,6 +52,14 @@ export function createScene() {
             updateControls: () => {} // No-op function
         };
     }
+
+    // Add resize handler
+    window.addEventListener('resize', () => {
+        camera.aspect = container.clientWidth / container.clientHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(container.clientWidth, container.clientHeight);
+    });
+
     
     // Only activate pointer lock when clicking outside UI
     document.addEventListener('click', (event) => {
