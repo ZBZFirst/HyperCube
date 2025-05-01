@@ -42,7 +42,7 @@ export function createScene() {
     
     // Only activate pointer lock when clicking outside UI
     document.addEventListener('click', (event) => {
-        const uiElement = document.getElementById('ui');
+        const uiElement = document.getElementById('data-container');
         if (!uiElement.contains(event.target) && controls) {
             try {
                 const lockPromise = controls.lock();
