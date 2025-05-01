@@ -1,46 +1,32 @@
 // uiManager.js start
 import * as d3 from 'https://cdn.jsdelivr.net/npm/d3@7/+esm';
 
-export function createUI(data, callbacks) {
-    const uiContainer = d3.select('#ui');
-    uiContainer.selectAll('*').remove();
-
-    // Create control buttons container
-    const controls = uiContainer.append('div').attr('class', 'controls');
+export function createUI(callbacks) {
+    const uiContainer = d3.select('#data-container');
     
-    // Download button
-    controls.append('button')
-        .text('Download CSV')
-        .on('click', callbacks.onExport);
-
-    // Delete button
-    controls.append('button')
-        .text('Delete Selected')
-        .on('click', callbacks.onDelete);
-
-    // Article table
-    const table = uiContainer.append('table').attr('id', 'data-table');
-    table.append('thead').append('tr')
-        .selectAll('th')
-        .data(['PMID', 'Title', 'Included'])
-        .enter()
-        .append('th')
-        .text(d => d);
-
-    const tbody = table.append('tbody');
-
     return {
-        updateTable: (filteredData) => {
+        updateTable: (data) => {
+            const tbody = d3.select('#data-table tbody');
+            tbody.selectAll('tr').remove();
+            
             const rows = tbody.selectAll('tr')
-                .data(filteredData)
-                .join('tr')
-                .on('click', (_, d) => callbacks.onSelect(d.PMID));
-
-            rows.selectAll('td')
-                .data(d => [d.PMID, d.Title?.substring(0, 30) + '...', 
-                      d.includeArticle === "true" ? "✓" : "✗"])
-                .join('td')
-                .text(d => d);
+                .data(data)
+                .enter()
+                .append('tr')
+                .attr('data-pmid', d => d.PMID);
+                
+            rows.append('td')
+                .text(d => d.Title?.substring(0, 50) + (d.Title?.length > 50 ? '...' : ''));
+                
+            rows.append('td')
+                .append('input')
+                .attr('type', 'checkbox')
+                .attr('class', 'select-checkbox')
+                .on('change', function(event, d) {
+                    const isSelected = event.target.checked;
+                    d3.select(this.closest('tr')).classed('selected', isSelected);
+                    callbacks.onSelect(d.PMID, isSelected);
+                });
         }
     };
 }
