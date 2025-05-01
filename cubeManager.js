@@ -5,6 +5,12 @@ import { createCube } from './createCube.js';
 let cubes = [];
 let selectedCube = null;
 let camera;
+let scene;
+
+export function initCubeManager(mainScene, mainCamera) {
+    scene = mainScene;
+    camera = mainCamera;
+}
 
 export function createCubesFromData(data, scene) {
     cubes.forEach(cube => scene.remove(cube));
@@ -73,21 +79,18 @@ export function updateCubeVisibility(cube) {
 }
 
 export function highlightCubeByPmid(pmid, isSelected) {
-  // Remove highlight from all cubes
-  scene.children.forEach(child => {
-    if (child.userData?.pmid) {
-      child.material.emissive.setHex(0x000000);
-    }
-  });
-  
-  // Highlight selected cube if needed
-  if (isSelected) {
-    const cube = scene.children.find(c => c.userData?.pmid === pmid);
+    // Reset all cubes
+    cubes.forEach(cube => {
+        cube.material.emissive.setHex(0x000000);
+    });
+    
+    // Highlight selected cube
+    const cube = cubes.find(c => c.userData.pmid === pmid);
     if (cube) {
-      cube.material.emissive.setHex(0x3498db); // Blue highlight
-      updateTextZone(cube.userData); // Update text zone
+        cube.material.emissive.setHex(isSelected ? 0x3498db : 0x000000);
+        selectedCube = isSelected ? cube : null;
     }
-  }
+    return cube;
 }
 
 export function getCubes() {
