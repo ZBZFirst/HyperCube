@@ -101,11 +101,22 @@ export function getCubes() {
 }
 
 export function centerCameraOnCube(cube) {
-    const targetPosition = cube.position.clone();
-    targetPosition.y += 1;
-    targetPosition.z += 5;
-    camera.position.lerp(targetPosition, 0.1);
-    camera.lookAt(cube.position);
+    if (!cube || !cube.position || !camera) {
+        console.warn('Cannot center camera - missing required elements');
+        return;
+    }
+    
+    try {
+        const targetPosition = cube.position.clone();
+        targetPosition.y += 1;
+        targetPosition.z += 5;
+        
+        // Smooth camera movement
+        camera.position.lerp(targetPosition, 0.1);
+        camera.lookAt(cube.position);
+    } catch (error) {
+        console.error('Camera centering error:', error);
+    }
 }
 
 function updateButtonStates() {
