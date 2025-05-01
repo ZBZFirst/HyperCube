@@ -43,6 +43,7 @@ async function init() {
         
         // 6. Start animation
         startAnimationLoop();
+        setupSplitters();
 
     } catch (error) {
         console.error("Initialization failed:", error);
@@ -132,6 +133,42 @@ function startAnimationLoop() {
         sceneObjects.renderer.render(sceneObjects.scene, sceneObjects.camera);
     }
     animate();
+}
+
+function setupSplitters() {
+  const verticalSplitter = document.getElementById('vertical-splitter');
+  const horizontalSplitter = document.getElementById('horizontal-splitter');
+  const dataContainer = document.getElementById('data-container');
+  const textContainer = document.getElementById('text-container');
+  
+  // Vertical splitter (columns)
+  verticalSplitter.addEventListener('mousedown', (e) => {
+    document.addEventListener('mousemove', resizeVertical);
+    document.addEventListener('mouseup', stopResize);
+  });
+  
+  function resizeVertical(e) {
+    const newWidth = e.clientX;
+    dataContainer.style.width = `${newWidth}px`;
+    verticalSplitter.style.left = `${newWidth}px`;
+  }
+  
+  // Horizontal splitter (rows)
+  horizontalSplitter.addEventListener('mousedown', (e) => {
+    document.addEventListener('mousemove', resizeHorizontal);
+    document.addEventListener('mouseup', stopResize);
+  });
+  
+  function resizeHorizontal(e) {
+    const newHeight = window.innerHeight - e.clientY;
+    textContainer.style.height = `${newHeight}px`;
+    horizontalSplitter.style.top = `${e.clientY}px`;
+  }
+  
+  function stopResize() {
+    document.removeEventListener('mousemove', resizeVertical);
+    document.removeEventListener('mousemove', resizeHorizontal);
+  }
 }
 
 // UI feedback functions
