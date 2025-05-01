@@ -138,37 +138,43 @@ function startAnimationLoop() {
 function setupSplitters() {
   const verticalSplitter = document.getElementById('vertical-splitter');
   const horizontalSplitter = document.getElementById('horizontal-splitter');
-  const dataContainer = document.getElementById('data-container');
-  const textContainer = document.getElementById('text-container');
+  const mainContent = document.getElementById('main-content');
   
-  // Vertical splitter (columns)
   verticalSplitter.addEventListener('mousedown', (e) => {
-    document.addEventListener('mousemove', resizeVertical);
-    document.addEventListener('mouseup', stopResize);
+    const startX = e.clientX;
+    const startWidth = mainContent.gridTemplateColumns.split(' ')[0];
+    
+    function doDrag(e) {
+      const newWidth = parseInt(startWidth) + (e.clientX - startX);
+      mainContent.style.gridTemplateColumns = `${Math.max(150, newWidth)}px 8px 1fr`;
+    }
+    
+    function stopDrag() {
+      document.removeEventListener('mousemove', doDrag);
+      document.removeEventListener('mouseup', stopDrag);
+    }
+    
+    document.addEventListener('mousemove', doDrag);
+    document.addEventListener('mouseup', stopDrag);
   });
-  
-  function resizeVertical(e) {
-    const newWidth = e.clientX;
-    dataContainer.style.width = `${newWidth}px`;
-    verticalSplitter.style.left = `${newWidth}px`;
-  }
-  
-  // Horizontal splitter (rows)
+
   horizontalSplitter.addEventListener('mousedown', (e) => {
-    document.addEventListener('mousemove', resizeHorizontal);
-    document.addEventListener('mouseup', stopResize);
+    const startY = e.clientY;
+    const startHeight = mainContent.gridTemplateRows.split(' ')[2];
+    
+    function doDrag(e) {
+      const newHeight = parseInt(startHeight) - (e.clientY - startY);
+      mainContent.style.gridTemplateRows = `1fr 8px ${Math.max(100, newHeight)}px`;
+    }
+    
+    function stopDrag() {
+      document.removeEventListener('mousemove', doDrag);
+      document.removeEventListener('mouseup', stopDrag);
+    }
+    
+    document.addEventListener('mousemove', doDrag);
+    document.addEventListener('mouseup', stopDrag);
   });
-  
-  function resizeHorizontal(e) {
-    const newHeight = window.innerHeight - e.clientY;
-    textContainer.style.height = `${newHeight}px`;
-    horizontalSplitter.style.top = `${e.clientY}px`;
-  }
-  
-  function stopResize() {
-    document.removeEventListener('mousemove', resizeVertical);
-    document.removeEventListener('mousemove', resizeHorizontal);
-  }
 }
 
 // UI feedback functions
