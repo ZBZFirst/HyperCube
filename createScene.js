@@ -136,30 +136,6 @@ export function createScene() {
         updateControls,
         }
     };
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 // createScene.js end
