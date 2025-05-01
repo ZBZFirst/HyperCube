@@ -40,7 +40,6 @@ async function init() {
             selectedCube = highlightCubeByPmid(pmid, true);
             if (selectedCube) {
               centerCameraOnCube(selectedCube);
-              updateButtonStates();
             }
           }, 
           highlightCubeByPmid // Pass the highlight function as third parameter
@@ -70,14 +69,12 @@ function handleSelect(pmid) {
     selectedCube = highlightCubeByPmid(pmid);
     if (selectedCube) {
         centerCameraOnCube(selectedCube);
-        updateButtonStates();
     }
 }
 
 function handleDelete(ui, data) {
     deleteSelectedCube();
     updateTableData(ui, data);
-    updateButtonStates();
     positionCubes(); // Reorganize remaining cubes
 }
 
@@ -87,10 +84,6 @@ function updateTableData(ui, data) {
     ));
 }
 
-function updateButtonStates() {
-    const deleteBtn = document.getElementById('delete-btn');
-    deleteBtn.disabled = !selectedCube;
-}
 
 function startAnimationLoop() {
     function animate() {
@@ -220,7 +213,6 @@ document.getElementById('delete-btn').addEventListener('click', () => {
     }
     deleteSelectedCube();
     selectedCube = null;
-    updateButtonStates();
     positionCubes();
 });
 
