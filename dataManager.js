@@ -19,23 +19,47 @@ export async function loadData(url) {
     }
 }
 
+export function updateTextZone(article) {
+  document.getElementById('selected-title').textContent = article.Title;
+  document.getElementById('pmid-text').textContent = article.PMID;
+  document.getElementById('year-text').textContent = article.PubYear;
+  document.getElementById('source-text').textContent = article.Source;
+  
+  const doiLink = document.getElementById('doi-link');
+  doiLink.textContent = article.DOI || '-';
+  doiLink.href = article.DOI ? `https://doi.org/${article.DOI}` : '#';
+  
+  const pmcLink = document.getElementById('pmc-link');
+  pmcLink.textContent = article.PMC ? `PMC${article.PMC}` : '-';
+  pmcLink.href = article.PMC ? `https://www.ncbi.nlm.nih.gov/pmc/articles/PMC${article.PMC}` : '#';
+  
+  document.getElementById('abstract-text').textContent = article.Abstract || 'No abstract available';
+}
+
 export function populateDataTable(data, onRowClick) {
-    const table = d3.select('#data-table tbody');
-    table.selectAll('tr').remove();
-    const rows = table.selectAll('tr')
-        .data(data)
-        .enter()
-        .append('tr')
-        .on('click', function(event, d) {
-            d3.selectAll('tr').classed('selected', false);
-            d3.select(this).classed('selected', true);
-            onRowClick(d.PMID);
-        });
+   const tbody = d3.select('#data-table tbody');
+   tbody.selectAll('tr').remove();
+  
+   const rows = tbody.selectAll('tr')
+     .data(data)
+     .enter()
+     .append('tr')
+     .attr('data-pmid', d => d.PMID);
     
-    rows.append('td').text(d => d.PMID);
-    rows.append('td').text(d => d.Title?.substring(0, 30) + '...');
-    rows.append('td').text(d => d.includeArticle === "true" ? "✓" : "✗");
-    return table;
+  // Title column
+   rows.append('td')
+     .text(d => d.Title?.substring(0, 50) + (d.Title?.length > 50 ? '...' : ''));
+    
+  // Checkbox column
+   rows.append('td')
+     .append('input')
+     .attr('type', 'checkbox')
+     .attr('class', 'select-checkbox')
+     .on('change', function(event, d) {
+       const isSelected = event.target.checked;
+       d3.select(this.closest('tr')).classed('selected', isSelected);
+       highlightCubeByPmid(d.PMID, isSelected);
+     });
 }
 
 export function getData() {
