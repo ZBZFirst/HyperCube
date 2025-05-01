@@ -60,9 +60,16 @@ function setupUI(data) {
         if (result) {
             selectedCubes = result.selectedCubes;
             lastSelectedCube = result.lastSelectedCube;
-            if (result.cube && isSelected) {
-                centerCameraOnCube(result.cube);
+            
+            // Always update text zone when selecting, clear when deselecting
+            if (isSelected && result.cube) {
                 updateTextZone(result.cube.userData);
+                centerCameraOnCube(result.cube);
+            } else if (selectedCubes.length === 0) {
+                clearTextZone();
+            } else if (lastSelectedCube) {
+                // Show last selected if we're deselecting something else
+                updateTextZone(lastSelectedCube.userData);
             }
         }
     });
