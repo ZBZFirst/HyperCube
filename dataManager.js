@@ -67,22 +67,21 @@ export function getData() {
     return data;
 }
 
+export function deleteFromData(pmid) {
+    const index = data.findIndex(item => item.PMID === pmid);
+    if (index !== -1) {
+        data.splice(index, 1);
+    }
+    return data;
+}
+
 export function exportFilteredData() {
     if (!data.length) {
         alert("No data available to export");
         return;
     }
-    
-    const filteredData = data.filter(item => 
-        getCubes().some(cube => cube.userData.pmid === item.PMID)
-    );
-    
-    if (!filteredData.length) {
-        alert("No articles remaining to export");
-        return;
-    }
 
-    const csvContent = d3.csvFormat(filteredData);
+    const csvContent = d3.csvFormat(data);
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
