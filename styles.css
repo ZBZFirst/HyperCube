@@ -1,27 +1,58 @@
-/* styles.css start*/
-/* Base Styles */
-body {
+/* styles.css */
+/* ========== BASE STYLES ========== */
+:root {
+  --splitter-size: 8px;
+  --splitter-color: #ddd;
+  --splitter-active: #888;
+  --data-container-width: 300px;
+  --text-container-height: 200px;
+  --primary-color: #4CAF50;
+  --danger-color: #f44336;
+  --text-color: #333;
+  --light-bg: #f8f8f8;
+  --table-row-odd: #f9f9f9;
+  --table-row-even: #fff;
+  --table-hover: #f0f0f0;
+  --table-selected: #e3f2fd;
+  --table-complete: #d4edda;
+}
+
+* {
+  box-sizing: border-box;
   margin: 0;
+  padding: 0;
+}
+
+body {
   font-family: Arial, sans-serif;
   height: 100vh;
+  overflow: hidden;
+  color: var(--text-color);
+}
+
+/* ========== MAIN LAYOUT CONTAINERS ========== */
+#app-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
   display: grid;
-  grid-template-columns: 300px 8px 1fr; /* Added 8px for vertical splitter */
-  grid-template-rows: 1fr 8px 200px; /* Added 8px for horizontal splitter */
+  grid-template-rows: 1fr var(--text-container-height);
+  grid-template-columns: var(--data-container-width) var(--splitter-size) 1fr;
   grid-template-areas:
     "data    vsplit  graphics"
-    "hsplit  hsplit  hsplit"
     "text    text    text";
 }
 
-/* Data Table Container */
+/* ========== CONTENT AREAS ========== */
 #data-container {
   grid-area: data;
-  background: rgba(255,255,255,0.95);
+  background: rgba(255, 255, 255, 0.95);
   padding: 15px;
   overflow-y: auto;
-  resize: horizontal;
-  min-width: 200px;
-  max-width: 50vw;
+  display: flex;
+  flex-direction: column;
 }
 
 #graphics-container {
@@ -30,47 +61,49 @@ body {
   overflow: hidden;
 }
 
-#graphics-container canvas {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  image-rendering: crisp-edges;
-}
-
 #text-container {
   grid-area: text;
-  background: #f8f8f8;
+  background: var(--light-bg);
   padding: 15px;
   overflow-y: auto;
-  resize: vertical;
-  min-height: 100px;
-  max-height: 50vh;
+  border-top: 1px solid var(--splitter-color);
 }
 
-/* Buttons Container */
-#button-container {
-  position: absolute;
-  bottom: 20px;
-  right: 20px;
-  display: flex;
-  gap: 10px;
-  z-index: 100;
+/* ========== SPLITTERS ========== */
+.splitter {
+  background-color: var(--splitter-color);
+  transition: background-color 0.2s;
 }
 
-/* Data Table */
+.splitter-vertical {
+  grid-area: vsplit;
+  cursor: col-resize;
+}
+
+.splitter-horizontal {
+  display: none; /* Using grid layout instead */
+}
+
+.splitter:hover {
+  background-color: var(--splitter-active);
+}
+
+/* ========== DATA TABLE ========== */
 #data-table {
   width: 100%;
   border-collapse: collapse;
   font-size: 14px;
+  margin-top: 15px;
+  flex-grow: 1;
 }
 
 #data-table th {
-  background: #f2f2f2;
+  background: var(--table-row-odd);
   text-align: left;
   padding: 10px;
   position: sticky;
   top: 0;
+  z-index: 10;
 }
 
 #data-table td {
@@ -78,97 +111,86 @@ body {
   border-bottom: 1px solid #e0e0e0;
 }
 
+#data-table tr:nth-child(even) {
+  background-color: var(--table-row-even);
+}
+
+#data-table tr:nth-child(odd) {
+  background-color: var(--table-row-odd);
+}
+
 #data-table tr:hover {
-  background: #f5f5f5;
+  background-color: var(--table-hover);
 }
 
 #data-table tr.selected {
-  background: #e3f2fd;
-}
-
-#data-table tr {
-  background-color: #f0f0f0;
-  transition: background-color 0.3s;
+  background-color: var(--table-selected);
 }
 
 #data-table tr.complete {
-  background-color: #d4edda;
+  background-color: var(--table-complete);
 }
 
-/* Input Fields */
-#data-table input[type="text"],
-#data-table select {
-  width: 100%;
-  padding: 4px;
-  box-sizing: border-box;
-}
-
-#data-table .rating-select {
-  width: 60px;
-}
-
-/* Checkbox Style */
+/* ========== FORM CONTROLS ========== */
 .select-checkbox {
   width: 18px;
   height: 18px;
   cursor: pointer;
 }
 
-/* Splitter Styles */
-.splitter-vertical {
-  grid-area: vsplit;
-  background-color: #ddd;
-  cursor: col-resize;
+.input-field {
+  width: 100%;
+  padding: 6px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
 }
 
-/* Horizontal Splitter (between rows) */
-.splitter-horizontal {
-  grid-area: hsplit;
-  background-color: #ddd;
-  cursor: row-resize;
+.rating-select {
+  width: 60px;
+  padding: 4px;
 }
 
-
-.splitter-vertical:hover, 
-.splitter-horizontal:hover {
-  background-color: #aaa;
+/* ========== BUTTONS ========== */
+#button-container {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  display: flex;
+  gap: 10px;
+  z-index: 100;
 }
 
-.splitter-vertical:active, 
-.splitter-horizontal:active {
-  background-color: #888;
-}
-
-
-/* Button Styles */
 .action-button {
   padding: 8px 16px;
-  background: #4CAF50;
+  background: var(--primary-color);
   color: white;
   border: none;
   border-radius: 4px;
   cursor: pointer;
   font-size: 14px;
+  transition: opacity 0.2s;
 }
 
 .action-button.delete {
-  background: #f44336;
+  background: var(--danger-color);
 }
 
 .action-button:hover {
   opacity: 0.9;
 }
 
-/* Text Zone Content */
+/* ========== TEXT ZONE ========== */
 #selected-title {
   font-size: 18px;
   font-weight: bold;
-  margin-bottom: 10px;
+  margin-bottom: 15px;
 }
 
 .metadata-row {
   display: flex;
   margin-bottom: 8px;
+  align-items: center;
 }
 
 .metadata-label {
@@ -180,4 +202,39 @@ body {
   margin-top: 15px;
   line-height: 1.5;
 }
-/* styles.css end*/
+
+/* ========== CANVAS STYLING ========== */
+#graphics-container canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  image-rendering: crisp-edges;
+}
+
+/* ========== UTILITY CLASSES ========== */
+.hidden {
+  display: none !important;
+}
+
+/* ========== RESPONSIVE ADJUSTMENTS ========== */
+@media (max-width: 768px) {
+  :root {
+    --data-container-width: 250px;
+    --text-container-height: 180px;
+  }
+  
+  #app-container {
+    grid-template-columns: var(--data-container-width) var(--splitter-size) 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  :root {
+    --data-container-width: 200px;
+  }
+  
+  .metadata-label {
+    min-width: 80px;
+  }
+}
