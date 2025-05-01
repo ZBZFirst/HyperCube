@@ -1,36 +1,4 @@
-/* styles.css */
-/* ========== BASE STYLES ========== */
-:root {
-  --splitter-size: 8px;
-  --splitter-color: #ddd;
-  --splitter-active: #888;
-  --data-container-width: 300px;
-  --text-container-height: 200px;
-  --primary-color: #4CAF50;
-  --danger-color: #f44336;
-  --text-color: #333;
-  --light-bg: #f8f8f8;
-  --table-row-odd: #f9f9f9;
-  --table-row-even: #fff;
-  --table-hover: #f0f0f0;
-  --table-selected: #e3f2fd;
-  --table-complete: #d4edda;
-}
-
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
-body {
-  font-family: Arial, sans-serif;
-  height: 100vh;
-  overflow: hidden;
-  color: var(--text-color);
-}
-
-/* ========== MAIN LAYOUT CONTAINERS ========== */
+/* ========== MAIN LAYOUT ========== */
 #app-container {
   position: fixed;
   top: 0;
@@ -38,223 +6,92 @@ body {
   width: 100vw;
   height: 100vh;
   display: grid;
-  grid-template-rows: 1fr var(--splitter-size) var(--text-container-height);
-  grid-template-columns: var(--data-container-width) var(--splitter-size) 1fr;
+  grid-template-rows: 1fr auto; /* Main content and button zone */
+  grid-template-columns: 1fr; /* Single column layout */
+}
+
+#main-content {
+  display: grid;
+  grid-template-columns: minmax(150px, 300px) 8px 1fr; /* Data | Splitter | Graphics */
+  grid-template-rows: 1fr 8px minmax(100px, 200px); /* Main area | Splitter | Text */
   grid-template-areas:
     "data    vsplit  graphics"
     "hsplit  hsplit  hsplit"
     "text    text    text";
+  height: calc(100vh - 60px); /* Account for button zone */
+  overflow: hidden;
 }
 
 /* ========== CONTENT AREAS ========== */
 #data-container {
   grid-area: data;
-  background: rgba(255,0,0,0.1;
-  padding: 15px;
   overflow-y: auto;
-  display: flex;
-  flex-direction: column;
+  padding: 15px;
+  background: #f8f8f8;
 }
 
 #graphics-container {
   grid-area: graphics;
   position: relative;
   overflow: hidden;
-  width: 100%;
-  height: 100%;
-  background-color: #f0f0f0; /* Visible fallback */
 }
 
 #graphics-container canvas {
-  display: block;
   width: 100%;
   height: 100%;
-  position: absolute;
-  top: 0;
-  left: 0;
+  display: block;
 }
 
 #text-container {
   grid-area: text;
-  background: rgba(0,0,255,0.1);
   padding: 15px;
   overflow-y: auto;
-  border-top: 1px solid var(--splitter-color);
+  background: #f0f0f0;
+  border-top: 1px solid #ddd;
 }
 
 /* ========== SPLITTERS ========== */
-.splitter {
-  background-color: var(--splitter-color);
-  transition: background-color 0.2s;
-  z-index: 10; /* Ensure splitters stay above other elements */
-}
-
-.splitter-vertical {
+#vertical-splitter {
   grid-area: vsplit;
-  background-color: var(--splitter-color);
+  background: #ddd;
   cursor: col-resize;
-  z-index: 100;
 }
 
-.splitter-horizontal {
+#horizontal-splitter {
   grid-area: hsplit;
-  background-color: var(--splitter-color);
+  background: #ddd;
   cursor: row-resize;
-  z-index: 100;
 }
-
 
 .splitter:hover {
-  background-color: var(--splitter-active);
+  background: #888;
 }
 
-/* ========== DATA TABLE ========== */
-#data-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 14px;
-  margin-top: 15px;
-  flex-grow: 1;
-}
-
-#data-table th {
-  background: var(--table-row-odd);
-  text-align: left;
-  padding: 10px;
-  position: sticky;
-  top: 0;
-  z-index: 10;
-}
-
-#data-table td {
-  padding: 8px 10px;
-  border-bottom: 1px solid #e0e0e0;
-}
-
-#data-table tr:nth-child(even) {
-  background-color: var(--table-row-even);
-}
-
-#data-table tr:nth-child(odd) {
-  background-color: var(--table-row-odd);
-}
-
-#data-table tr:hover {
-  background-color: var(--table-hover);
-}
-
-#data-table tr.selected {
-  background-color: var(--table-selected);
-}
-
-#data-table tr.complete {
-  background-color: var(--table-complete);
-}
-
-/* ========== FORM CONTROLS ========== */
-.select-checkbox {
-  width: 18px;
-  height: 18px;
-  cursor: pointer;
-}
-
-.input-field {
-  width: 100%;
-  padding: 6px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 14px;
-}
-
-.rating-select {
-  width: 60px;
-  padding: 4px;
-}
-
-/* ========== BUTTONS ========== */
+/* ========== BUTTON ZONE ========== */
 #button-container {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
+  height: 60px;
   display: flex;
+  align-items: center;
+  justify-content: flex-end;
   gap: 10px;
-  z-index: 100;
+  padding: 0 20px;
+  background: #f8f8f8;
+  border-top: 1px solid #ddd;
 }
 
 .action-button {
   padding: 8px 16px;
-  background: var(--primary-color);
-  color: white;
   border: none;
   border-radius: 4px;
   cursor: pointer;
-  font-size: 14px;
-  transition: opacity 0.2s;
 }
 
-.action-button.delete {
-  background: var(--danger-color);
+.delete {
+  background: #f44336;
+  color: white;
 }
 
-.action-button:hover {
-  opacity: 0.9;
-}
-
-/* ========== TEXT ZONE ========== */
-#selected-title {
-  font-size: 18px;
-  font-weight: bold;
-  margin-bottom: 15px;
-}
-
-.metadata-row {
-  display: flex;
-  margin-bottom: 8px;
-  align-items: center;
-}
-
-.metadata-label {
-  font-weight: bold;
-  min-width: 100px;
-}
-
-#abstract-text {
-  margin-top: 15px;
-  line-height: 1.5;
-}
-
-/* ========== CANVAS STYLING ========== */
-#graphics-container canvas {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  image-rendering: crisp-edges;
-}
-
-/* ========== UTILITY CLASSES ========== */
-.hidden {
-  display: none !important;
-}
-
-/* ========== RESPONSIVE ADJUSTMENTS ========== */
-@media (max-width: 768px) {
-  :root {
-    --data-container-width: 250px;
-    --text-container-height: 180px;
-  }
-  
-  #app-container {
-    grid-template-columns: var(--data-container-width) var(--splitter-size) 1fr;
-  }
-}
-
-@media (max-width: 480px) {
-  :root {
-    --data-container-width: 200px;
-  }
-  
-  .metadata-label {
-    min-width: 80px;
-  }
+#download-btn {
+  background: #4CAF50;
+  color: white;
 }
