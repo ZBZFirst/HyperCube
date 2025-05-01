@@ -20,39 +20,29 @@ let cubes = [];
 
 async function init() {
     try {
-        // Initialize 3D scene and renderer
+        // 1. First create the scene and renderer
         sceneObjects = createScene();
         scene = sceneObjects.scene;
         renderer = sceneObjects.renderer;
         
-        // Show loading state
-        const loadingIndicator = showLoadingIndicator();
-
-        // Load and prepare data
+        // 2. Load data
         const data = await loadData("pubmed_data.csv");
         if (!data || data.length === 0) {
-            throw new Error("No data loaded or empty dataset");
+            throw new Error("No data loaded - check your CSV file");
         }
 
-        // Initialize UI components
-        const ui = initializeUI(data);
-        setupButtonHandlers(ui, data);
-        
-        // Create 3D cubes and populate table
+        // 3. Create cubes
         cubes = createCubesFromData(data, scene);
-        updateTableData(ui, data);
-        updateButtonStates();
         
-        // Hide loading indicator
-        removeLoadingIndicator(loadingIndicator);
-
-        // Start animation loop
+        // 4. Initialize UI after DOM is ready
+        await initializeUI(data);
+        
+        // 5. Start animation
         startAnimationLoop();
 
     } catch (error) {
         console.error("Initialization failed:", error);
-        showErrorToUser(error.message);
-        // Fallback scene if needed
+        alert(`Error: ${error.message}`);
         createFallbackScene();
     }
 }
@@ -167,6 +157,49 @@ function createFallbackScene() {
         renderer.render(scene, camera);
     }
     animate();
+}
+
+async function initializeUI(data) {
+    return new Promise((resolve) => {
+        // Wait for DOM to be fully ready
+        if (document.readyState === 'complete') {
+            setupUI(data);
+            resolve();
+        } else {
+            window.addEventListener('DOMContentLoaded', () => {
+                setupUI(data);
+                resolve();
+            });
+        }
+    });
+}
+
+function setupUI(data) {
+    // Create UI manager
+    const ui = createUI(data, {
+        onSelect: (pmid) => {
+            selectedCube = highlightCubeByPmid(pmid);
+            if (selectedCube) {
+                centerCameraOnCube(selectedCube);
+                document.getElementById('delete-btn').disabled = false;
+            }
+        }
+    });
+
+    // Setup button handlers
+    document.getElementById('download-btn').addEventListener('click', async () => {
+        await exportFilteredData();
+    });
+    
+    document.getElementById('delete-btn').addEventListener('click', () => {
+        if (!selectedCube) return;
+        deleteSelectedCube();
+        ui.updateTable(data.filter(d => getCubes().some(c => c.userData.pmid === d.PMID)));
+        document.getElementById('delete-btn').disabled = true;
+    });
+
+    // Initial table population
+    ui.updateTable(data);
 }
 
 function showEditModal(pmid, ui, data) {
