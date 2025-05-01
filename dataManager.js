@@ -3,20 +3,109 @@ import * as d3 from 'https://cdn.jsdelivr.net/npm/d3@7/+esm';
 
 let data = [];
 
+/* ========== PRIVATE HELPER FUNCTIONS ========== */
+
+function initializeItemFields(item) {
+  item.includeArticle = item.includeArticle || "true";
+  item.rationale = item.rationale || "";
+  item.tags = item.tags || "";
+  return item;
+}
+
+function updateCompletionStatus(item) {
+  item.complete = item.Notes && item.Rating && item.Tags;
+  return item;
+}
+
+function createTitleCell(row, d) {
+  row.append('td')
+    .text(d => d.Title?.substring(0, 50) + (d.Title?.length > 50 ? '...' : ''));
+}
+
+function createCheckboxCell(row, d, onSelect) {
+  row.append('td')
+    .append('input')
+    .attr('type', 'checkbox')
+    .attr('class', 'select-checkbox')
+    .on('change', function(event) {
+      const pmid = d3.select(this.closest('tr')).attr('data-pmid');
+      onSelect(pmid, event.target.checked);
+    });
+}
+
+function createNotesCell(row, d) {
+  row.append('td')
+    .append('input')
+    .attr('type', 'text')
+    .attr('class', 'notes-input')
+    .attr('value', d => d.Notes || '')
+    .on('change', function(event, d) {
+      addAnnotation(d.PMID, 'Notes', event.target.value);
+      d3.select(this.closest('tr')).classed('complete', d.complete);
+    });
+}
+
+function createRatingCell(row, d) {
+  const select = row.append('td')
+    .append('select')
+    .attr('class', 'rating-select')
+    .on('change', function(event, d) {
+      addAnnotation(d.PMID, 'Rating', event.target.value);
+      d3.select(this.closest('tr')).classed('complete', d.complete);
+    });
+  
+  select.selectAll('option')
+    .data([...Array(6).keys()].slice(1))
+    .enter()
+    .append('option')
+    .attr('value', d => d)
+    .text(d => d)
+    .filter((d, i, nodes) => d === nodes[i].__data__.Rating)
+    .attr('selected', true);
+}
+
+function createTagsCell(row, d) {
+  row.append('td')
+    .append('input')
+    .attr('type', 'text')
+    .attr('class', 'tags-input')
+    .attr('value', d => d.Tags || '')
+    .on('change', function(event, d) {
+      addAnnotation(d.PMID, 'Tags', event.target.value);
+      d3.select(this.closest('tr')).classed('complete', d.complete);
+    });
+}
+
+function setupTableRows(tbody, data, onSelect) {
+  return tbody.selectAll('tr')
+    .data(data)
+    .enter()
+    .append('tr')
+    .attr('data-pmid', d => d.PMID)
+    .classed('complete', d => d.complete);
+}
+
+function createExportBlob(data) {
+  const exportData = data.map(item => ({
+    ...item,
+    Notes: item.Notes || '',
+    Rating: item.Rating || '',
+    Tags: item.Tags || ''
+  }));
+  return new Blob([d3.csvFormat(exportData)], { type: 'text/csv;charset=utf-8;' });
+}
+
+/* ========== PUBLIC API FUNCTIONS ========== */
+
 export async function loadData(url) {
-    try {
-        data = await d3.csv(url);
-        // Initialize our custom fields if they don't exist
-        data.forEach(item => {
-            item.includeArticle = item.includeArticle || "true";
-            item.rationale = item.rationale || "";
-            item.tags = item.tags || "";
-        });
-        return data;
-    } catch (error) {
-        console.error("Error loading data:", error);
-        return [];
-    }
+  try {
+    data = await d3.csv(url);
+    data.forEach(initializeItemFields);
+    return data;
+  } catch (error) {
+    console.error("Error loading data:", error);
+    return [];
+  }
 }
 
 export function addAnnotation(pmid, field, value) {
@@ -27,10 +116,6 @@ export function addAnnotation(pmid, field, value) {
     return true;
   }
   return false;
-}
-
-function updateCompletionStatus(item) {
-  item.complete = item.Notes && item.Rating && item.Tags;
 }
 
 export function updateTextZone(article) {
@@ -54,95 +139,45 @@ export function populateDataTable(data, onSelect) {
   const tbody = d3.select('#data-table tbody');
   tbody.selectAll('tr').remove();
 
-  const rows = tbody.selectAll('tr')
-    .data(data)
-    .enter()
-    .append('tr')
-    .attr('data-pmid', d => d.PMID)
-    .classed('complete', d => d.complete);
-
-  // Title column
-  rows.append('td')
-    .text(d => d.Title?.substring(0, 50) + (d.Title?.length > 50 ? '...' : ''));
-
-  // Checkbox column
-  rows.append('td')
-    .append('input')
-    .attr('type', 'checkbox')
-    .attr('class', 'select-checkbox')
-    .on('change', function(event) {
-      const pmid = d3.select(this.closest('tr')).attr('data-pmid');
-      onSelect(pmid, event.target.checked);
-    });
-
-  // Notes column
-  rows.append('td')
-    .append('input')
-    .attr('type', 'text')
-    .attr('class', 'notes-input')
-    .attr('value', d => d.Notes || '')
-    .on('change', function(event, d) {
-      addAnnotation(d.PMID, 'Notes', event.target.value);
-      d3.select(this.closest('tr')).classed('complete', d.complete);
-    });
-
-  // Rating column (1-5)
-  rows.append('td')
-    .append('select')
-    .attr('class', 'rating-select')
-    .on('change', function(event, d) {
-      addAnnotation(d.PMID, 'Rating', event.target.value);
-      d3.select(this.closest('tr')).classed('complete', d.complete);
-    })
-    .selectAll('option')
-    .data([...Array(6).keys()].slice(1))
-    .enter()
-    .append('option')
-    .attr('value', d => d)
-    .text(d => d)
-    .filter((d, i, nodes) => d === nodes[i].__data__.Rating)
-    .attr('selected', true);
-
-  // Tags column
-  rows.append('td')
-    .append('input')
-    .attr('type', 'text')
-    .attr('class', 'tags-input')
-    .attr('value', d => d.Tags || '')
-    .on('change', function(event, d) {
-      addAnnotation(d.PMID, 'Tags', event.target.value);
-      d3.select(this.closest('tr')).classed('complete', d.complete);
-    });
+  const rows = setupTableRows(tbody, data, onSelect);
+  
+  createTitleCell(rows);
+  createCheckboxCell(rows, onSelect);
+  createNotesCell(rows);
+  createRatingCell(rows);
+  createTagsCell(rows);
 }
 
 export function getData() {
-    return data;
+  return data;
 }
 
 export function deleteSelectedFromData(pmids) {
-    data = data.filter(item => !pmids.includes(item.PMID));
-    return data;
+  data = data.filter(item => !pmids.includes(item.PMID));
+  return data;
 }
 
 export function deleteFromData(pmid) {
-    const index = data.findIndex(item => item.PMID === pmid);
-    if (index !== -1) {
-        data.splice(index, 1);
-    }
-    return data;
+  const index = data.findIndex(item => item.PMID === pmid);
+  if (index !== -1) {
+    data.splice(index, 1);
+  }
+  return data;
 }
 
 export function exportFilteredData() {
-    if (!data.length) {alert("No data available to export");return;}
-    const exportData = data.map(item => ({...item,Notes: item.Notes || '',Rating: item.Rating || '',Tags: item.Tags || ''}));
-    const csvContent = d3.csvFormat(data);
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.setAttribute('href', url);
-    link.setAttribute('download', `pubmed_export_${new Date().toISOString().slice(0,10)}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  if (!data.length) {
+    alert("No data available to export");
+    return;
+  }
+  
+  const blob = createExportBlob(data);
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.setAttribute('href', url);
+  link.setAttribute('download', `pubmed_export_${new Date().toISOString().slice(0,10)}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
 }
 // dataManager.js end
