@@ -23,8 +23,13 @@ async function init() {
         showLoadingIndicator();
         
         // 1. Initialize scene
-        sceneObjects = createScene();
-        initCubeManager(sceneObjects.scene, sceneObjects.camera);
+        const sceneObjects = createScene();
+        if (!sceneObjects) {
+            throw new Error("Failed to initialize 3D scene");
+        }
+        
+        // Start animation loop
+        sceneObjects.animate();
         
         // 2. Load data
         const data = await loadData("pubmed_data.csv");
