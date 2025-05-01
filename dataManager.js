@@ -84,6 +84,7 @@ function setupTableRows(tbody, data, onSelect) {
     .attr('data-pmid', d => d.PMID)
     .classed('complete', d => d.complete)
     .on('keydown', function(event) {
+    });
 }
 
 function createExportBlob(data) {
