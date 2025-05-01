@@ -34,13 +34,17 @@ async function init() {
         cubes = createCubesFromData(data, scene);
         
         // 4. Initialize UI
-        populateDataTable(data, (pmid) => {
+        populateDataTable(
+          data, 
+          (pmid) => {
             selectedCube = highlightCubeByPmid(pmid, true);
             if (selectedCube) {
-                centerCameraOnCube(selectedCube);
-                updateButtonStates();
+              centerCameraOnCube(selectedCube);
+              updateButtonStates();
             }
-        });
+          }, 
+          highlightCubeByPmid // Pass the highlight function as third parameter
+        );
         
         // 5. Start animation
         startAnimationLoop();
