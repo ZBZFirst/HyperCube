@@ -47,21 +47,18 @@ export function positionCubes() {
 }
 
 // Simplify deleteSelectedCube to just handle the cube removal
-export function deleteSelectedCube() {
-    if (!selectedCube) return;
+export function deleteSelectedCubes() {
+    // Remove all selected cubes from scene
+    selectedCubes.forEach(cube => {
+        scene.remove(cube);
+        const index = cubes.indexOf(cube);
+        if (index !== -1) cubes.splice(index, 1);
+    });
     
-    // Remove from Three.js scene
-    scene.remove(selectedCube);
-    
-    // Remove from cubes array
-    const cubeIndex = cubes.findIndex(c => c.userData.pmid === selectedCube.userData.pmid);
-    if (cubeIndex !== -1) {
-        cubes.splice(cubeIndex, 1);
-    }
-    
-    selectedCube = null;
-    // Removed positionCubes() call to prevent reorganization
+    selectedCubes = [];
+    lastSelectedCube = null;
 }
+
 
 export function toggleIncludeArticle(pmid) {
     const cube = cubes.find(c => c.userData.pmid === pmid);
@@ -79,17 +76,31 @@ export function updateCubeVisibility(cube) {
 }
 
 export function highlightCubeByPmid(pmid, isSelected) {
-    // Reset all cubes
-    cubes.forEach(cube => {
-        cube.material.emissive.setHex(0x000000);
+    const cube = cubes.find(c => c.userData.pmid === pmid);
+    if (!cube) return null;
+
+    if (isSelected) {
+        // Add to selected cubes if not already there
+        if (!selectedCubes.includes(cube)) {
+            selectedCubes.push(cube);
+        }
+        lastSelectedCube = cube; // Track most recent selection
+    } else {
+        // Remove from selected cubes
+        selectedCubes = selectedCubes.filter(c => c !== cube);
+    }
+
+    // Update all highlights
+    selectedCubes.forEach(c => {
+        // Gold for most recent, blue for others
+        c.material.emissive.setHex(c === lastSelectedCube ? 0xFFD700 : 0x3498db);
     });
     
-    // Highlight selected cube
-    const cube = cubes.find(c => c.userData.pmid === pmid);
-    if (cube) {
-        cube.material.emissive.setHex(isSelected ? 0x3498db : 0x000000);
-        selectedCube = isSelected ? cube : null;
-    }
+    // Clear highlights for deselected cubes
+    cubes.filter(c => !selectedCubes.includes(c)).forEach(c => {
+        c.material.emissive.setHex(0x000000);
+    });
+
     return cube;
 }
 
