@@ -65,6 +65,11 @@ export function getData() {
     return data;
 }
 
+export function deleteSelectedFromData(pmids) {
+    data = data.filter(item => !pmids.includes(item.PMID));
+    return data;
+}
+
 export function deleteFromData(pmid) {
     const index = data.findIndex(item => item.PMID === pmid);
     if (index !== -1) {
