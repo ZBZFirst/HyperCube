@@ -77,16 +77,22 @@ export function updateCubeVisibility(cube) {
     cube.material.needsUpdate = true;
 }
 
-export function highlightCubeByPmid(pmid) {
-    if (selectedCube) {
-        selectedCube.material.emissive.setHex(0x000000);
+export function highlightCubeByPmid(pmid, isSelected) {
+  // Remove highlight from all cubes
+  scene.children.forEach(child => {
+    if (child.userData?.pmid) {
+      child.material.emissive.setHex(0x000000);
     }
-    selectedCube = cubes.find(c => c.userData.pmid === pmid);
-    if (selectedCube) {
-        selectedCube.material.emissive.setHex(0xffff00);
-        updateButtonStates();
+  });
+  
+  // Highlight selected cube if needed
+  if (isSelected) {
+    const cube = scene.children.find(c => c.userData?.pmid === pmid);
+    if (cube) {
+      cube.material.emissive.setHex(0x3498db); // Blue highlight
+      updateTextZone(cube.userData); // Update text zone
     }
-    return selectedCube;
+  }
 }
 
 export function getCubes() {
