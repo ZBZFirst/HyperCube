@@ -7,7 +7,6 @@ import { loadData, exportFilteredData, populateDataTable, updateTextZone } from 
 import { 
     createCubesFromData, 
     deleteSelectedCube,
-    toggleIncludeArticle,
     getCubes,
     updateCubeVisibility,
     positionCubes,
@@ -34,8 +33,14 @@ async function init() {
         // 3. Create cubes
         cubes = createCubesFromData(data, scene);
         
-        // 4. Initialize UI after DOM is ready
-        await initializeUI(data);
+        // 4. Initialize UI
+        populateDataTable(data, (pmid) => {
+            selectedCube = highlightCubeByPmid(pmid, true);
+            if (selectedCube) {
+                centerCameraOnCube(selectedCube);
+                updateButtonStates();
+            }
+        });
         
         // 5. Start animation
         startAnimationLoop();
@@ -54,25 +59,6 @@ function initializeUI(data) {
         onExport: () => exportFilteredData(),
         onDelete: handleDelete,
         // ... other callbacks
-    });
-}
-
-function setupButtonHandlers(ui, data) {
-    document.getElementById('download-btn').addEventListener('click', async () => {
-        try {
-            this.disabled = true;
-            await exportFilteredData();
-        } finally {
-            this.disabled = false;
-        }
-    });
-    
-    document.getElementById('delete-btn').addEventListener('click', () => {
-        if (!selectedCube) {
-            showAlert("Please select an article first");
-            return;
-        }
-        handleDelete(ui, data);
     });
 }
 
@@ -98,7 +84,8 @@ function updateTableData(ui, data) {
 }
 
 function updateButtonStates() {
-    document.getElementById('delete-btn').disabled = !selectedCube;
+    const deleteBtn = document.getElementById('delete-btn');
+    deleteBtn.disabled = !selectedCube;
 }
 
 function startAnimationLoop() {
@@ -212,6 +199,27 @@ function showEditModal(pmid, ui, data) {
         document.body.removeChild(modal);
     });
 }
+
+// Setup button handlers
+document.getElementById('download-btn').addEventListener('click', async () => {
+    try {
+        await exportFilteredData();
+    } catch (error) {
+        console.error("Export failed:", error);
+    }
+});
+
+document.getElementById('delete-btn').addEventListener('click', () => {
+    if (!selectedCube) {
+        alert("Please select an article first");
+        return;
+    }
+    deleteSelectedCube();
+    selectedCube = null;
+    updateButtonStates();
+    positionCubes();
+});
+
 
 init();
     // script.js end
