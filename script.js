@@ -23,7 +23,7 @@ async function init() {
         showLoadingIndicator();
         
         // 1. Initialize scene
-        const sceneObjects = createScene();
+        sceneObjects = createScene();
         if (!sceneObjects) {
             throw new Error("Failed to initialize 3D scene");
         }
@@ -134,8 +134,12 @@ function setupEventHandlers() {
 function startAnimationLoop() {
     function animate() {
         requestAnimationFrame(animate);
-        sceneObjects.updateControls(0.016);
-        sceneObjects.renderer.render(sceneObjects.scene, sceneObjects.camera);
+        
+        // Add null check
+        if (sceneObjects && sceneObjects.updateControls) {
+            sceneObjects.updateControls(0.016);
+            sceneObjects.renderer.render(sceneObjects.scene, sceneObjects.camera);
+        }
     }
     animate();
 }
