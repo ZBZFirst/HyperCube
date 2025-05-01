@@ -15,7 +15,8 @@ import {
 
 // Global state
 let sceneObjects;
-let selectedCube = null;
+let selectedCubes = [];
+let lastSelectedCube = null;
 
 async function init() {
     try {
@@ -52,13 +53,17 @@ async function init() {
     }
 }
 
-// Helper functions
+// Update the setupUI function
 function setupUI(data) {
     populateDataTable(data, (pmid, isSelected) => {
-        const cube = highlightCubeByPmid(pmid, isSelected);
-        if (cube && isSelected) {
-            centerCameraOnCube(cube);
-            updateTextZone(cube.userData);
+        const result = highlightCubeByPmid(pmid, isSelected, selectedCubes, lastSelectedCube);
+        if (result) {
+            selectedCubes = result.selectedCubes;
+            lastSelectedCube = result.lastSelectedCube;
+            if (result.cube && isSelected) {
+                centerCameraOnCube(result.cube);
+                updateTextZone(result.cube.userData);
+            }
         }
     });
 }
