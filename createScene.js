@@ -31,13 +31,15 @@ export function createScene() {
     // Only activate pointer lock when clicking outside UI
     document.addEventListener('click', (event) => {
         const uiElement = document.getElementById('ui');
-        if (!uiElement.contains(event.target)) {
-            controls.lock().catch(e => {
+        if (!uiElement.contains(event.target) && controls) {
+            controls.lock().then(() => {
+                console.log("Pointer lock acquired");
+            }).catch(e => {
                 console.log("Pointer lock error:", e);
             });
         }
     });
-
+    
     // Movement state
     const keysPressed = {};
     document.addEventListener('keydown', (e) => {
