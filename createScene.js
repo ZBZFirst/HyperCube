@@ -96,9 +96,10 @@ function setupPointerLock(controls, renderer) {
     document.addEventListener('click', (event) => {
         const uiElement = document.getElementById('data-container');
         if (!uiElement.contains(event.target) && controls) {
-            controls.lock().catch(e => {
-                console.log("Pointer lock error:", e);
-            });
+            const promise = controls.lock();
+            if (promise && promise.catch) {
+                promise.catch(e => console.log("Pointer lock error:", e));
+            }
         }
     });
 }
