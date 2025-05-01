@@ -40,26 +40,21 @@ export function positionCubes() {
     });
 }
 
+// Simplify deleteSelectedCube to just handle the cube removal
 export function deleteSelectedCube() {
     if (!selectedCube) return;
-    
-    // Find and remove from data array
-    const dataIndex = data.findIndex(d => d.PMID === selectedCube.userData.pmid);
-    if (dataIndex !== -1) {
-        data.splice(dataIndex, 1);
-    }
     
     // Remove from Three.js scene
     scene.remove(selectedCube);
     
     // Remove from cubes array
-    const cubeIndex = cubes.indexOf(selectedCube);
+    const cubeIndex = cubes.findIndex(c => c.userData.pmid === selectedCube.userData.pmid);
     if (cubeIndex !== -1) {
         cubes.splice(cubeIndex, 1);
     }
     
     selectedCube = null;
-    positionCubes(); // Reorganize remaining cubes
+    // Removed positionCubes() call to prevent reorganization
 }
 
 export function toggleIncludeArticle(pmid) {
