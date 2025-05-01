@@ -22,34 +22,28 @@ async function init() {
     try {
         showLoadingIndicator();
         
-        // 1. Initialize scene
+        // 1. Initialize scene first
         sceneObjects = createScene();
-        if (!sceneObjects) {
-            throw new Error("Failed to initialize 3D scene");
-        }
+        if (!sceneObjects) throw new Error("Scene initialization failed");
         
-        // Start animation loop
-        sceneObjects.animate();
+        // 2. Initialize cube manager with proper references
+        initCubeManager(sceneObjects.scene, sceneObjects.camera);
         
-        // 2. Load data
+        // 3. Load data
         const data = await loadData("pubmed_data.csv");
-        if (!data || data.length === 0) {
-            throw new Error("No data loaded - check your CSV file");
-        }
-
-        // 3. Create cubes
+        if (!data?.length) throw new Error("No data loaded");
+        
+        // 4. Create cubes
         createCubesFromData(data, sceneObjects.scene);
         
-        // 4. Initialize UI
+        // 5. Setup UI and controls
         setupUI(data);
-        
-        // 5. Setup event handlers
         setupEventHandlers();
-        
-        // 6. Start animation
-        startAnimationLoop();
         setupSplitters();
-
+        
+        // 6. Start animation last
+        startAnimationLoop();
+        
     } catch (error) {
         console.error("Initialization failed:", error);
         showErrorToUser(error.message);
