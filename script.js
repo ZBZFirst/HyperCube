@@ -69,7 +69,7 @@ function setupUI(data) {
 }
 
 function setupEventHandlers() {
-    // Delete button - now handles multiple selections
+    // Delete button - handles multiple selections
     document.getElementById('delete-btn').addEventListener('click', () => {
         if (selectedCubes.length === 0) {
             alert("Please select at least one article first");
@@ -100,7 +100,6 @@ function setupEventHandlers() {
                 }
             }
         );
-    });
         
         // Update text zone with last selected cube's info if available
         if (lastSelectedCube) {
@@ -108,7 +107,7 @@ function setupEventHandlers() {
         }
     });
 
-    // Download button - remains unchanged
+    // Download button
     document.getElementById('download-btn').addEventListener('click', async () => {
         try {
             await exportFilteredData();
