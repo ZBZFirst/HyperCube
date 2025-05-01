@@ -106,10 +106,28 @@ function setupPointerLock(controls, renderer) {
 
 export function createScene() {
     const container = document.getElementById('graphics-container');
-    
+    if (!container) {
+        console.error('Graphics container not found!');
+        return null;
+    }
+
+    // Verify canvas exists
+    const canvas = container.querySelector('canvas');
+    if (!canvas) {
+        console.error('Canvas element not found in graphics container!');
+        return null;
+    }
+
     const scene = setupScene();
     const camera = setupCamera(container);
     const renderer = setupRenderer(container);
+    
+    // Add basic geometry for testing
+    const testGeometry = new THREE.BoxGeometry(1, 1, 1);
+    const testMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+    const testCube = new THREE.Mesh(testGeometry, testMaterial);
+    scene.add(testCube);
+    
     const { controls, updateControls } = setupControls(camera, renderer);
     
     if (controls) {
@@ -121,7 +139,40 @@ export function createScene() {
         camera,
         renderer,
         controls,
-        updateControls
+        updateControls,
+        // Add animation function
+        animate: function() {
+            requestAnimationFrame(this.animate.bind(this));
+            testCube.rotation.x += 0.01;
+            testCube.rotation.y += 0.01;
+            renderer.render(scene, camera);
+            updateControls(0.016);
+        }
     };
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 // createScene.js end
