@@ -36,7 +36,7 @@ export function updateTextZone(article) {
   document.getElementById('abstract-text').textContent = article.Abstract || 'No abstract available';
 }
 
-export function populateDataTable(data, onRowClick) {
+export function populateDataTable(data, onRowClick, hightlightFunction) {
    const tbody = d3.select('#data-table tbody');
    tbody.selectAll('tr').remove();
   
@@ -60,6 +60,13 @@ export function populateDataTable(data, onRowClick) {
        d3.select(this.closest('tr')).classed('selected', isSelected);
        highlightCubeByPmid(d.PMID, isSelected);
      });
+
+    .on('change', function(event, d) {
+       const isSelected = event.target.checked;
+       d3.select(this.closest('tr')).classed('selected', isSelected);
+       highlightFunction(d.PMID, isSelected); // Use passed function
+   });
+    
 }
 
 export function getData() {
