@@ -52,6 +52,8 @@ export function createScene() {
     });
 
     function updateControls(delta) {
+        if (!controls || !controls.isLocked) return;
+        
         const velocity = new THREE.Vector3();
         const speed = 5;
         const altitudeSpeed = 3;
