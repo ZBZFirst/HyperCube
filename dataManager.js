@@ -133,11 +133,8 @@ export function deleteFromData(pmid) {
 }
 
 export function exportFilteredData() {
-    if (!data.length) {
-        alert("No data available to export");
-        return;
-    }
-
+    if (!data.length) {alert("No data available to export");return;}
+    const exportData = data.map(item => ({...item,Notes: item.Notes || '',Rating: item.Rating || '',Tags: item.Tags || ''}));
     const csvContent = d3.csvFormat(data);
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
