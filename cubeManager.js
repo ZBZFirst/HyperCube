@@ -47,18 +47,14 @@ export function positionCubes() {
 }
 
 // Simplify deleteSelectedCube to just handle the cube removal
-export function deleteSelectedCubes() {
-    // Remove all selected cubes from scene
+export function deleteSelectedCubes(selectedCubes) {
     selectedCubes.forEach(cube => {
         scene.remove(cube);
         const index = cubes.indexOf(cube);
         if (index !== -1) cubes.splice(index, 1);
     });
-    
-    selectedCubes = [];
-    lastSelectedCube = null;
+    return [];
 }
-
 
 export function toggleIncludeArticle(pmid) {
     const cube = cubes.find(c => c.userData.pmid === pmid);
@@ -75,33 +71,29 @@ export function updateCubeVisibility(cube) {
     cube.material.needsUpdate = true;
 }
 
-export function highlightCubeByPmid(pmid, isSelected) {
+export function highlightCubeByPmid(pmid, isSelected, selectedCubes = [], lastSelectedCube = null) {
     const cube = cubes.find(c => c.userData.pmid === pmid);
     if (!cube) return null;
 
     if (isSelected) {
-        // Add to selected cubes if not already there
         if (!selectedCubes.includes(cube)) {
-            selectedCubes.push(cube);
+            selectedCubes = [...selectedCubes, cube];
         }
-        lastSelectedCube = cube; // Track most recent selection
+        lastSelectedCube = cube;
     } else {
-        // Remove from selected cubes
         selectedCubes = selectedCubes.filter(c => c !== cube);
     }
 
-    // Update all highlights
-    selectedCubes.forEach(c => {
-        // Gold for most recent, blue for others
-        c.material.emissive.setHex(c === lastSelectedCube ? 0xFFD700 : 0x3498db);
-    });
-    
-    // Clear highlights for deselected cubes
-    cubes.filter(c => !selectedCubes.includes(c)).forEach(c => {
-        c.material.emissive.setHex(0x000000);
+    // Update highlights
+    cubes.forEach(c => {
+        if (selectedCubes.includes(c)) {
+            c.material.emissive.setHex(c === lastSelectedCube ? 0xFFD700 : 0x3498db);
+        } else {
+            c.material.emissive.setHex(0x000000);
+        }
     });
 
-    return cube;
+    return { cube, selectedCubes, lastSelectedCube };
 }
 
 export function getCubes() {
