@@ -36,7 +36,7 @@ export function updateTextZone(article) {
   document.getElementById('abstract-text').textContent = article.Abstract || 'No abstract available';
 }
 
-export function populateDataTable(data, onRowClick, highlightFunction) {
+export function populateDataTable(data, onSelect) {
    const tbody = d3.select('#data-table tbody');
    tbody.selectAll('tr').remove();
   
@@ -55,11 +55,9 @@ export function populateDataTable(data, onRowClick, highlightFunction) {
      .append('input')
      .attr('type', 'checkbox')
      .attr('class', 'select-checkbox')
-     .on('change', function(event, d) {
-       const isSelected = event.target.checked;
-       d3.select(this.closest('tr')).classed('selected', isSelected);
-       highlightFunction(d.PMID, isSelected); // Use passed function
-       onRowClick(d.PMID); // Call the row click handler
+     .on('change', function(event) {
+         const pmid = d3.select(this.closest('tr')).attr('data-pmid');
+         onSelect(pmid, event.target.checked);
      });
 }
 
