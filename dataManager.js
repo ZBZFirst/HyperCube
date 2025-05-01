@@ -22,14 +22,14 @@ function createTitleCell(row, d) {
     .text(d => d.Title?.substring(0, 50) + (d.Title?.length > 50 ? '...' : ''));
 }
 
-function createCheckboxCell(row, d, onSelect) {
+function createCheckboxCell(row, onSelect) {  // Changed parameter list
   row.append('td')
     .append('input')
     .attr('type', 'checkbox')
     .attr('class', 'select-checkbox')
     .on('change', function(event) {
       const pmid = d3.select(this.closest('tr')).attr('data-pmid');
-      onSelect(pmid, event.target.checked);
+      onSelect(pmid, event.target.checked);  // Now properly using the passed callback
     });
 }
 
@@ -82,7 +82,8 @@ function setupTableRows(tbody, data, onSelect) {
     .enter()
     .append('tr')
     .attr('data-pmid', d => d.PMID)
-    .classed('complete', d => d.complete);
+    .classed('complete', d => d.complete)
+    .on('keydown', function(event) {
 }
 
 function createExportBlob(data) {
