@@ -19,6 +19,20 @@ export async function loadData(url) {
     }
 }
 
+export function addAnnotation(pmid, field, value) {
+  const item = data.find(d => d.PMID === pmid);
+  if (item) {
+    item[field] = value;
+    updateCompletionStatus(item);
+    return true;
+  }
+  return false;
+}
+
+function updateCompletionStatus(item) {
+  item.complete = item.Notes && item.Rating && item.Tags;
+}
+
 export function updateTextZone(article) {
   document.getElementById('selected-title').textContent = article.Title;
   document.getElementById('pmid-text').textContent = article.PMID;
