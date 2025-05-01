@@ -36,7 +36,7 @@ export function updateTextZone(article) {
   document.getElementById('abstract-text').textContent = article.Abstract || 'No abstract available';
 }
 
-export function populateDataTable(data, onRowClick, hightlightFunction) {
+export function populateDataTable(data, onRowClick, highlightFunction) {
    const tbody = d3.select('#data-table tbody');
    tbody.selectAll('tr').remove();
   
@@ -46,11 +46,11 @@ export function populateDataTable(data, onRowClick, hightlightFunction) {
      .append('tr')
      .attr('data-pmid', d => d.PMID);
     
-  // Title column
+   // Title column
    rows.append('td')
      .text(d => d.Title?.substring(0, 50) + (d.Title?.length > 50 ? '...' : ''));
     
-  // Checkbox column
+   // Checkbox column
    rows.append('td')
      .append('input')
      .attr('type', 'checkbox')
@@ -58,15 +58,9 @@ export function populateDataTable(data, onRowClick, hightlightFunction) {
      .on('change', function(event, d) {
        const isSelected = event.target.checked;
        d3.select(this.closest('tr')).classed('selected', isSelected);
-       highlightCubeByPmid(d.PMID, isSelected);
-     });
-
-    .on('change', function(event, d) {
-       const isSelected = event.target.checked;
-       d3.select(this.closest('tr')).classed('selected', isSelected);
        highlightFunction(d.PMID, isSelected); // Use passed function
-   });
-    
+       onRowClick(d.PMID); // Call the row click handler
+     });
 }
 
 export function getData() {
