@@ -76,26 +76,31 @@ function setupEventHandlers() {
             return;
         }
         
-        // Get PMIDs of all selected cubes
-        const pmidsToDelete = selectedCubes.map(cube => cube.userData.pmid);
+        // Get PMIDs to delete
+        const pmidsToDelete = selectedCubes.map(c => c.userData.pmid);
         
-        // Remove from data
+        // Update data
         deleteSelectedFromData(pmidsToDelete);
         
-        // Remove cubes from scene
-        deleteSelectedCubes();
+        // Update scene
+        selectedCubes = deleteSelectedCubes(selectedCubes);
+        lastSelectedCube = null;
         
-        // Refresh table with remaining data
+        // Refresh UI
         populateDataTable(
             getData(),
             (pmid, isSelected) => {
-                highlightCubeByPmid(pmid, isSelected);
-                if (isSelected) {
-                    const cube = getCubes().find(c => c.userData.pmid === pmid);
-                    if (cube) centerCameraOnCube(cube);
+                const result = highlightCubeByPmid(pmid, isSelected, selectedCubes, lastSelectedCube);
+                if (result) {
+                    selectedCubes = result.selectedCubes;
+                    lastSelectedCube = result.lastSelectedCube;
+                    if (result.cube && isSelected) {
+                        centerCameraOnCube(result.cube);
+                    }
                 }
             }
         );
+    });
         
         // Update text zone with last selected cube's info if available
         if (lastSelectedCube) {
