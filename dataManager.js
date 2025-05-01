@@ -51,28 +51,68 @@ export function updateTextZone(article) {
 }
 
 export function populateDataTable(data, onSelect) {
-   const tbody = d3.select('#data-table tbody');
-   tbody.selectAll('tr').remove();
-  
-   const rows = tbody.selectAll('tr')
-     .data(data)
-     .enter()
-     .append('tr')
-     .attr('data-pmid', d => d.PMID);
-    
-   // Title column
-   rows.append('td')
-     .text(d => d.Title?.substring(0, 50) + (d.Title?.length > 50 ? '...' : ''));
-    
-   // Checkbox column
-   rows.append('td')
-     .append('input')
-     .attr('type', 'checkbox')
-     .attr('class', 'select-checkbox')
-     .on('change', function(event) {
-         const pmid = d3.select(this.closest('tr')).attr('data-pmid');
-         onSelect(pmid, event.target.checked);
-     });
+  const tbody = d3.select('#data-table tbody');
+  tbody.selectAll('tr').remove();
+
+  const rows = tbody.selectAll('tr')
+    .data(data)
+    .enter()
+    .append('tr')
+    .attr('data-pmid', d => d.PMID)
+    .classed('complete', d => d.complete);
+
+  // Title column
+  rows.append('td')
+    .text(d => d.Title?.substring(0, 50) + (d.Title?.length > 50 ? '...' : ''));
+
+  // Checkbox column
+  rows.append('td')
+    .append('input')
+    .attr('type', 'checkbox')
+    .attr('class', 'select-checkbox')
+    .on('change', function(event) {
+      const pmid = d3.select(this.closest('tr')).attr('data-pmid');
+      onSelect(pmid, event.target.checked);
+    });
+
+  // Notes column
+  rows.append('td')
+    .append('input')
+    .attr('type', 'text')
+    .attr('class', 'notes-input')
+    .attr('value', d => d.Notes || '')
+    .on('change', function(event, d) {
+      addAnnotation(d.PMID, 'Notes', event.target.value);
+      d3.select(this.closest('tr')).classed('complete', d.complete);
+    });
+
+  // Rating column (1-5)
+  rows.append('td')
+    .append('select')
+    .attr('class', 'rating-select')
+    .on('change', function(event, d) {
+      addAnnotation(d.PMID, 'Rating', event.target.value);
+      d3.select(this.closest('tr')).classed('complete', d.complete);
+    })
+    .selectAll('option')
+    .data([...Array(6).keys()].slice(1))
+    .enter()
+    .append('option')
+    .attr('value', d => d)
+    .text(d => d)
+    .filter((d, i, nodes) => d === nodes[i].__data__.Rating)
+    .attr('selected', true);
+
+  // Tags column
+  rows.append('td')
+    .append('input')
+    .attr('type', 'text')
+    .attr('class', 'tags-input')
+    .attr('value', d => d.Tags || '')
+    .on('change', function(event, d) {
+      addAnnotation(d.PMID, 'Tags', event.target.value);
+      d3.select(this.closest('tr')).classed('complete', d.complete);
+    });
 }
 
 export function getData() {
