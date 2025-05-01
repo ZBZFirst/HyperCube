@@ -143,60 +143,6 @@ function createFallbackScene() {
     animate();
 }
 
-
-function showEditModal(pmid, ui, data) {
-    const cube = getCubes().find(c => c.userData.pmid === pmid);
-    if (!cube) return;
-
-    const modal = document.createElement('div');
-    modal.style.position = 'fixed';
-    modal.style.top = '50%';
-    modal.style.left = '50%';
-    modal.style.transform = 'translate(-50%, -50%)';
-    modal.style.background = 'white';
-    modal.style.padding = '20px';
-    modal.style.zIndex = '1000';
-    modal.style.border = '1px solid #ccc';
-    
-    modal.innerHTML = `
-        <h3>Edit Article</h3>
-        <div>
-            <label>
-                <input type="checkbox" ${cube.userData.includeArticle === "true" ? 'checked' : ''}>
-                Include Article
-            </label>
-        </div>
-        <div>
-            <label>Rationale:</label><br>
-            <textarea rows="4" cols="40">${cube.userData.rationale || ''}</textarea>
-        </div>
-        <div>
-            <label>Tags (semicolon separated):</label><br>
-            <input type="text" value="${cube.userData.tags || ''}" style="width: 100%">
-        </div>
-        <div style="margin-top: 10px;">
-            <button id="save-changes">Save</button>
-            <button id="close-modal">Close</button>
-        </div>
-    `;
-
-    document.body.appendChild(modal);
-
-    modal.querySelector('#save-changes').addEventListener('click', () => {
-        cube.userData.includeArticle = modal.querySelector('input[type="checkbox"]').checked ? "true" : "false";
-        cube.userData.rationale = modal.querySelector('textarea').value;
-        cube.userData.tags = modal.querySelector('input[type="text"]').value;
-        updateCubeVisibility(cube);
-        positionCubes();
-        document.body.removeChild(modal);
-        ui.updateTable(data);
-    });
-
-    modal.querySelector('#close-modal').addEventListener('click', () => {
-        document.body.removeChild(modal);
-    });
-}
-
 // Setup button handlers
 document.getElementById('download-btn').addEventListener('click', async () => {
     try {
