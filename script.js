@@ -144,22 +144,44 @@ function createFallbackScene() {
 }
 
 // Setup button handlers
+// Delete button handler
+document.getElementById('delete-btn').addEventListener('click', () => {
+    if (!selectedCube) {
+        alert("Please select an article first");
+        return;
+    }
+    
+    const pmid = selectedCube.userData.pmid;
+    
+    // Remove from data
+    deleteFromData(pmid);
+    
+    // Remove cube from scene
+    deleteSelectedCube();
+    
+    // Refresh the table view
+    populateDataTable(
+        getData(),
+        (pmid) => {
+            const cube = cubes.find(c => c.userData.pmid === pmid);
+            if (cube) {
+                selectedCube = highlightCubeByPmid(pmid, true);
+                centerCameraOnCube(cube);
+            }
+        },
+        highlightCubeByPmid
+    );
+    
+    selectedCube = null;
+});
+
+// Download button handler (no changes needed)
 document.getElementById('download-btn').addEventListener('click', async () => {
     try {
         await exportFilteredData();
     } catch (error) {
         console.error("Export failed:", error);
     }
-});
-
-document.getElementById('delete-btn').addEventListener('click', () => {
-    if (!selectedCube) {
-        alert("Please select an article first");
-        return;
-    }
-    deleteSelectedCube();
-    selectedCube = null;
-    positionCubes();
 });
 
 
