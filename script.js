@@ -54,47 +54,50 @@ async function init() {
 // Helper functions
 function setupUI(data) {
     populateDataTable(data, (pmid, isSelected) => {
-        selectedCube = highlightCubeByPmid(pmid, isSelected);
-        if (selectedCube && isSelected) {
-            centerCameraOnCube(selectedCube);
-            updateTextZone(selectedCube.userData);
+        const cube = highlightCubeByPmid(pmid, isSelected);
+        if (cube && isSelected) {
+            centerCameraOnCube(cube);
+            updateTextZone(cube.userData);
         }
     });
 }
 
 function setupEventHandlers() {
-    // Delete button
+    // Delete button - now handles multiple selections
     document.getElementById('delete-btn').addEventListener('click', () => {
-        if (!selectedCube) {
-            alert("Please select an article first");
+        if (selectedCubes.length === 0) {
+            alert("Please select at least one article first");
             return;
         }
         
-        const pmid = selectedCube.userData.pmid;
+        // Get PMIDs of all selected cubes
+        const pmidsToDelete = selectedCubes.map(cube => cube.userData.pmid);
         
         // Remove from data
-        deleteFromData(pmid);
+        deleteSelectedFromData(pmidsToDelete);
         
-        // Remove cube from scene
-        deleteSelectedCube();
+        // Remove cubes from scene
+        deleteSelectedCubes();
         
-        // Refresh table
+        // Refresh table with remaining data
         populateDataTable(
             getData(),
             (pmid, isSelected) => {
-                const cubes = getCubes();
-                const cube = cubes.find(c => c.userData.pmid === pmid);
-                if (cube) {
-                    selectedCube = highlightCubeByPmid(pmid, isSelected);
-                    if (isSelected) centerCameraOnCube(cube);
+                highlightCubeByPmid(pmid, isSelected);
+                if (isSelected) {
+                    const cube = getCubes().find(c => c.userData.pmid === pmid);
+                    if (cube) centerCameraOnCube(cube);
                 }
             }
         );
         
-        selectedCube = null;
+        // Update text zone with last selected cube's info if available
+        if (lastSelectedCube) {
+            updateTextZone(lastSelectedCube.userData);
+        }
     });
 
-    // Download button
+    // Download button - remains unchanged
     document.getElementById('download-btn').addEventListener('click', async () => {
         try {
             await exportFilteredData();
