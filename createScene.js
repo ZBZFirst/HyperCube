@@ -1,4 +1,3 @@
-    // createScene.js start
 import * as THREE from 'three';
 import { PointerLockControls } from 'three/examples/jsm/controls/PointerLockControls.js';
 
@@ -26,17 +25,39 @@ export function createScene() {
     document.body.appendChild(renderer.domElement);
 
     // Setup controls with UI protection
-    const controls = new PointerLockControls(camera, renderer.domElement);
+    let controls;
+    try {
+        controls = new PointerLockControls(camera, renderer.domElement);
+    } catch (error) {
+        console.error("Failed to initialize PointerLockControls:", error);
+        // Provide fallback controls or disable movement
+        return {
+            scene,
+            camera,
+            renderer,
+            controls: null,
+            updateControls: () => {} // No-op function
+        };
+    }
     
     // Only activate pointer lock when clicking outside UI
     document.addEventListener('click', (event) => {
         const uiElement = document.getElementById('ui');
         if (!uiElement.contains(event.target) && controls) {
-            controls.lock().then(() => {
-                console.log("Pointer lock acquired");
-            }).catch(e => {
-                console.log("Pointer lock error:", e);
-            });
+            try {
+                const lockPromise = controls.lock();
+                if (lockPromise) {
+                    lockPromise.then(() => {
+                        console.log("Pointer lock acquired");
+                    }).catch(e => {
+                        console.log("Pointer lock error:", e);
+                    });
+                } else {
+                    console.warn("Pointer lock API not available");
+                }
+            } catch (e) {
+                console.error("Error attempting pointer lock:", e);
+            }
         }
     });
     
@@ -65,11 +86,9 @@ export function createScene() {
         if (keysPressed[' ']) velocity.y += altitudeSpeed * delta;
         if (keysPressed['control']) velocity.y -= altitudeSpeed * delta;
 
-        if (controls.isLocked) {
-            controls.moveRight(velocity.x);
-            controls.moveForward(velocity.z);
-            camera.position.y += velocity.y;
-        }
+        controls.moveRight(velocity.x);
+        controls.moveForward(velocity.z);
+        camera.position.y += velocity.y;
     }
 
     return { 
@@ -80,5 +99,3 @@ export function createScene() {
         updateControls
     };
 }
-
-    // createScene.js end
