@@ -1,3 +1,4 @@
+// script.js start
 import * as THREE from 'three';
 import * as d3 from 'https://cdn.jsdelivr.net/npm/d3@7/+esm';
 import { createScene } from './createScene.js';
@@ -164,3 +165,4 @@ function createFallbackScene() {
 }
 
 init();
+// script.js end
