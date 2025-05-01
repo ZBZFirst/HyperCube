@@ -226,6 +226,16 @@ function showErrorToUser(message) {
     alert(`Error: ${message}`);
 }
 
+function clearTextZone() {
+    document.getElementById('selected-title').textContent = 'No article selected';
+    document.getElementById('pmid-text').textContent = '-';
+    document.getElementById('year-text').textContent = '-';
+    document.getElementById('source-text').textContent = '-';
+    document.getElementById('doi-link').textContent = '-';
+    document.getElementById('pmc-link').textContent = '-';
+    document.getElementById('abstract-text').textContent = 'Select an article to view its abstract';
+}
+
 function createFallbackScene() {
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera();
