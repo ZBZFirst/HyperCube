@@ -48,7 +48,7 @@ body {
 /* ========== CONTENT AREAS ========== */
 #data-container {
   grid-area: data;
-  background: rgba(255, 255, 255, 0.95);
+  background: rgba(255,0,0,0.1;
   padding: 15px;
   overflow-y: auto;
   display: flex;
@@ -61,7 +61,7 @@ body {
   overflow: hidden;
   width: 100%;
   height: 100%;
-  background-color: #f0f0f0; /* Temporary background to verify visibility */
+  background: rgba(0,255,0,0.1);
 }
 
 #graphics-container canvas {
@@ -75,7 +75,7 @@ body {
 
 #text-container {
   grid-area: text;
-  background: var(--light-bg);
+  background: rgba(0,0,255,0.1);
   padding: 15px;
   overflow-y: auto;
   border-top: 1px solid var(--splitter-color);
