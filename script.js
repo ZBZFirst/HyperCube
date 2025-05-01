@@ -12,7 +12,8 @@ import {
     getCubes,
     updateCubeVisibility,
     positionCubes,
-    centerCameraOnCube
+    centerCameraOnCube,
+    highlightCubeByPmid
 } from './cubeManager.js';
 
 let scene, renderer, sceneObjects;
