@@ -6,7 +6,6 @@ import { createUI } from './uiManager.js';
 import { loadData, exportFilteredData, populateDataTable, updateTextZone } from './dataManager.js';
 import { 
     createCubesFromData, 
-    highlightCubeByPmid, 
     deleteSelectedCube,
     toggleIncludeArticle,
     getCubes,
