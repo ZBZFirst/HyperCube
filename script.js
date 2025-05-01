@@ -148,39 +148,55 @@ function setupSplitters() {
   const verticalSplitter = document.getElementById('vertical-splitter');
   const horizontalSplitter = document.getElementById('horizontal-splitter');
   const mainContent = document.getElementById('main-content');
-  
+
+  // Initialize with default values if not set
+  if (!mainContent.style.gridTemplateColumns) {
+    mainContent.style.gridTemplateColumns = 'minmax(150px, 300px) 8px 1fr';
+  }
+  if (!mainContent.style.gridTemplateRows) {
+    mainContent.style.gridTemplateRows = '1fr 8px minmax(100px, 200px)';
+  }
+
   verticalSplitter.addEventListener('mousedown', (e) => {
+    e.preventDefault();
     const startX = e.clientX;
-    const startWidth = mainContent.gridTemplateColumns.split(' ')[0];
-    
+    // Get computed style if inline style isn't set
+    const gridTemplateColumns = mainContent.style.gridTemplateColumns || 
+                              window.getComputedStyle(mainContent).gridTemplateColumns;
+    const startWidth = parseInt(gridTemplateColumns.split(' ')[0]);
+
     function doDrag(e) {
-      const newWidth = parseInt(startWidth) + (e.clientX - startX);
+      const newWidth = startWidth + (e.clientX - startX);
       mainContent.style.gridTemplateColumns = `${Math.max(150, newWidth)}px 8px 1fr`;
     }
-    
+
     function stopDrag() {
       document.removeEventListener('mousemove', doDrag);
       document.removeEventListener('mouseup', stopDrag);
     }
-    
+
     document.addEventListener('mousemove', doDrag);
     document.addEventListener('mouseup', stopDrag);
   });
 
   horizontalSplitter.addEventListener('mousedown', (e) => {
+    e.preventDefault();
     const startY = e.clientY;
-    const startHeight = mainContent.gridTemplateRows.split(' ')[2];
-    
+    // Get computed style if inline style isn't set
+    const gridTemplateRows = mainContent.style.gridTemplateRows || 
+                           window.getComputedStyle(mainContent).gridTemplateRows;
+    const startHeight = parseInt(gridTemplateRows.split(' ')[2]);
+
     function doDrag(e) {
-      const newHeight = parseInt(startHeight) - (e.clientY - startY);
+      const newHeight = startHeight - (e.clientY - startY);
       mainContent.style.gridTemplateRows = `1fr 8px ${Math.max(100, newHeight)}px`;
     }
-    
+
     function stopDrag() {
       document.removeEventListener('mousemove', doDrag);
       document.removeEventListener('mouseup', stopDrag);
     }
-    
+
     document.addEventListener('mousemove', doDrag);
     document.addEventListener('mouseup', stopDrag);
   });
