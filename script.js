@@ -159,48 +159,6 @@ function createFallbackScene() {
     animate();
 }
 
-async function initializeUI(data) {
-    return new Promise((resolve) => {
-        // Wait for DOM to be fully ready
-        if (document.readyState === 'complete') {
-            setupUI(data);
-            resolve();
-        } else {
-            window.addEventListener('DOMContentLoaded', () => {
-                setupUI(data);
-                resolve();
-            });
-        }
-    });
-}
-
-function setupUI(data) {
-    // Create UI manager
-    const ui = createUI(data, {
-        onSelect: (pmid) => {
-            selectedCube = highlightCubeByPmid(pmid);
-            if (selectedCube) {
-                centerCameraOnCube(selectedCube);
-                document.getElementById('delete-btn').disabled = false;
-            }
-        }
-    });
-
-    // Setup button handlers
-    document.getElementById('download-btn').addEventListener('click', async () => {
-        await exportFilteredData();
-    });
-    
-    document.getElementById('delete-btn').addEventListener('click', () => {
-        if (!selectedCube) return;
-        deleteSelectedCube();
-        ui.updateTable(data.filter(d => getCubes().some(c => c.userData.pmid === d.PMID)));
-        document.getElementById('delete-btn').disabled = true;
-    });
-
-    // Initial table population
-    ui.updateTable(data);
-}
 
 function showEditModal(pmid, ui, data) {
     const cube = getCubes().find(c => c.userData.pmid === pmid);
