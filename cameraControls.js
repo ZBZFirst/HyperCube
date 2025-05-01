@@ -2,30 +2,34 @@ import { setupTraditionalControls } from './traditionalControls.js';
 import { setupExperimentalControls } from './experimentalControls.js';
 
 export function setupCameraControls(camera, renderer, { useExperimental = false } = {}) {
-    // First check if we should even attempt experimental controls
+    let activeControlType = 'traditional'; // Default fallback
+    let controlsObject = null;
+
     if (useExperimental) {
         const experimentalResult = attemptExperimentalControls(camera, renderer);
         if (experimentalResult.success) {
-            console.log(
-                "%cCONTROLS: Using experimental control scheme", 
-                "color: #4CAF50; font-weight: bold"
-            );
-            return experimentalResult.controls;
+            activeControlType = 'experimental';
+            controlsObject = experimentalResult.controls;
+            console.log(`%cCONTROLS: Using experimental control scheme`, "color: #4CAF50; font-weight: bold");
+        } else {
+            console.log(`%cCONTROLS: Falling back to traditional because: ${experimentalResult.reason}`, "color: #FF9800; font-weight: bold");
         }
-        
-        console.log(
-            "%cCONTROLS: Falling back to traditional controls because:\n" + 
-            experimentalResult.reason, 
-            "color: #FF9800; font-weight: bold"
-        );
     } else {
-        console.log(
-            "%cCONTROLS: Using traditional controls by configuration", 
-            "color: #2196F3; font-weight: bold"
-        );
+        console.log(`%cCONTROLS: Using traditional controls by configuration`, "color: #2196F3; font-weight: bold");
     }
-    
-    return setupTraditionalControls(camera, renderer);
+
+    // Fallback to traditional if experimental failed or wasn't attempted
+    if (!controlsObject) {
+        controlsObject = setupTraditionalControls(camera, renderer);
+    }
+
+    // Return enhanced controls object with tracking
+    return {
+        ...controlsObject,
+        getActiveControlType: () => activeControlType,
+        // Forward any existing getControlMode if present
+        getControlMode: controlsObject.getControlMode || (() => activeControlType)
+    };
 }
 
 function attemptExperimentalControls(camera, renderer) {
