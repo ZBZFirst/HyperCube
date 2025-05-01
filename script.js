@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import * as d3 from 'https://cdn.jsdelivr.net/npm/d3@7/+esm';
 import { createScene } from './createScene.js';
 import { createUI } from './uiManager.js';
-import { loadData, exportFilteredData, populateDataTable } from './dataManager.js';
+import { loadData, exportFilteredData, populateDataTable, updateTextZone } from './dataManager.js';
 import { 
     createCubesFromData, 
     highlightCubeByPmid, 
