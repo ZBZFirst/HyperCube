@@ -162,4 +162,8 @@ function updateButtonStates() {
         deleteBtn.disabled = true;
     }
 }
+
+// At the bottom of cubeManager.js
+window.sortByYear = sortByYear;
+window.defaultSort = defaultSort;
 // cubeManager.js end
