@@ -233,7 +233,67 @@ function convertToCSV(data) {
     return csvRows.join('\n');
 }
 
-// Public export function
+export function showPubMedFetchOverlay() {
+    const overlay = document.createElement('div');
+    overlay.id = 'pubmed-fetch-overlay';
+    overlay.style.position = 'absolute';
+    overlay.style.top = '0';
+    overlay.style.left = '0';
+    overlay.style.width = '100%';
+    overlay.style.height = '100%';
+    overlay.style.backgroundColor = 'rgba(0,0,0,0.8)';
+    overlay.style.zIndex = '1000';
+    overlay.style.display = 'flex';
+    overlay.style.flexDirection = 'column';
+    overlay.style.justifyContent = 'center';
+    overlay.style.alignItems = 'center';
+    overlay.style.color = 'white';
+    
+    const spinner = document.createElement('div');
+    spinner.className = 'spinner';
+    spinner.style.border = '5px solid #f3f3f3';
+    spinner.style.borderTop = '5px solid #3498db';
+    spinner.style.borderRadius = '50%';
+    spinner.style.width = '50px';
+    spinner.style.height = '50px';
+    spinner.style.animation = 'spin 2s linear infinite';
+    
+    const message = document.createElement('div');
+    message.textContent = 'Fetching data from PubMed...';
+    message.style.marginTop = '20px';
+    message.style.fontSize = '1.2em';
+    
+    overlay.appendChild(spinner);
+    overlay.appendChild(message);
+    
+    // Add CSS animation
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    `;
+    document.head.appendChild(style);
+    
+    document.getElementById('graphics-container').appendChild(overlay);
+}
+
+export function hidePubMedFetchOverlay() {
+    const overlay = document.getElementById('pubmed-fetch-overlay');
+    if (overlay) {
+        overlay.remove();
+    }
+    // Also remove the style element we added
+    const styles = document.querySelectorAll('style');
+    styles.forEach(style => {
+        if (style.textContent.includes('spin')) {
+            style.remove();
+        }
+    });
+}
+
+// In pubmedFetcher.js, modify the fetchPubMedData function:
 export async function fetchPubMedData(searchTerm = DEFAULT_SEARCH_TERM, apiKey = DEFAULT_API_KEY) {
     const startTime = Date.now();
     
@@ -245,28 +305,11 @@ export async function fetchPubMedData(searchTerm = DEFAULT_SEARCH_TERM, apiKey =
         
         // Prepare data
         const records = prepareData(metadata, tagData);
-        const csvContent = convertToCSV(records);
-        
-        // Create a filename-safe version of the search term
-        const safeSearchTerm = searchTerm.replace(/[^\w\s]/g, '').replace(/\s+/g, '_').slice(0, 50);
-        const filename = `pubmed_results_${safeSearchTerm}_${Math.floor(Date.now() / 1000)}.csv`;
-        
-        // Create download link
-        const blob = new Blob([csvContent], { type: 'text/csv' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
         
         // Completion message
         const elapsedTime = (Date.now() - startTime) / 1000;
         console.log(`\n==================================================`);
         console.log(`Successfully processed ${records.length} articles`);
-        console.log(`Results saved to: ${filename}`);
         console.log(`Total execution time: ${elapsedTime.toFixed(2)} seconds`);
         console.log(`==================================================`);
         
@@ -276,6 +319,8 @@ export async function fetchPubMedData(searchTerm = DEFAULT_SEARCH_TERM, apiKey =
         throw error;
     }
 }
+
+// Remove the window.fetchPubMedDataFromConsole function as we won't need it
 
 // Export function to be called from dev console
 window.fetchPubMedDataFromConsole = async function() {
