@@ -29,20 +29,55 @@ export function createCubesFromData(data, scene) {
     return cubes;
 }
 
-export function positionCubes() {
+let currentSortMode = 'default'; // 'default' or 'year'
+
+export function sortByYear() {
+    currentSortMode = 'year';
+    positionCubes();
+}
+
+export function defaultSort() {
+    currentSortMode = 'default';
+    positionCubes();
+}
+
+function positionCubes() {
     const includedCubes = cubes.filter(c => c.userData.includeArticle === "true");
-    const gridSize = Math.ceil(Math.sqrt(includedCubes.length));
-    const spacing = 2.5;
     
-    includedCubes.forEach((cube, i) => {
-        const x = (i % gridSize - gridSize/2) * spacing;
-        const z = Math.floor(i / gridSize - gridSize/2) * spacing;
-        cube.position.set(x, 0, z);
-        cube.visible = true;
-    });
-    
-    cubes.filter(c => c.userData.includeArticle !== "true").forEach(cube => {
-        cube.visible = false;
+    if (currentSortMode === 'year') {
+        // Year-based sorting (X=year, Y=article index)
+        const cubesByYear = {};
+        includedCubes.forEach(cube => {
+            const year = cube.userData.PubYear || "Unknown";
+            if (!cubesByYear[year]) cubesByYear[year] = [];
+            cubesByYear[year].push(cube);
+        });
+
+        const years = Object.keys(cubesByYear).sort();
+        years.forEach((year, yearIndex) => {
+            cubesByYear[year].forEach((cube, articleIndex) => {
+                cube.position.set(
+                    yearIndex * 3.0,    // X: year
+                    articleIndex * 1.5, // Y: article index
+                    0                  // Z: fixed
+                );
+            });
+        });
+    } else {
+        // Default grid sorting
+        const gridSize = Math.ceil(Math.sqrt(includedCubes.length));
+        includedCubes.forEach((cube, i) => {
+            cube.position.set(
+                (i % gridSize - gridSize/2) * 2.5, // X
+                0,                                 // Y
+                Math.floor(i / gridSize - gridSize/2) * 2.5 // Z
+            );
+        });
+    }
+
+    // Handle visibility
+    cubes.forEach(cube => {
+        cube.visible = cube.userData.includeArticle === "true";
     });
 }
 
