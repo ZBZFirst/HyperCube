@@ -89,15 +89,36 @@ function setupTableRows(tbody, data, onSelect) {
 }
 
 export async function attemptPubMedFetch() {
-    // Default search term - you might want to make this configurable
-    const searchTerm = "Liquid Mechanical Ventilation Life Support Humans";
-    try {
-        const data = await fetchPubMedData(searchTerm);
-        return data;
-    } catch (error) {
-        console.error("PubMed fetch failed:", error);
-        throw error;
-    }
+    return new Promise((resolve) => {
+        const overlay = showPubMedFetchOverlay();
+        
+        // We'll handle the resolution in the button click handlers
+        overlay.querySelector('button').onclick = async () => {
+            const fetchButton = overlay.querySelector('button');
+            fetchButton.disabled = true;
+            fetchButton.textContent = 'Fetching...';
+            
+            try {
+                const searchTerm = overlay.querySelector('#pubmed-search-term').value.trim();
+                const apiKey = overlay.querySelector('#pubmed-api-key').value.trim() || DEFAULT_API_KEY;
+                
+                const data = await fetchPubMedData(searchTerm, apiKey);
+                hidePubMedFetchOverlay();
+                resolve(data);
+            } catch (error) {
+                console.error("PubMed fetch failed:", error);
+                fetchButton.textContent = 'Try Again';
+                fetchButton.disabled = false;
+                // Don't resolve here - let user try again or cancel
+            }
+        };
+        
+        // Handle cancel button
+        overlay.querySelectorAll('button')[1].onclick = () => {
+            hidePubMedFetchOverlay();
+            resolve(null); // Signal to load from CSV
+        };
+    });
 }
 
 function createExportBlob(data) {
@@ -172,39 +193,146 @@ export function deleteSelectedFromData(pmids) {
   return data;
 }
 
-export function showPubMedFetchOverlay() {
+function showPubMedFetchOverlay() {
     const overlay = document.createElement('div');
     overlay.id = 'pubmed-fetch-overlay';
-    overlay.style.position = 'absolute';
+    overlay.style.position = 'fixed';  // Changed to fixed to cover whole screen
     overlay.style.top = '0';
     overlay.style.left = '0';
     overlay.style.width = '100%';
     overlay.style.height = '100%';
-    overlay.style.backgroundColor = 'rgba(0,0,0,0.8)';
-    overlay.style.zIndex = '1000';
+    overlay.style.backgroundColor = 'rgba(0,0,0,0.9)';
+    overlay.style.zIndex = '10000';  // Higher z-index to ensure it's on top
     overlay.style.display = 'flex';
     overlay.style.flexDirection = 'column';
     overlay.style.justifyContent = 'center';
     overlay.style.alignItems = 'center';
     overlay.style.color = 'white';
-    
-    const spinner = document.createElement('div');
-    spinner.className = 'spinner';
-    spinner.style.border = '5px solid #f3f3f3';
-    spinner.style.borderTop = '5px solid #3498db';
-    spinner.style.borderRadius = '50%';
-    spinner.style.width = '50px';
-    spinner.style.height = '50px';
-    spinner.style.animation = 'spin 2s linear infinite';
-    
-    const message = document.createElement('div');
-    message.textContent = 'Fetching data from PubMed...';
-    message.style.marginTop = '20px';
-    message.style.fontSize = '1.2em';
-    
-    overlay.appendChild(spinner);
-    overlay.appendChild(message);
-    
+    overlay.style.padding = '20px';
+    overlay.style.boxSizing = 'border-box';
+
+    // Create form container
+    const form = document.createElement('div');
+    form.style.width = '100%';
+    form.style.maxWidth = '500px';
+    form.style.backgroundColor = '#222';
+    form.style.padding = '30px';
+    form.style.borderRadius = '10px';
+    form.style.boxShadow = '0 0 20px rgba(0,0,0,0.5)';
+
+    // Title
+    const title = document.createElement('h2');
+    title.textContent = 'Fetch PubMed Data';
+    title.style.marginTop = '0';
+    title.style.textAlign = 'center';
+    form.appendChild(title);
+
+    // Search Term Input
+    const searchTermLabel = document.createElement('label');
+    searchTermLabel.textContent = 'Search Term:';
+    searchTermLabel.style.display = 'block';
+    searchTermLabel.style.marginBottom = '5px';
+    form.appendChild(searchTermLabel);
+
+    const searchTermInput = document.createElement('input');
+    searchTermInput.type = 'text';
+    searchTermInput.id = 'pubmed-search-term';
+    searchTermInput.value = 'Liquid Mechanical Ventilation Life Support Humans';
+    searchTermInput.style.width = '100%';
+    searchTermInput.style.padding = '10px';
+    searchTermInput.style.marginBottom = '20px';
+    searchTermInput.style.borderRadius = '5px';
+    searchTermInput.style.border = 'none';
+    form.appendChild(searchTermInput);
+
+    // API Key Input
+    const apiKeyLabel = document.createElement('label');
+    apiKeyLabel.textContent = 'PubMed API Key (optional):';
+    apiKeyLabel.style.display = 'block';
+    apiKeyLabel.style.marginBottom = '5px';
+    form.appendChild(apiKeyLabel);
+
+    const apiKeyInput = document.createElement('input');
+    apiKeyInput.type = 'text';
+    apiKeyInput.id = 'pubmed-api-key';
+    apiKeyInput.placeholder = 'Leave blank to use default';
+    apiKeyInput.style.width = '100%';
+    apiKeyInput.style.padding = '10px';
+    apiKeyInput.style.marginBottom = '30px';
+    apiKeyInput.style.borderRadius = '5px';
+    apiKeyInput.style.border = 'none';
+    form.appendChild(apiKeyInput);
+
+    // Buttons container
+    const buttonsContainer = document.createElement('div');
+    buttonsContainer.style.display = 'flex';
+    buttonsContainer.style.justifyContent = 'space-between';
+    buttonsContainer.style.gap = '10px';
+
+    // Fetch Button
+    const fetchButton = document.createElement('button');
+    fetchButton.textContent = 'Fetch from PubMed';
+    fetchButton.style.padding = '10px 20px';
+    fetchButton.style.backgroundColor = '#4CAF50';
+    fetchButton.style.color = 'white';
+    fetchButton.style.border = 'none';
+    fetchButton.style.borderRadius = '5px';
+    fetchButton.style.cursor = 'pointer';
+    fetchButton.style.flex = '1';
+    fetchButton.onclick = async () => {
+        fetchButton.disabled = true;
+        fetchButton.textContent = 'Fetching...';
+        fetchButton.style.backgroundColor = '#2E7D32';
+        
+        try {
+            const searchTerm = searchTermInput.value.trim();
+            const apiKey = apiKeyInput.value.trim() || DEFAULT_API_KEY;
+            
+            // Show loading spinner
+            const spinner = document.createElement('div');
+            spinner.className = 'spinner';
+            spinner.style.border = '5px solid rgba(255,255,255,0.3)';
+            spinner.style.borderTop = '5px solid #fff';
+            spinner.style.borderRadius = '50%';
+            spinner.style.width = '30px';
+            spinner.style.height = '30px';
+            spinner.style.animation = 'spin 1s linear infinite';
+            spinner.style.margin = '20px auto';
+            form.appendChild(spinner);
+            
+            const data = await fetchPubMedData(searchTerm, apiKey);
+            hidePubMedFetchOverlay();
+            return data;
+        } catch (error) {
+            console.error("PubMed fetch failed:", error);
+            fetchButton.textContent = 'Try Again';
+            fetchButton.style.backgroundColor = '#f44336';
+            fetchButton.disabled = false;
+            return null;
+        }
+    };
+    buttonsContainer.appendChild(fetchButton);
+
+    // Cancel Button (load from CSV instead)
+    const cancelButton = document.createElement('button');
+    cancelButton.textContent = 'Load from CSV';
+    cancelButton.style.padding = '10px 20px';
+    cancelButton.style.backgroundColor = '#f44336';
+    cancelButton.style.color = 'white';
+    cancelButton.style.border = 'none';
+    cancelButton.style.borderRadius = '5px';
+    cancelButton.style.cursor = 'pointer';
+    cancelButton.style.flex = '1';
+    cancelButton.onclick = () => {
+        hidePubMedFetchOverlay();
+        return null; // Signal to load from CSV
+    };
+    buttonsContainer.appendChild(cancelButton);
+
+    form.appendChild(buttonsContainer);
+    overlay.appendChild(form);
+    document.body.appendChild(overlay);
+
     // Add CSS animation
     const style = document.createElement('style');
     style.textContent = `
@@ -214,8 +342,11 @@ export function showPubMedFetchOverlay() {
         }
     `;
     document.head.appendChild(style);
-    
-    document.getElementById('graphics-container').appendChild(overlay);
+
+    // Focus on search term input
+    searchTermInput.focus();
+
+    return overlay;
 }
 
 export function hidePubMedFetchOverlay() {
