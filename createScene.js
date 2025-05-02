@@ -74,7 +74,7 @@ function setupControls(camera, renderer) {
             if (keysPressed['s']) velocity.z += speed * delta;
             if (keysPressed['a']) velocity.x -= speed * delta;
             if (keysPressed['d']) velocity.x += speed * delta;
-            if (keysPressed[' ']) velocity.y += altitudeSpeed * delta;
+            if (keysPressed['shift']) velocity.y += altitudeSpeed * delta;
             if (keysPressed['control']) velocity.y -= altitudeSpeed * delta;
 
             controls.moveRight(velocity.x);
