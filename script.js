@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import * as d3 from 'https://cdn.jsdelivr.net/npm/d3@7/+esm';
 import { createScene } from './createScene.js';
 import { createUI } from './uiManager.js';
-import { loadData, exportFilteredData, populateDataTable, updateTextZone, deleteFromData, getData, deleteSelectedFromData, addAnnotation } from './dataManager.js';
+import { loadData, exportFilteredData, populateDataTable, updateTextZone, attemptPubMedFetch, showPubMedFetchOverlay, hidePubMedFetchOverlay, deleteFromData, getData, deleteSelectedFromData, addAnnotation } from './dataManager.js';
 import { 
     createCubesFromData, 
     deleteSelectedCubes,
@@ -29,9 +29,19 @@ async function init() {
         // 2. Initialize cube manager with proper references
         initCubeManager(sceneObjects.scene, sceneObjects.camera);
         
-        // 3. Load data
-        const data = await loadData("pubmed_data.csv");
-        if (!data?.length) throw new Error("No data loaded");
+        // 3. DATA LOADING - try PubMed fetch first, then fall back to CSV
+        let data;
+        try {
+            showPubMedFetchOverlay();
+            data = await attemptPubMedFetch();
+            if (!data?.length) throw new Error("PubMed fetch returned no data");
+            hidePubMedFetchOverlay();
+        } catch (fetchError) {
+            console.warn("PubMed fetch failed, falling back to CSV:", fetchError);
+            hidePubMedFetchOverlay();
+            data = await loadData("pubmed_data.csv");
+            if (!data?.length) throw new Error("No data loaded from either source");
+        }
         
         // 4. Create cubes
         createCubesFromData(data, sceneObjects.scene);
