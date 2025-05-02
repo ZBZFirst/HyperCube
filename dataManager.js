@@ -1,6 +1,6 @@
 // dataManager.js start
 import * as d3 from 'https://cdn.jsdelivr.net/npm/d3@7/+esm';
-import { fetchPubMedData } from './pubmedFetcher.js';
+import { fetchPubMedData, DEFAULT_API_KEY  } from './pubmedFetcher.js';
 
 let data = [];
 
