@@ -172,6 +172,66 @@ export function deleteSelectedFromData(pmids) {
   return data;
 }
 
+export function showPubMedFetchOverlay() {
+    const overlay = document.createElement('div');
+    overlay.id = 'pubmed-fetch-overlay';
+    overlay.style.position = 'absolute';
+    overlay.style.top = '0';
+    overlay.style.left = '0';
+    overlay.style.width = '100%';
+    overlay.style.height = '100%';
+    overlay.style.backgroundColor = 'rgba(0,0,0,0.8)';
+    overlay.style.zIndex = '1000';
+    overlay.style.display = 'flex';
+    overlay.style.flexDirection = 'column';
+    overlay.style.justifyContent = 'center';
+    overlay.style.alignItems = 'center';
+    overlay.style.color = 'white';
+    
+    const spinner = document.createElement('div');
+    spinner.className = 'spinner';
+    spinner.style.border = '5px solid #f3f3f3';
+    spinner.style.borderTop = '5px solid #3498db';
+    spinner.style.borderRadius = '50%';
+    spinner.style.width = '50px';
+    spinner.style.height = '50px';
+    spinner.style.animation = 'spin 2s linear infinite';
+    
+    const message = document.createElement('div');
+    message.textContent = 'Fetching data from PubMed...';
+    message.style.marginTop = '20px';
+    message.style.fontSize = '1.2em';
+    
+    overlay.appendChild(spinner);
+    overlay.appendChild(message);
+    
+    // Add CSS animation
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    `;
+    document.head.appendChild(style);
+    
+    document.getElementById('graphics-container').appendChild(overlay);
+}
+
+export function hidePubMedFetchOverlay() {
+    const overlay = document.getElementById('pubmed-fetch-overlay');
+    if (overlay) {
+        overlay.remove();
+    }
+    // Also remove the style element we added
+    const styles = document.querySelectorAll('style');
+    styles.forEach(style => {
+        if (style.textContent.includes('spin')) {
+            style.remove();
+        }
+    });
+}
+
 export function deleteFromData(pmid) {
   const index = data.findIndex(item => item.PMID === pmid);
   if (index !== -1) {
