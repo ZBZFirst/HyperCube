@@ -252,14 +252,22 @@ function createApiKeyInput() {
   const input = document.createElement('input');
   input.type = 'text';
   input.id = 'pubmed-api-key';
-  input.placeholder = 'Leave blank to use default';
+  
+  // Now shows the actual default key in placeholder
+  input.placeholder = `Leave blank to use default key: ${DEFAULT_API_KEY}`;
+  
+  // Visual indication it's using a default value
+  input.title = `Default key: ${DEFAULT_API_KEY}\n\nRate limits may apply with shared keys`;
+  
   Object.assign(input.style, {
     width: '100%',
     padding: '10px',
     marginBottom: '30px',
     borderRadius: '5px',
-    border: 'none'
+    border: 'none',
+    fontFamily: 'monospace' // Better for API key display
   });
+
   return input;
 }
 
