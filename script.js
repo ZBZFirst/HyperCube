@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import * as d3 from 'https://cdn.jsdelivr.net/npm/d3@7/+esm';
 import { createScene } from './createScene.js';
 import { createUI } from './uiManager.js';
-import { loadData, exportFilteredData, populateDataTable, updateTextZone, attemptPubMedFetch, showPubMedFetchOverlay, hidePubMedFetchOverlay, deleteFromData, getData, deleteSelectedFromData, addAnnotation } from './dataManager.js';
+import { loadData, exportFilteredData, populateDataTable, updateTextZone, attemptPubMedFetch, hidePubMedFetchOverlay, deleteFromData, getData, deleteSelectedFromData, addAnnotation } from './dataManager.js';
 import { 
     createCubesFromData, 
     deleteSelectedCubes,
