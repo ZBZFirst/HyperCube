@@ -88,6 +88,18 @@ function setupTableRows(tbody, data, onSelect) {
     });
 }
 
+export async function attemptPubMedFetch() {
+    // Default search term - you might want to make this configurable
+    const searchTerm = "Liquid Mechanical Ventilation Life Support Humans";
+    try {
+        const data = await fetchPubMedData(searchTerm);
+        return data;
+    } catch (error) {
+        console.error("PubMed fetch failed:", error);
+        throw error;
+    }
+}
+
 function createExportBlob(data) {
   const exportData = data.map(item => ({
     ...item,
