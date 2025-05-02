@@ -254,7 +254,7 @@ function createApiKeyInput() {
   input.id = 'pubmed-api-key';
   
   // Now shows the actual default key in placeholder
-  input.placeholder = `Leave blank to use default key`;
+  input.placeholder = `Leave blank to use default key: ${DEFAULT_API_KEY}`;
   
   // Visual indication it's using a default value
   input.title = `Default key: ${DEFAULT_API_KEY}\n\nRate limits may apply with shared keys`;
