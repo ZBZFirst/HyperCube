@@ -31,14 +31,12 @@ async function init() {
         
         // 3. DATA LOADING - try PubMed fetch first, then fall back to CSV
         let data;
-        try {
-            showPubMedFetchOverlay();
-            data = await attemptPubMedFetch();
-            if (!data?.length) throw new Error("PubMed fetch returned no data");
-            hidePubMedFetchOverlay();
-        } catch (fetchError) {
-            console.warn("PubMed fetch failed, falling back to CSV:", fetchError);
-            hidePubMedFetchOverlay();
+        const pubmedData = await attemptPubMedFetch();
+        
+        if (pubmedData && pubmedData.length) {
+            data = pubmedData;
+        } else {
+            console.log("Falling back to CSV load");
             data = await loadData("pubmed_data.csv");
             if (!data?.length) throw new Error("No data loaded from either source");
         }
