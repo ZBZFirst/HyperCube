@@ -2,6 +2,16 @@
 import * as THREE from 'three';
 import { createCube } from './createCube.js';
 
+
+const PositionModes = {
+    GRID: 'grid',
+    YEAR: 'year',
+    JOURNAL: 'journal',
+    CITATIONS: 'citations',
+    CUSTOM: 'custom'
+};
+
+
 let cubes = [];
 let selectedCube = null;
 let camera;
@@ -11,6 +21,8 @@ const animationDuration = 4; // seconds
 let isAnimating = false;
 let originalPositions = new WeakMap();
 let targetPositions = new WeakMap();
+let currentPositionMode = PositionModes.GRID;
+let customPositioner = null;
 
 // Add this to your init function to ensure animation runs
 export function initCubeManager(mainScene, mainCamera) {
@@ -44,69 +56,56 @@ export function createCubesFromData(data, scene) {
     return cubes;
 }
 
-let currentSortMode = 'default'; // 'default' or 'year'
-
-export function sortByYear() {
-    currentSortMode = 'year';
-    positionCubes();
-}
-
-export function defaultSort() {
-    currentSortMode = 'default';
-    positionCubes();
+export function setPositionMode(mode, customCallback = null) {
+    if (Object.values(PositionModes).includes(mode)) {
+        currentPositionMode = mode;
+        if (mode === PositionModes.CUSTOM && customCallback) {
+            customPositioner = customCallback;
+        }
+        positionCubes();
+    }
 }
 
 function positionCubes() {
     const includedCubes = cubes.filter(c => c.userData.includeArticle === "true");
     
-    // Store original positions before calculating new ones
+    // Store original positions
     cubes.forEach(cube => {
         originalPositions.set(cube, cube.position.clone());
     });
-    
-    // Calculate target positions
-    if (currentSortMode === 'year') {
-        const cubesByYear = {};
-        includedCubes.forEach(cube => {
-            const year = cube.userData.PubYear || "Unknown";
-            if (!cubesByYear[year]) cubesByYear[year] = [];
-            cubesByYear[year].push(cube);
-        });
-
-        const years = Object.keys(cubesByYear).sort();
-        years.forEach((year, yearIndex) => {
-            cubesByYear[year].forEach((cube, articleIndex) => {
-                const targetPos = new THREE.Vector3(
-                    yearIndex * 3.0,
-                    articleIndex * 1.5,
-                    0
-                );
-                targetPositions.set(cube, targetPos);
-            });
-        });
-    } else {
-        const gridSize = Math.ceil(Math.sqrt(includedCubes.length));
-        includedCubes.forEach((cube, i) => {
-            const targetPos = new THREE.Vector3(
-                (i % gridSize - gridSize/2) * 2.5,
-                0,
-                Math.floor(i / gridSize - gridSize/2) * 2.5
-            );
-            targetPositions.set(cube, targetPos);
-        });
-    }
 
     // Handle visibility immediately
     cubes.forEach(cube => {
         cube.visible = cube.userData.includeArticle === "true";
     });
+
+    // Calculate target positions based on current mode
+    switch(currentPositionMode) {
+        case PositionModes.YEAR:
+            positionByYear(includedCubes);
+            break;
+            
+        case PositionModes.JOURNAL:
+            positionByJournal(includedCubes);
+            break;
+            
+        case PositionModes.CITATIONS:
+            positionByCitations(includedCubes);
+            break;
+            
+        case PositionModes.CUSTOM:
+            if (customPositioner) customPositioner(includedCubes);
+            break;
+            
+        default: // GRID
+            positionAsGrid(includedCubes);
+    }
     
     // Start animation
     animationStartTime = performance.now() / 1000;
     isAnimating = true;
     animateCubes();
 }
-
 
 // Simplify deleteSelectedCube to just handle the cube removal
 export function deleteSelectedCubes(selectedCubes) {
@@ -195,6 +194,83 @@ function animateCubes() {
     }
 }
 
+function positionByYear(cubes) {
+    const cubesByYear = {};
+    cubes.forEach(cube => {
+        const year = cube.userData.PubYear || "Unknown";
+        if (!cubesByYear[year]) cubesByYear[year] = [];
+        cubesByYear[year].push(cube);
+    });
+
+    const years = Object.keys(cubesByYear).sort();
+    years.forEach((year, yearIndex) => {
+        cubesByYear[year].forEach((cube, articleIndex) => {
+            targetPositions.set(cube, new THREE.Vector3(
+                yearIndex * 3.0,
+                articleIndex * 1.5,
+                0
+            ));
+        });
+    });
+}
+
+function positionByJournal(cubes) {
+    const cubesByJournal = {};
+    cubes.forEach(cube => {
+        const journal = cube.userData.Journal || "Unknown";
+        if (!cubesByJournal[journal]) cubesByJournal[journal] = [];
+        cubesByJournal[journal].push(cube);
+    });
+
+    const journals = Object.keys(cubesByJournal).sort();
+    const radius = journals.length * 1.5;
+    
+    journals.forEach((journal, journalIndex) => {
+        const angle = (journalIndex / journals.length) * Math.PI * 2;
+        const x = Math.cos(angle) * radius;
+        const z = Math.sin(angle) * radius;
+        
+        cubesByJournal[journal].forEach((cube, articleIndex) => {
+            targetPositions.set(cube, new THREE.Vector3(
+                x + (Math.random() - 0.5) * 2,
+                articleIndex * 0.8,
+                z + (Math.random() - 0.5) * 2
+            ));
+        });
+    });
+}
+
+function positionByCitations(cubes) {
+    const sorted = [...cubes].sort((a, b) => 
+        (b.userData.Citations || 0) - (a.userData.Citations || 0));
+    
+    const spiralRadius = 10;
+    const heightScale = 0.1;
+    
+    sorted.forEach((cube, i) => {
+        const angle = i * 0.2;
+        const radius = spiralRadius * (1 - i/sorted.length);
+        const citations = cube.userData.Citations || 0;
+        
+        targetPositions.set(cube, new THREE.Vector3(
+            Math.cos(angle) * radius,
+            citations * heightScale,
+            Math.sin(angle) * radius
+        ));
+    });
+}
+
+function positionAsGrid(cubes) {
+    const gridSize = Math.ceil(Math.sqrt(cubes.length));
+    cubes.forEach((cube, i) => {
+        targetPositions.set(cube, new THREE.Vector3(
+            (i % gridSize - gridSize/2) * 2.5,
+            0,
+            Math.floor(i / gridSize - gridSize/2) * 2.5
+        ));
+    });
+}
+
 export function centerCameraOnCube(cube) {
     if (!cube || !cube.position || !camera) {
         console.warn('Cannot center camera - missing required elements');
@@ -224,6 +300,6 @@ function updateButtonStates() {
 }
 
 // At the bottom of cubeManager.js
-window.sortByYear = sortByYear;
-window.defaultSort = defaultSort;
+window.setPositionMode = setPositionMode;
+window.PositionModes = PositionModes;
 // cubeManager.js end
