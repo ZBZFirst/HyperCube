@@ -6,10 +6,25 @@ let cubes = [];
 let selectedCube = null;
 let camera;
 let scene;
+let animationStartTime = null;
+const animationDuration = 4; // seconds
+let isAnimating = false;
+let originalPositions = new WeakMap();
+let targetPositions = new WeakMap();
 
+// Add this to your init function to ensure animation runs
 export function initCubeManager(mainScene, mainCamera) {
     scene = mainScene;
     camera = mainCamera;
+    
+    // Start animation loop
+    function animationLoop() {
+        if (isAnimating) {
+            animateCubes();
+        }
+        requestAnimationFrame(animationLoop);
+    }
+    animationLoop();
 }
 
 export function createCubesFromData(data, scene) {
@@ -44,8 +59,13 @@ export function defaultSort() {
 function positionCubes() {
     const includedCubes = cubes.filter(c => c.userData.includeArticle === "true");
     
+    // Store original positions before calculating new ones
+    cubes.forEach(cube => {
+        originalPositions.set(cube, cube.position.clone());
+    });
+    
+    // Calculate target positions
     if (currentSortMode === 'year') {
-        // Year-based sorting (X=year, Y=article index)
         const cubesByYear = {};
         includedCubes.forEach(cube => {
             const year = cube.userData.PubYear || "Unknown";
@@ -56,30 +76,37 @@ function positionCubes() {
         const years = Object.keys(cubesByYear).sort();
         years.forEach((year, yearIndex) => {
             cubesByYear[year].forEach((cube, articleIndex) => {
-                cube.position.set(
-                    yearIndex * 3.0,    // X: year
-                    articleIndex * 1.5, // Y: article index
-                    0                  // Z: fixed
+                const targetPos = new THREE.Vector3(
+                    yearIndex * 3.0,
+                    articleIndex * 1.5,
+                    0
                 );
+                targetPositions.set(cube, targetPos);
             });
         });
     } else {
-        // Default grid sorting
         const gridSize = Math.ceil(Math.sqrt(includedCubes.length));
         includedCubes.forEach((cube, i) => {
-            cube.position.set(
-                (i % gridSize - gridSize/2) * 2.5, // X
-                0,                                 // Y
-                Math.floor(i / gridSize - gridSize/2) * 2.5 // Z
+            const targetPos = new THREE.Vector3(
+                (i % gridSize - gridSize/2) * 2.5,
+                0,
+                Math.floor(i / gridSize - gridSize/2) * 2.5
             );
+            targetPositions.set(cube, targetPos);
         });
     }
 
-    // Handle visibility
+    // Handle visibility immediately
     cubes.forEach(cube => {
         cube.visible = cube.userData.includeArticle === "true";
     });
+    
+    // Start animation
+    animationStartTime = performance.now() / 1000;
+    isAnimating = true;
+    animateCubes();
 }
+
 
 // Simplify deleteSelectedCube to just handle the cube removal
 export function deleteSelectedCubes(selectedCubes) {
@@ -133,6 +160,39 @@ export function highlightCubeByPmid(pmid, isSelected, selectedCubes = [], lastSe
 
 export function getCubes() {
     return cubes;
+}
+
+// Add this function to update cube positions gradually
+function animateCubes() {
+    if (!isAnimating) return;
+    
+    const currentTime = performance.now() / 1000; // convert to seconds
+    const elapsed = currentTime - animationStartTime;
+    const progress = Math.min(elapsed / animationDuration, 1);
+    
+    cubes.forEach(cube => {
+        if (targetPositions.has(cube)) {
+            const startPos = originalPositions.get(cube);
+            const endPos = targetPositions.get(cube);
+            
+            if (startPos && endPos) {
+                // Use easing for smoother animation (e.g., easeOutCubic)
+                const easedProgress = 1 - Math.pow(1 - progress, 3);
+                
+                cube.position.lerpVectors(
+                    startPos,
+                    endPos,
+                    easedProgress
+                );
+            }
+        }
+    });
+    
+    if (progress >= 1) {
+        isAnimating = false;
+    } else {
+        requestAnimationFrame(animateCubes);
+    }
 }
 
 export function centerCameraOnCube(cube) {
