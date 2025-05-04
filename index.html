@@ -75,8 +75,25 @@
     
     <!-- Button Zone -->
     <div id="button-container">
+      <!-- Existing buttons -->
       <button class="action-button delete" id="delete-btn">Delete</button>
       <button class="action-button" id="download-btn">Download</button>
+      
+      <!-- Add these new view control buttons -->
+      <div class="view-controls">
+        <button class="view-button" onclick="setPositionMode(PositionModes.GRID)">
+          <span class="icon">◼</span> Grid
+        </button>
+        <button class="view-button" onclick="setPositionMode(PositionModes.YEAR)">
+          <span class="icon">📅</span> Year
+        </button>
+        <button class="view-button" onclick="setPositionMode(PositionModes.JOURNAL)">
+          <span class="icon">📚</span> Journal
+        </button>
+        <button class="view-button" onclick="setPositionMode(PositionModes.CITATIONS)">
+          <span class="icon">⭐</span> Citations
+        </button>
+      </div>
     </div>
     
     <script type="module" src="script.js"></script>
