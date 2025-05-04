@@ -10,9 +10,7 @@ import {
     getCubes,
     highlightCubeByPmid,
     centerCameraOnCube,
-    initCubeManager,
-    defaultSort,
-    sortByYear
+    initCubeManager
 } from './cubeManager.js';
 
 // Global state
