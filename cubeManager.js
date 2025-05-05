@@ -36,6 +36,19 @@ export function clearSelections() {
     updateButtonStates();
 }
 
+// Add this to cubeManager.js
+export function deleteCubesByPmids(pmids, scene) {
+    pmids.forEach(pmid => {
+        const cube = cubes.find(c => c.userData.pmid === pmid);
+        if (cube) {
+            scene.remove(cube);
+            const index = cubes.indexOf(cube);
+            if (index !== -1) cubes.splice(index, 1);
+        }
+    });
+    return cubes;
+}
+
 export function initCubeManager(mainScene, mainCamera) {
     scene = mainScene;
     camera = mainCamera;
