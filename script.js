@@ -4,79 +4,44 @@ import * as d3 from 'https://cdn.jsdelivr.net/npm/d3@7/+esm';
 import { createScene } from './createScene.js';
 import { createUI } from './uiManager.js';
 import { loadData, exportFilteredData, populateDataTable, updateTextZone, attemptPubMedFetch, hidePubMedFetchOverlay, deleteFromData, getData, deleteSelectedFromData, addAnnotation } from './dataManager.js';
-import { 
-    createCubesFromData, 
-    deleteSelectedCubes,
-    getCubes,
-    highlightCubeByPmid,
-    centerCameraOnCube,
-    initCubeManager
-} from './cubeManager.js';
+import { createCubesFromData, deleteSelectedCubes, getCubes, highlightCubeByPmid, centerCameraOnCube, initCubeManager } from './cubeManager.js';
 
-// Global state
 let sceneObjects;
 let selectedCubes = [];
 let lastSelectedCube = null;
 
 async function init() {
-    try {
-        showLoadingIndicator();
-        
-        // 1. Initialize scene first
+    try {showLoadingIndicator();
         sceneObjects = createScene();
         if (!sceneObjects) throw new Error("Scene initialization failed");
-        
-        // 2. Initialize cube manager with proper references
         initCubeManager(sceneObjects.scene, sceneObjects.camera);
-        
-        // 3. DATA LOADING - try PubMed fetch first, then fall back to CSV
         let data;
         const pubmedData = await attemptPubMedFetch();
-        
-        if (pubmedData && pubmedData.length) {
-            data = pubmedData;
-        } else {
-            console.log("Falling back to CSV load");
-            data = await loadData("pubmed_data.csv");
-            if (!data?.length) throw new Error("No data loaded from either source");
-        }
-        
-        // 4. Create cubes
+        if (pubmedData && pubmedData.length) {data = pubmedData;} 
+            else {console.log("Falling back to CSV load");data = await loadData("pubmed_data.csv");if (!data?.length) throw new Error("No data loaded from either source");}
         createCubesFromData(data, sceneObjects.scene);
-        
-        // 5. Setup UI and controls
         setupUI(data);
         setupEventHandlers();
         setupSplitters();
-        
-        // 6. Start animation last
-        startAnimationLoop();
-        
-    } catch (error) {
-        console.error("Initialization failed:", error);
-        showErrorToUser(error.message);
-        createFallbackScene();
-    } finally {
-        removeLoadingIndicator();
-    }
+        startAnimationLoop();} 
+            catch (error) {console.error("Initialization failed:", error);
+                showErrorToUser(error.message);
+                createFallbackScene();} 
+    finally {removeLoadingIndicator();}
 }
 
-// Update the setupUI function
 function setupUI(data) {
     populateDataTable(data, (pmid, isSelected) => {
         const result = highlightCubeByPmid(pmid, isSelected, selectedCubes, lastSelectedCube);
         if (result) {
             selectedCubes = result.selectedCubes;
             lastSelectedCube = result.lastSelectedCube;
-            
-            // Always update text zone when selecting, clear when deselecting
             if (isSelected && result.cube) {
                 updateTextZone(result.cube.userData);
                 centerCameraOnCube(result.cube);
             } else if (selectedCubes.length === 0) {
                 clearTextZone();
             } else if (lastSelectedCube) {
-                // Show last selected if we're deselecting something else
                 updateTextZone(lastSelectedCube.userData);
             }
         }
@@ -84,24 +49,15 @@ function setupUI(data) {
 }
 
 function setupEventHandlers() {
-    // Delete button - handles multiple selections
     document.getElementById('delete-btn').addEventListener('click', () => {
         if (selectedCubes.length === 0) {
             alert("Please select at least one article first");
             return;
         }
-        
-        // Get PMIDs to delete
         const pmidsToDelete = selectedCubes.map(c => c.userData.pmid);
-        
-        // Update data
         deleteSelectedFromData(pmidsToDelete);
-        
-        // Update scene
         selectedCubes = deleteSelectedCubes(selectedCubes);
         lastSelectedCube = null;
-        
-        // Refresh UI
         populateDataTable(
             getData(),
             (pmid, isSelected) => {
@@ -115,14 +71,10 @@ function setupEventHandlers() {
                 }
             }
         );
-        
-        // Update text zone with last selected cube's info if available
         if (lastSelectedCube) {
             updateTextZone(lastSelectedCube.userData);
         }
     });
-
-    // Download button
     document.getElementById('download-btn').addEventListener('click', async () => {
         try {
             await exportFilteredData();
@@ -136,8 +88,6 @@ function setupEventHandlers() {
 function startAnimationLoop() {
     function animate() {
         requestAnimationFrame(animate);
-        
-        // Add null check
         if (sceneObjects && sceneObjects.updateControls) {
             sceneObjects.updateControls(0.016);
             sceneObjects.renderer.render(sceneObjects.scene, sceneObjects.camera);
@@ -150,8 +100,7 @@ function setupSplitters() {
   const verticalSplitter = document.getElementById('vertical-splitter');
   const horizontalSplitter = document.getElementById('horizontal-splitter');
   const mainContent = document.getElementById('main-content');
-
-  // Initialize with default values if not set
+    
   if (!mainContent.style.gridTemplateColumns) {
     mainContent.style.gridTemplateColumns = 'minmax(150px, 300px) 8px 1fr';
   }
@@ -162,7 +111,6 @@ function setupSplitters() {
   verticalSplitter.addEventListener('mousedown', (e) => {
     e.preventDefault();
     const startX = e.clientX;
-    // Get computed style if inline style isn't set
     const gridTemplateColumns = mainContent.style.gridTemplateColumns || 
                               window.getComputedStyle(mainContent).gridTemplateColumns;
     const startWidth = parseInt(gridTemplateColumns.split(' ')[0]);
@@ -204,7 +152,6 @@ function setupSplitters() {
   });
 }
 
-// UI feedback functions
 function showLoadingIndicator() {
     const loader = document.createElement('div');
     loader.id = 'loading-indicator';
