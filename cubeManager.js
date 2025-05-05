@@ -307,13 +307,15 @@ export function centerCameraOnCube(cube) {
     }
 }
 
-function updateButtonStates() {
+export function updateButtonStates() {
     const deleteBtn = document.getElementById('delete-btn');
-    if (selectedCube) {
-        deleteBtn.disabled = false;
-    } else {
-        deleteBtn.disabled = true;
-    }
+    const downloadBtn = document.getElementById('download-btn');
+    
+    if (!deleteBtn || !downloadBtn) return;
+    
+    const hasSelection = selectedCubes.length > 0;
+    deleteBtn.disabled = !hasSelection;
+    downloadBtn.disabled = !hasSelection;
 }
 
 // At the bottom of cubeManager.js
