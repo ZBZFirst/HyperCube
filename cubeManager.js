@@ -136,6 +136,7 @@ export function highlightCubeByPmid(pmid, isSelected, selectedCubes = [], lastSe
     const cube = cubes.find(c => c.userData.pmid === pmid);
     if (!cube) return null;
 
+    // Update selection state
     if (isSelected) {
         if (!selectedCubes.includes(cube)) {
             selectedCubes = [...selectedCubes, cube];
@@ -145,12 +146,28 @@ export function highlightCubeByPmid(pmid, isSelected, selectedCubes = [], lastSe
         selectedCubes = selectedCubes.filter(c => c !== cube);
     }
 
-    // Update highlights
+    // Update highlights for all cubes
     cubes.forEach(c => {
-        if (selectedCubes.includes(c)) {
-            c.material.emissive.setHex(c === lastSelectedCube ? 0xFFD700 : 0x3498db);
-        } else {
-            c.material.emissive.setHex(0x000000);
+        try {
+            // Handle both single material and material array cases
+            const materials = Array.isArray(c.material) ? c.material : [c.material];
+            
+            materials.forEach(mat => {
+                if (mat.emissive) {
+                    if (selectedCubes.includes(c)) {
+                        // Gold for last selected, blue for others
+                        mat.emissive.setHex(c === lastSelectedCube ? 0xFFD700 : 0x3498db);
+                        mat.emissiveIntensity = 0.5;
+                    } else {
+                        // Reset to no emission
+                        mat.emissive.setHex(0x000000);
+                        mat.emissiveIntensity = 0;
+                    }
+                    mat.needsUpdate = true;
+                }
+            });
+        } catch (e) {
+            console.warn('Failed to update cube highlight:', e);
         }
     });
 
