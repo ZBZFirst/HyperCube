@@ -1,98 +1,75 @@
 import * as THREE from 'three';
 
-export function createTimeBasedBackground(scene) {
-    console.log('[Background] Initializing optimized time-based background');
+export function createDynamicBackground(scene) {
+    console.log('[Background] Creating dynamic cube background');
 
-    // 1. Create a simpler background geometry
-    const geometry = new THREE.SphereGeometry(1000, 32, 32);
-    geometry.scale(-1, 1, 1); // Invert the sphere
-
-    // 2. Pre-create canvas for better performance
-    const canvas = document.createElement('canvas');
-    canvas.width = 2; // Minimal width for gradient
-    canvas.height = 128; // Reduced height
-    const ctx = canvas.getContext('2d');
-    
-    // 3. Create material with initial black color
+    // 1. Create a cube that will resize to fit content
+    const geometry = new THREE.BoxGeometry(1, 1, 1);
     const material = new THREE.MeshBasicMaterial({
         side: THREE.BackSide,
-        transparent: false,
-        map: new THREE.CanvasTexture(canvas)
+        color: 0x000000,
+        transparent: false
     });
-    
-    const backgroundSphere = new THREE.Mesh(geometry, material);
-    backgroundSphere.name = 'TimeBackground';
-    backgroundSphere.renderOrder = -1000; // Ensure it renders first
-    scene.add(backgroundSphere);
 
-    // 4. Optimized color definitions
-    const timeColors = [
-        { // 00:00 - 04:00 (Night)
-            name: "Night",
-            top: 0x000000,
-            bottom: 0x000000
-        },
-        { // 04:00 - 06:00 (Dawn)
-            name: "Dawn", 
-            top: 0x1a1a2e,
-            bottom: 0x16213e
-        },
-        { // 06:00 - 12:00 (Morning)
-            name: "Morning",
-            top: 0x87CEEB,
-            bottom: 0xE0F7FA
-        },
-        { // 12:00 - 17:00 (Afternoon)
-            name: "Afternoon",
-            top: 0x64b5f6,
-            bottom: 0xbbdefb
-        },
-        { // 17:00 - 19:00 (Dusk)
-            name: "Dusk",
-            top: 0xff7e5f,
-            bottom: 0xfeb47b
-        },
-        { // 19:00 - 24:00 (Evening)
-            name: "Evening",
-            top: 0x0f2027,
-            bottom: 0x203a43
-        }
-    ];
+    const backgroundCube = new THREE.Mesh(geometry, material);
+    backgroundCube.name = 'DynamicBackgroundCube';
+    backgroundCube.renderOrder = -1000; // Render first
+    scene.add(backgroundCube);
 
-    // 5. Optimized update function
-    function updateBackground() {
-        const now = new Date();
-        const hours = now.getHours();
-        const phaseIndex = Math.floor(hours / 4);
-        const colors = timeColors[phaseIndex % timeColors.length];
+    // 2. Store reference to content bounds
+    let contentBounds = {
+        min: new THREE.Vector3(-10, -10, -10), // Default small size
+        max: new THREE.Vector3(10, 10, 10)
+    };
 
-        // Create gradient
-        const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
-        gradient.addColorStop(0, `#${colors.top.toString(16).padStart(6, '0')}`);
-        gradient.addColorStop(1, `#${colors.bottom.toString(16).padStart(6, '0')}`);
+    // 3. Update function that resizes cube to contain all content
+    function updateSize(contentMin, contentMax) {
+        // Calculate required size (content bounds + 50 unit padding)
+        const padding = 50;
+        const size = new THREE.Vector3().subVectors(contentMax, contentMin);
         
-        ctx.fillStyle = gradient;
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        // Set cube dimensions
+        backgroundCube.scale.x = Math.max(1, size.x + padding * 2);
+        backgroundCube.scale.y = Math.max(1, size.y + padding * 2);
+        backgroundCube.scale.z = Math.max(1, size.z + padding * 2);
         
-        // Update texture
-        material.map.needsUpdate = true;
+        // Center the cube around content
+        backgroundCube.position.copy(contentMin.clone().add(contentMax).multiplyScalar(0.5));
         
-        console.log(`[Background] Updated to ${colors.name} mode`);
+        console.log(`[Background] Resized to: ${backgroundCube.scale.x}x${backgroundCube.scale.y}x${backgroundCube.scale.z}`);
     }
 
-    // 6. Initial update
-    updateBackground();
+    // 4. Time-based color updates (simplified)
+    const timeColors = [
+        { name: "Night", color: 0x000000 },    // 00:00-06:00
+        { name: "Morning", color: 0x87CEEB },  // 06:00-12:00
+        { name: "Day", color: 0x64b5f6 },      // 12:00-18:00
+        { name: "Evening", color: 0x0f2027 }   // 18:00-24:00
+    ];
 
-    // 7. Update every 15 minutes instead of every minute
-    const updateInterval = setInterval(updateBackground, 900000);
+    function updateTimeColors() {
+        const hours = new Date().getHours();
+        const period = Math.floor(hours / 6);
+        const colors = timeColors[period % timeColors.length];
+        
+        material.color.setHex(colors.color);
+        console.log(`[Background] Updated to ${colors.name} colors`);
+    }
+
+    // 5. Initial setup
+    updateTimeColors();
+    updateSize(contentBounds.min, contentBounds.max);
     
+    // Update colors every hour
+    const colorInterval = setInterval(updateTimeColors, 3600000);
+
     return {
-        updateBackground,
+        updateSize, // Call this when your content bounds change
         dispose: () => {
-            clearInterval(updateInterval);
-            scene.remove(backgroundSphere);
-            material.dispose();
+            clearInterval(colorInterval);
+            scene.remove(backgroundCube);
             geometry.dispose();
+            material.dispose();
         }
     };
 }
