@@ -2,7 +2,7 @@
 import * as THREE from 'three';
 import * as d3 from 'https://cdn.jsdelivr.net/npm/d3@7/+esm';
 import { createScene } from './createScene.js';
-import { createUI } from './uiManager.js';
+import { createUI, setupUI } from './uiManager.js';
 import { loadData, exportFilteredData, populateDataTable, updateTextZone, attemptPubMedFetch, hidePubMedFetchOverlay, deleteFromData, getData, deleteSelectedFromData, addAnnotation } from './dataManager.js';
 import { createCubesFromData, deleteSelectedCubes, getCubes, highlightCubeByPmid, centerCameraOnCube, initCubeManager } from './cubeManager.js';
 
@@ -30,23 +30,6 @@ async function init() {
     finally {removeLoadingIndicator();}
 }
 
-function setupUI(data) {
-    populateDataTable(data, (pmid, isSelected) => {
-        const result = highlightCubeByPmid(pmid, isSelected, selectedCubes, lastSelectedCube);
-        if (result) {
-            selectedCubes = result.selectedCubes;
-            lastSelectedCube = result.lastSelectedCube;
-            if (isSelected && result.cube) {
-                updateTextZone(result.cube.userData);
-                centerCameraOnCube(result.cube);
-            } else if (selectedCubes.length === 0) {
-                clearTextZone();
-            } else if (lastSelectedCube) {
-                updateTextZone(lastSelectedCube.userData);
-            }
-        }
-    });
-}
 
 function setupEventHandlers() {
     document.getElementById('delete-btn').addEventListener('click', () => {
