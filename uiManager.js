@@ -1,6 +1,6 @@
 // uiManager.js start
 import * as d3 from 'd3';
-import { SelectionState } from '../state/selectionState';
+import { SelectionState } from '../state/selectionState.js';
 
 export function createTable(containerId, onSelectionChange) {
   const renderRow = (row) => {
