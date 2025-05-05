@@ -1,12 +1,14 @@
 // createCube.js start
 import * as THREE from 'three';
 
+// PMID,Title,Source,Doi,Author_1,Collective_Name,PubYear,PubMonth,PubDay,OriginalPubDate,Abstract,DOI,DOI_Link,PMC_ID,PMC_Link,MeSH_1,Keyword_1,MeSH_2,Keyword_2,MeSH_3,Keyword_3,MeSH_4,Keyword_4,MeSH_5,Keyword_5,MeSH_6,Keyword_6,MeSH_7,Keyword_7,MeSH_8,Keyword_8,MeSH_9,Keyword_9,MeSH_10,Keyword_10,MeSH_11,Keyword_11,MeSH_12,Keyword_12,MeSH_13,Keyword_13,MeSH_14,Keyword_14,MeSH_15,Keyword_15,MeSH_16,Keyword_16,MeSH_17,Keyword_17,MeSH_18,Keyword_18,MeSH_19,Keyword_19,MeSH_20,Keyword_20,MeSH_21,Keyword_21,MeSH_22,Keyword_22,MeSH_23,Keyword_23,MeSH_24,Keyword_24,MeSH_25,Keyword_25,MeSH_26,Keyword_26,MeSH_27,Keyword_27,MeSH_28,Keyword_28,MeSH_29,Keyword_29,MeSH_30,Keyword_30
+
 // Configuration - map these to your actual data columns
 const DATA_MAPPING = {
     YEAR: 'PubYear',          // Publication year
-    JOURNAL: 'Journal',       // Journal name
-    RATING: 'Rating',         // User rating (if available)
-    TAGS: 'Tags',            // Tags/comma-separated
+    JOURNAL: 'Source',       // Journal name
+    RATING: 'PMID',         // User rating (if available)
+    TAGS: 'Keyword_1',            // Tags/comma-separated
     AUTHOR: 'Author_1',       // First author
     CITATIONS: 'Citations',   // Citation count
     TITLE: 'Title'           // Article title
