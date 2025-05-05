@@ -1,5 +1,6 @@
 // uiManager.js start
 import * as d3 from 'https://cdn.jsdelivr.net/npm/d3@7/+esm';
+import { loadData, exportFilteredData, populateDataTable, updateTextZone, attemptPubMedFetch, hidePubMedFetchOverlay, deleteFromData, getData, deleteSelectedFromData, addAnnotation } from './dataManager.js';
 
 export function createUI(callbacks) {
     const uiContainer = d3.select('#data-container');
