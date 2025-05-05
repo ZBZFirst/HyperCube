@@ -10,13 +10,13 @@ import {
     getCubes,
     highlightCubeByPmid,
     centerCameraOnCube,
-    initCubeManager
+    initCubeManager,
+    getSelectedCubes,
+    clearSelections
 } from './cubeManager.js';
 
 // Global state
 let sceneObjects;
-let selectedCubes = [];
-let lastSelectedCube = null;
 
 async function init() {
     try {
@@ -63,20 +63,12 @@ async function init() {
 
 function setupUI(data) {
     populateDataTable(data, (pmid, isSelected) => {
-        const result = highlightCubeByPmid(pmid, isSelected, selectedCubes, lastSelectedCube);
-        if (result) {
-            selectedCubes = result.selectedCubes;
-            lastSelectedCube = result.lastSelectedCube;
-            
-            // Update text display
-            if (isSelected && result.cube) {
-                updateTextZone(result.cube.userData);
-                centerCameraOnCube(result.cube);
-            } else if (selectedCubes.length === 0) {
-                clearTextZone();
-            } else if (lastSelectedCube) {
-                updateTextZone(lastSelectedCube.userData);
-            }
+        const result = highlightCubeByPmid(pmid, isSelected);
+        if (result && isSelected && result.cube) {
+            updateTextZone(result.cube.userData);
+            centerCameraOnCube(result.cube);
+        } else if (getSelectedCubes().length === 0) {
+            clearTextZone();
         }
     });
 }
@@ -92,48 +84,60 @@ function updateButtonStates() {
     downloadBtn.disabled = !hasSelection;
 }
 
+
 function setupEventHandlers() {
     // Delete button - handles multiple selections
     document.getElementById('delete-btn').addEventListener('click', () => {
+        const selectedCubes = getSelectedCubes(); // Get current selection
+        
         if (selectedCubes.length === 0) {
             alert("Please select at least one article first");
             return;
         }
         
-        // Get PMIDs to delete
-        const pmidsToDelete = selectedCubes.map(c => c.userData.pmid);
-        
-        // Update data
-        deleteSelectedFromData(pmidsToDelete);
-        
-        // Update scene
-        selectedCubes = deleteSelectedCubes(selectedCubes);
-        lastSelectedCube = null;
-        
-        // Refresh UI
-        populateDataTable(
-            getData(),
-            (pmid, isSelected) => {
-                const result = highlightCubeByPmid(pmid, isSelected, selectedCubes, lastSelectedCube);
-                if (result) {
-                    selectedCubes = result.selectedCubes;
-                    lastSelectedCube = result.lastSelectedCube;
-                    if (result.cube && isSelected) {
-                        centerCameraOnCube(result.cube);
+        try {
+            // Get PMIDs to delete
+            const pmidsToDelete = selectedCubes.map(c => c.userData.pmid);
+            
+            // Update data
+            deleteSelectedFromData(pmidsToDelete);
+            
+            // Update scene
+            deleteSelectedCubes(selectedCubes);
+            clearSelections(); // Clear selection state
+            
+            // Refresh UI with remaining data
+            populateDataTable(
+                getData(),
+                (pmid, isSelected) => {
+                    if (isSelected) {
+                        const result = highlightCubeByPmid(pmid, isSelected);
+                        if (result?.cube) {
+                            centerCameraOnCube(result.cube);
+                        }
                     }
                 }
-            }
-        );
-        
-        // Update text zone with last selected cube's info if available
-        if (lastSelectedCube) {
-            updateTextZone(lastSelectedCube.userData);
+            );
+            
+            // Clear text display
+            clearTextZone();
+            
+        } catch (error) {
+            console.error("Deletion failed:", error);
+            showErrorToUser("Failed to delete selected articles");
         }
     });
 
     // Download button
     document.getElementById('download-btn').addEventListener('click', async () => {
         try {
+            const selectedCubes = getSelectedCubes();
+            
+            if (selectedCubes.length === 0) {
+                alert("Please select at least one article to download");
+                return;
+            }
+            
             await exportFilteredData();
         } catch (error) {
             console.error("Export failed:", error);
