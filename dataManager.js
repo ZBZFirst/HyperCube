@@ -122,12 +122,35 @@ export async function attemptPubMedFetch() {
 }
 
 function createExportBlob(data) {
-  const exportData = data.map(item => ({
-    ...item,
-    Notes: item.Notes || '',
-    Rating: item.Rating || '',
-    Tags: item.Tags || ''
-  }));
+  const exportData = data.map(item => {
+    // Create a clean copy of the item without Three.js references
+    const cleanItem = {};
+    
+    // Copy all properties that are safe for CSV
+    Object.keys(item).forEach(key => {
+      // Only include primitive values and strings
+      if (item[key] === null || 
+          typeof item[key] !== 'object' || 
+          item[key] instanceof Date) {
+        cleanItem[key] = item[key];
+      }
+      // Handle special cases
+      else if (key === 'userData' && item[key]) {
+        // Flatten userData if it exists
+        Object.keys(item[key]).forEach(dataKey => {
+          cleanItem[dataKey] = item[key][dataKey];
+        });
+      }
+    });
+    
+    // Ensure required fields exist
+    cleanItem.Notes = item.Notes || '';
+    cleanItem.Rating = item.Rating || '';
+    cleanItem.Tags = item.Tags || '';
+    
+    return cleanItem;
+  });
+
   return new Blob([d3.csvFormat(exportData)], { type: 'text/csv;charset=utf-8;' });
 }
 
@@ -409,18 +432,61 @@ export function deleteFromData(pmid) {
 }
 
 export function exportFilteredData() {
-  if (!data.length) {
+  const currentData = getData();
+  
+  if (!currentData || currentData.length === 0) {
     alert("No data available to export");
     return;
   }
-  
-  const blob = createExportBlob(data);
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.setAttribute('href', url);
-  link.setAttribute('download', `pubmed_export_${new Date().toISOString().slice(0,10)}.csv`);
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
+
+  try {
+    // Get all unique field names from all items
+    const allFields = new Set();
+    currentData.forEach(item => {
+      Object.keys(item).forEach(field => {
+        if (field !== 'cubeRef') { // Exclude Three.js references
+          allFields.add(field);
+        }
+      });
+    });
+
+    // Convert to CSV
+    const fields = Array.from(allFields);
+    const csvRows = [
+      fields.join(','), // header row
+      ...currentData.map(item => 
+        fields.map(field => 
+          `"${String(item[field] || '').replace(/"/g, '""')}"`
+        ).join(',')
+      )
+    ];
+
+    const blob = new Blob([csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `pubmed_export_${new Date().toISOString().slice(0,10)}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  } catch (error) {
+    console.error('Export failed:', error);
+    alert('Export failed. Please check console for details.');
+  }
 }
+
+function getCleanExportData(data) {
+  return data.map(item => {
+    const clean = {};
+    Object.keys(item).forEach(key => {
+      // Only include non-object properties (except Date)
+      if (typeof item[key] !== 'object' || item[key] instanceof Date) {
+        clean[key] = item[key];
+      }
+    });
+    return clean;
+  });
+}
+
 // dataManager.js end
