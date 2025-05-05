@@ -1,57 +1,53 @@
-// createCube.js start
 import * as THREE from 'three';
-
-// PMID,Title,Source,Doi,Author_1,Collective_Name,PubYear,PubMonth,PubDay,OriginalPubDate,Abstract,DOI,DOI_Link,PMC_ID,PMC_Link,MeSH_1,Keyword_1,MeSH_2,Keyword_2,MeSH_3,Keyword_3,MeSH_4,Keyword_4,MeSH_5,Keyword_5,MeSH_6,Keyword_6,MeSH_7,Keyword_7,MeSH_8,Keyword_8,MeSH_9,Keyword_9,MeSH_10,Keyword_10,MeSH_11,Keyword_11,MeSH_12,Keyword_12,MeSH_13,Keyword_13,MeSH_14,Keyword_14,MeSH_15,Keyword_15,MeSH_16,Keyword_16,MeSH_17,Keyword_17,MeSH_18,Keyword_18,MeSH_19,Keyword_19,MeSH_20,Keyword_20,MeSH_21,Keyword_21,MeSH_22,Keyword_22,MeSH_23,Keyword_23,MeSH_24,Keyword_24,MeSH_25,Keyword_25,MeSH_26,Keyword_26,MeSH_27,Keyword_27,MeSH_28,Keyword_28,MeSH_29,Keyword_29,MeSH_30,Keyword_30
 
 // Configuration - map these to your actual data columns
 const DATA_MAPPING = {
     YEAR: 'PubYear',          // Publication year
     JOURNAL: 'Source',       // Journal name
-    RATING: 'PMID',         // User rating (if available)
-    TAGS: 'Keyword_1',            // Tags/comma-separated
-    AUTHOR: 'Author_1',       // First author
-    CITATIONS: 'Citations',   // Citation count
+    PMID: 'PMID',            // PubMed ID
+    TAG: 'Keyword_1',        // First keyword
+    AUTHOR: 'Author_1',      // First author
     TITLE: 'Title'           // Article title
 };
 
 export function createCube(data, allData) {
-    // Safely get size with fallback
-    const size = calculateSizeBasedOnCitations(getField(data, DATA_MAPPING.CITATIONS));
+    // Fixed size since we don't have citations
+    const size = 0.8;
     
     const geometry = new THREE.BoxGeometry(size, size, size);
     const baseColor = getColorForYear(getField(data, DATA_MAPPING.YEAR));
 
     // Create materials for each face with proper fallbacks
     const materials = [
-        createFaceMaterial(
+        createFaceMaterial( // Year face
             baseColor,
             getField(data, DATA_MAPPING.YEAR, 'Year?'),
             'Year'
         ),
-        createFaceMaterial(
+        createFaceMaterial( // Journal face
             lightenColor(baseColor, 0.2),
             getJournalAbbreviation(getField(data, DATA_MAPPING.JOURNAL)),
             'Journal'
         ),
-        createFaceMaterial(
+        createFaceMaterial( // PMID face
             darkenColor(baseColor, 0.2),
-            getField(data, DATA_MAPPING.RATING, '?'),
-            'Rating'
+            getField(data, DATA_MAPPING.PMID, 'PMID?'),
+            'ID'
         ),
-        createFaceMaterial(
+        createFaceMaterial( // Keyword face
             complementColor(baseColor),
-            getFirstTag(getField(data, DATA_MAPPING.TAGS)),
-            'Tag'
+            getFirstTag(getField(data, DATA_MAPPING.TAG)),
+            'Keyword'
         ),
-        createFaceMaterial(
+        createFaceMaterial( // Author face
             lightenColor(baseColor, 0.1),
             getFirstAuthorInitial(getField(data, DATA_MAPPING.AUTHOR)),
             'Author'
         ),
-        createFaceMaterial(
+        createFaceMaterial( // Title face
             darkenColor(baseColor, 0.1),
-            getField(data, DATA_MAPPING.CITATIONS, '0'),
-            'Citations'
+            getTitleAbbreviation(getField(data, DATA_MAPPING.TITLE)),
+            'Title'
         )
     ];
 
@@ -71,17 +67,8 @@ function getField(data, fieldName, fallback = '') {
     return fallback;
 }
 
-// Helper function to calculate cube size based on citations
-function calculateSizeBasedOnCitations(citationCount) {
-    const baseSize = 0.8;
-    if (!citationCount) return baseSize;
-    return baseSize * (1 + Math.log10(citationCount + 1) / 5);
-}
-
 // Helper function to calculate position
 function calculatePosition(data, allData) {
-    // Implement your positioning logic here
-    // Example: simple grid layout
     const index = allData.indexOf(data);
     const gridSize = Math.ceil(Math.sqrt(allData.length));
     const x = (index % gridSize) * 2 - gridSize;
@@ -100,16 +87,24 @@ function createFaceMaterial(color, text, label) {
     context.fillStyle = `#${color.getHexString()}`;
     context.fillRect(0, 0, canvas.width, canvas.height);
     
-    // Add text
-    context.font = 'Bold 80px Arial';
+    // Add main text (centered, larger)
+    context.font = 'Bold 60px Arial';
     context.textAlign = 'center';
     context.textBaseline = 'middle';
     context.fillStyle = 'white';
-    context.fillText(text, canvas.width/2, canvas.height/2);
     
-    // Add small label
+    // Split long text into two lines if needed
+    if (String(text).length > 8) {
+        const mid = Math.floor(String(text).length / 2);
+        context.fillText(String(text).substring(0, mid), canvas.width/2, canvas.height/2 - 20);
+        context.fillText(String(text).substring(mid), canvas.width/2, canvas.height/2 + 20);
+    } else {
+        context.fillText(String(text), canvas.width/2, canvas.height/2);
+    }
+    
+    // Add label (smaller, at bottom)
     context.font = '20px Arial';
-    context.fillText(label, canvas.width/2, canvas.height/2 + 60);
+    context.fillText(label, canvas.width/2, canvas.height - 20);
     
     // Create texture from canvas
     const texture = new THREE.CanvasTexture(canvas);
@@ -122,7 +117,7 @@ function createFaceMaterial(color, text, label) {
     });
 }
 
-// Color manipulation helpers
+// Color manipulation helpers (unchanged)
 function lightenColor(color, amount) {
     const hsl = { h: 0, s: 0, l: 0 };
     color.getHSL(hsl);
@@ -153,20 +148,32 @@ function complementColor(color) {
 // Data formatting helpers
 function getJournalAbbreviation(journal) {
     if (!journal) return 'N/A';
-    return journal.split(' ').map(word => word[0]).join('').toUpperCase().substring(0,3);
+    // Better abbreviation that keeps journal recognizable
+    return journal.split(' ')
+        .map(word => word.length > 3 ? word.substring(0,3) : word)
+        .join(' ')
+        .substring(0, 12);
 }
 
-function getFirstTag(tags) {
-    if (!tags) return '';
-    return tags.split(',')[0].substring(0,3);
+function getFirstTag(tag) {
+    if (!tag) return '';
+    return tag.length > 10 ? tag.substring(0,10) + '...' : tag;
 }
 
 function getFirstAuthorInitial(author) {
     if (!author) return '?';
-    return author.split(' ')[0][0];
+    const parts = author.split(' ');
+    return parts.length > 1 ? `${parts[0][0]}${parts[parts.length-1][0]}` : parts[0][0];
 }
 
-// Year-based coloring
+function getTitleAbbreviation(title) {
+    if (!title) return 'No Title';
+    // Get first meaningful word (skip articles)
+    const firstWord = title.replace(/^(the|a|an)\s+/i, '').split(' ')[0];
+    return firstWord.length > 8 ? firstWord.substring(0,8) : firstWord;
+}
+
+// Year-based coloring (unchanged)
 function getColorForYear(year) {
     if (!year) return new THREE.Color(0x999999);
     const minYear = 1950;
@@ -178,6 +185,3 @@ function getColorForYear(year) {
         Math.min(1, Math.max(0, normalized))
     );
 }
-
-
-// createCube.js end
