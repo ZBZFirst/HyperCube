@@ -2,8 +2,8 @@
 import * as THREE from 'three';
 import * as d3 from 'https://cdn.jsdelivr.net/npm/d3@7/+esm';
 import { createScene } from './createScene.js';
-import { createTable } from './core/uiManager';
-import { SelectionService } from './services/selectionService';
+import { createTable } from './core/uiManager.js';
+import { SelectionService } from './services/selectionService.js';
 import { loadData, exportFilteredData, populateDataTable, updateTextZone, attemptPubMedFetch, hidePubMedFetchOverlay, deleteFromData, getData, deleteSelectedFromData, addAnnotation } from './dataManager.js';
 import { 
     createCubesFromData, 
