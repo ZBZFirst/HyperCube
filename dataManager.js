@@ -211,6 +211,17 @@ export function getData() {
   return data;
 }
 
+// Add this to dataManager.js
+export function deleteSelectedItems(pmids) {
+    // Filter out the selected items
+    data = data.filter(item => !pmids.includes(item.PMID));
+    return data;
+}
+
+export function getItemByPmid(pmid) {
+    return data.find(item => item.PMID === pmid);
+}
+
 export function deleteSelectedFromData(pmids) {
   data = data.filter(item => !pmids.includes(item.PMID));
   return data;
