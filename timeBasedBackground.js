@@ -2,26 +2,27 @@
 import * as THREE from 'three';
 
 export function createTimeBasedBackground(scene) {
-    // Create a large sphere for the background
+    console.log('[Background] Initializing time-based background system');
+    
+    // Create background sphere
     const geometry = new THREE.SphereGeometry(500, 60, 40);
-    geometry.scale(-1, 1, 1); // Invert the sphere so textures face inward
-    
-    const material = new THREE.MeshBasicMaterial({
-        side: THREE.BackSide
-    });
-    
+    geometry.scale(-1, 1, 1);
+    const material = new THREE.MeshBasicMaterial({ side: THREE.BackSide });
     const backgroundSphere = new THREE.Mesh(geometry, material);
     scene.add(backgroundSphere);
-    
+    console.log('[Background] Created background sphere');
+
     // Time-based color gradients
     const timeColors = {
-        night: { top: 0x000000, bottom: 0x000000 },        // 00:00 - 04:00
-        dawn: { top: 0x1a1a2e, bottom: 0x16213e },         // 04:00 - 06:00
-        morning: { top: 0x87CEEB, bottom: 0xE0F7FA },      // 06:00 - 12:00
-        afternoon: { top: 0x64b5f6, bottom: 0xbbdefb },    // 12:00 - 17:00
-        dusk: { top: 0xff7e5f, bottom: 0xfeb47b },         // 17:00 - 19:00
-        evening: { top: 0x0f2027, bottom: 0x203a43 }       // 19:00 - 24:00
+        night: { name: "Midnight", top: 0x000000, bottom: 0x000000 },
+        dawn: { name: "Dawn", top: 0x1a1a2e, bottom: 0x16213e },
+        morning: { name: "Morning", top: 0x87CEEB, bottom: 0xE0F7FA },
+        afternoon: { name: "Afternoon", top: 0x64b5f6, bottom: 0xbbdefb },
+        dusk: { name: "Sunset", top: 0xff7e5f, bottom: 0xfeb47b },
+        evening: { name: "Evening", top: 0x0f2027, bottom: 0x203a43 }
     };
+
+    let currentPhase = '';
     
     function updateBackground() {
         const now = new Date();
@@ -29,47 +30,33 @@ export function createTimeBasedBackground(scene) {
         const minutes = now.getMinutes();
         const timeValue = hours + minutes / 60;
         
-        let colors;
+        console.group(`[Background] Updating (${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')})`);
+        
+        let phase, colors;
         
         if (timeValue >= 0 && timeValue < 4) {
-            colors = timeColors.night;
-        } else if (timeValue >= 4 && timeValue < 6) {
-            // Smooth transition from night to dawn
-            const t = (timeValue - 4) / 2;
-            colors = {
-                top: interpolateColor(timeColors.night.top, timeColors.dawn.top, t),
-                bottom: interpolateColor(timeColors.night.bottom, timeColors.dawn.bottom, t)
-            };
-        } else if (timeValue >= 6 && timeValue < 12) {
-            // Smooth transition from dawn to morning
-            const t = (timeValue - 6) / 6;
-            colors = {
-                top: interpolateColor(timeColors.dawn.top, timeColors.morning.top, t),
-                bottom: interpolateColor(timeColors.dawn.bottom, timeColors.morning.bottom, t)
-            };
-        } else if (timeValue >= 12 && timeValue < 17) {
-            // Smooth transition from morning to afternoon
-            const t = (timeValue - 12) / 5;
-            colors = {
-                top: interpolateColor(timeColors.morning.top, timeColors.afternoon.top, t),
-                bottom: interpolateColor(timeColors.morning.bottom, timeColors.afternoon.bottom, t)
-            };
-        } else if (timeValue >= 17 && timeValue < 19) {
-            // Smooth transition from afternoon to dusk
-            const t = (timeValue - 17) / 2;
-            colors = {
-                top: interpolateColor(timeColors.afternoon.top, timeColors.dusk.top, t),
-                bottom: interpolateColor(timeColors.afternoon.bottom, timeColors.dusk.bottom, t)
-            };
-        } else if (timeValue >= 19 && timeValue < 24) {
-            // Smooth transition from dusk to evening
-            const t = (timeValue - 19) / 5;
-            colors = {
-                top: interpolateColor(timeColors.dusk.top, timeColors.evening.top, t),
-                bottom: interpolateColor(timeColors.dusk.bottom, timeColors.evening.bottom, t)
-            };
+            phase = 'night';
+        } else if (timeValue < 6) {
+            phase = 'dawn';
+        } else if (timeValue < 12) {
+            phase = 'morning';
+        } else if (timeValue < 17) {
+            phase = 'afternoon';
+        } else if (timeValue < 19) {
+            phase = 'dusk';
+        } else {
+            phase = 'evening';
         }
-        
+
+        // Only log phase changes
+        if (phase !== currentPhase) {
+            console.log(`[Background] Phase changed to: ${timeColors[phase].name}`);
+            currentPhase = phase;
+        }
+
+        colors = timeColors[phase];
+        console.log(`Using colors: Top=${colors.top.toString(16)}, Bottom=${colors.bottom.toString(16)}`);
+
         // Create gradient texture
         const canvas = document.createElement('canvas');
         canvas.width = 1;
@@ -86,9 +73,22 @@ export function createTimeBasedBackground(scene) {
         const texture = new THREE.CanvasTexture(canvas);
         backgroundSphere.material.map = texture;
         backgroundSphere.material.needsUpdate = true;
+        
+        console.log('Created new gradient texture');
+        console.groupEnd();
+
+        // Detailed status every 5 minutes
+        if (minutes % 5 === 0) {
+            console.log(`[Background Status] 
+                Time: ${hours}:${String(minutes).padStart(2, '0')}
+                Phase: ${timeColors[phase].name}
+                Colors: Top=#${colors.top.toString(16)}, Bottom=#${colors.bottom.toString(16)}
+                Texture Size: ${canvas.width}x${canvas.height}
+                Material Updated: ${backgroundSphere.material.needsUpdate}
+            `);
+        }
     }
-    
-    // Helper function to interpolate between colors
+
     function interpolateColor(color1, color2, factor) {
         const r1 = (color1 >> 16) & 255;
         const g1 = (color1 >> 8) & 255;
@@ -104,12 +104,19 @@ export function createTimeBasedBackground(scene) {
         
         return (r << 16) | (g << 8) | b;
     }
-    
-    // Update immediately and then every minute
+
+    // Initial update
     updateBackground();
-    setInterval(updateBackground, 60000);
     
+    // Update every minute (60000ms)
+    const updateInterval = setInterval(updateBackground, 60000);
+    console.log(`[Background] Set update interval to every 60 seconds (ID: ${updateInterval})`);
+
     return {
-        updateBackground // Expose if you want to manually trigger updates
+        updateBackground,
+        stopUpdates: () => {
+            clearInterval(updateInterval);
+            console.log('[Background] Stopped automatic updates');
+        }
     };
 }
