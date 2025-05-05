@@ -2,50 +2,72 @@
 import * as THREE from 'three';
 
 export function createCube(data, allData) {
-    const positions = calculateCubePositions(data, allData);
-    const geometry = new THREE.BoxGeometry(
-        positions.size,
-        positions.size,
-        positions.size
-    );
+    const size = calculateSizeBasedOnCitations(data.Citations);
+    const geometry = new THREE.BoxGeometry(size, size, size);
     
-    const material = new THREE.MeshPhongMaterial({
-        color: getColorForYear(data.PubYear),
-        transparent: true,
-        opacity: 0.9
-    });
+    // Get color scheme based on publication year
+    const baseColor = getColorForYear(data.PubYear);
     
-    const cube = new THREE.Mesh(geometry, material);
-    cube.position.set(positions.x, positions.y, positions.z);
+    // Create materials with different tints and metadata
+    const materials = [
+        createFaceMaterial(baseColor, data.PubYear, 'Year'),    // Right
+        createFaceMaterial(lighten(baseColor, 0.2), data.Journal?.substr(0,3), 'Journal'), // Left
+        createFaceMaterial(darken(baseColor, 0.2), data.Rating || '?', 'Rating'),  // Top
+        createFaceMaterial(complement(baseColor), data.Tags?.split(',')[0] || '', 'Tag'), // Bottom
+        createFaceMaterial(lighten(baseColor, 0.1), data.Author_1?.split(' ')[0], 'Author'), // Front
+        createFaceMaterial(darken(baseColor, 0.1), data.Citations || '0', 'Citations') // Back
+    ];
+    
+    const cube = new THREE.Mesh(geometry, materials);
+    cube.position.set(...calculatePosition(data, allData));
     cube.userData = data;
     return cube;
 }
 
-function calculateCubePositions(data, allData) {
-    const years = [...new Set(allData.map(d => d.PubYear || 0))].sort((a, b) => a - b);
-    const normalizedZ = years.indexOf(data.PubYear || 0) + 1;
-    const articlesInYear = allData.filter(d => d.PubYear === data.PubYear).length;
-    const articleIndex = allData.filter(d => d.PubYear === data.PubYear).indexOf(data);
-    const normalizedX = articleIndex + 1;
-    const baseSize = 0.8;
-    const size = data.Citations ? baseSize * (1 + Math.log10(data.Citations + 1) / 5) : baseSize;
-    return {
-        x: normalizedX * 1.5,
-        y: 0,
-        z: normalizedZ * 2,
-        size: size
-    };
+// Helper functions
+function lighten(color, amount) {
+    return color.clone().lerp(new THREE.Color(0xffffff), amount);
 }
 
-function getColorForYear(year) {
-    if (!year) return 0x999999;
-    const minYear = 1950;
-    const maxYear = new Date().getFullYear();
-    const normalized = year ? (year - minYear) / (maxYear - minYear) : 0;
-    return new THREE.Color().lerpColors(
-        new THREE.Color(0x1a2b6d),
-        new THREE.Color(0xd62246),
-        Math.min(1, Math.max(0, normalized))
-    ).getHex();
+function darken(color, amount) {
+    return color.clone().lerp(new THREE.Color(0x000000), amount);
 }
+
+function complement(color) {
+    return new THREE.Color().setHSL(
+        (color.getHSL().h + 0.5) % 1,
+        color.getHSL().s,
+        color.getHSL().l
+    );
+}
+
+function createFaceMaterial(color, text) {
+    // Create a canvas for texture
+    const canvas = document.createElement('canvas');
+    canvas.width = 256;
+    canvas.height = 256;
+    const context = canvas.getContext('2d');
+    
+    // Fill with color
+    context.fillStyle = `#${color.toString(16).padStart(6, '0')}`;
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Add text
+    context.font = 'Bold 120px Arial';
+    context.textAlign = 'center';
+    context.textBaseline = 'middle';
+    context.fillStyle = 'white';
+    context.fillText(text, canvas.width/2, canvas.height/2);
+    
+    // Create texture from canvas
+    const texture = new THREE.CanvasTexture(canvas);
+    
+    return new THREE.MeshPhongMaterial({
+        map: texture,
+        transparent: true,
+        opacity: 0.9
+    });
+}
+
+
 // createCube.js end
