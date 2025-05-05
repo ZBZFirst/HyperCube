@@ -1,15 +1,18 @@
 // sceneSetup.js start
 import * as THREE from 'three';
+import { createTimeBasedBackground } from './timeBasedBackground.js';
 
 export function setupScene() {
     const scene = new THREE.Scene();
     
-    // Lighting
+    // Add time-based background
+    createTimeBasedBackground(scene);
+    
+    // Lighting (adjusted to work with dynamic background)
     scene.add(new THREE.AmbientLight(0xffffff, 0.5));
     const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
     directionalLight.position.set(1, 1, 1);
     scene.add(directionalLight);
-    scene.add(new THREE.HemisphereLight(0xffffbb, 0x080820, 0.5));
     
     // Helpers
     scene.add(new THREE.GridHelper(20, 20));
