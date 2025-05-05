@@ -2,7 +2,8 @@
 import * as THREE from 'three';
 import * as d3 from 'https://cdn.jsdelivr.net/npm/d3@7/+esm';
 import { createScene } from './createScene.js';
-import { createUI } from './uiManager.js';
+import { createTable } from './core/uiManager';
+import { SelectionService } from './services/selectionService';
 import { loadData, exportFilteredData, populateDataTable, updateTextZone, attemptPubMedFetch, hidePubMedFetchOverlay, deleteFromData, getData, deleteSelectedFromData, addAnnotation } from './dataManager.js';
 import { 
     createCubesFromData, 
@@ -61,16 +62,15 @@ async function init() {
     }
 }
 
+// Initialize UI
+const dataTable = createTable('#data-table', (pmid, selected) => {
+  SelectionService.toggleSelection(pmid, selected);
+  updateButtonStates();
+});
+
+// Example usage
 function setupUI(data) {
-    populateDataTable(data, (pmid, isSelected) => {
-        const result = highlightCubeByPmid(pmid, isSelected);
-        if (result && isSelected && result.cube) {
-            updateTextZone(result.cube.userData);
-            centerCameraOnCube(result.cube);
-        } else if (getSelectedCubes().length === 0) {
-            clearTextZone();
-        }
-    });
+  dataTable.update(data);
 }
 
 // Remove the updateButtonStates function from script.js since it's now in cubeManager.js
