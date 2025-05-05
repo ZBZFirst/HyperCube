@@ -23,36 +23,13 @@ let originalPositions = new WeakMap();
 let targetPositions = new WeakMap();
 let currentPositionMode = PositionModes.GRID;
 let customPositioner = null;
-let selectedCubes = [];
-let lastSelectedCube = null;
 
-export function getSelectedCubes() {
-    return selectedCubes;
-}
-
-export function clearSelections() {
-    selectedCubes = [];
-    lastSelectedCube = null;
-    updateButtonStates();
-}
-
-// Add this to cubeManager.js
-export function deleteCubesByPmids(pmids, scene) {
-    pmids.forEach(pmid => {
-        const cube = cubes.find(c => c.userData.pmid === pmid);
-        if (cube) {
-            scene.remove(cube);
-            const index = cubes.indexOf(cube);
-            if (index !== -1) cubes.splice(index, 1);
-        }
-    });
-    return cubes;
-}
-
+// Add this to your init function to ensure animation runs
 export function initCubeManager(mainScene, mainCamera) {
     scene = mainScene;
     camera = mainCamera;
     
+    // Start animation loop
     function animationLoop() {
         if (isAnimating) {
             animateCubes();
@@ -92,14 +69,17 @@ export function setPositionMode(mode, customCallback = null) {
 function positionCubes() {
     const includedCubes = cubes.filter(c => c.userData.includeArticle === "true");
     
+    // Store original positions
     cubes.forEach(cube => {
         originalPositions.set(cube, cube.position.clone());
     });
 
+    // Handle visibility immediately
     cubes.forEach(cube => {
         cube.visible = cube.userData.includeArticle === "true";
     });
 
+    // Calculate target positions based on current mode
     switch(currentPositionMode) {
         case PositionModes.YEAR:
             positionByYear(includedCubes);
@@ -127,6 +107,7 @@ function positionCubes() {
     animateCubes();
 }
 
+// Simplify deleteSelectedCube to just handle the cube removal
 export function deleteSelectedCubes(selectedCubes) {
     selectedCubes.forEach(cube => {
         scene.remove(cube);
@@ -164,31 +145,23 @@ export function highlightCubeByPmid(pmid, isSelected, selectedCubes = [], lastSe
         selectedCubes = selectedCubes.filter(c => c !== cube);
     }
 
+    // Update highlights
     cubes.forEach(c => {
-        try {
-            const materials = Array.isArray(c.material) ? c.material : [c.material];
-            materials.forEach(mat => {
-                if (mat.emissive) {
-                    mat.emissive.setHex(selectedCubes.includes(c) ? 
-                        (c === lastSelectedCube ? 0xFFD700 : 0x3498db) : 0x000000);
-                    mat.emissiveIntensity = selectedCubes.includes(c) ? 0.5 : 0;
-                    mat.needsUpdate = true;
-                }
-            });
-        } catch (e) {
-            console.warn('Failed to update cube highlight:', e);
+        if (selectedCubes.includes(c)) {
+            c.material.emissive.setHex(c === lastSelectedCube ? 0xFFD700 : 0x3498db);
+        } else {
+            c.material.emissive.setHex(0x000000);
         }
     });
 
-    updateButtonStates();
-
-    return { cube };
+    return { cube, selectedCubes, lastSelectedCube };
 }
 
 export function getCubes() {
     return cubes;
 }
 
+// Add this function to update cube positions gradually
 function animateCubes() {
     if (!isAnimating) return;
     
@@ -309,6 +282,7 @@ export function centerCameraOnCube(cube) {
         targetPosition.y += 1;
         targetPosition.z += 5;
         
+        // Smooth camera movement
         camera.position.lerp(targetPosition, 0.1);
         camera.lookAt(cube.position);
     } catch (error) {
@@ -316,17 +290,16 @@ export function centerCameraOnCube(cube) {
     }
 }
 
-export function updateButtonStates() {
+function updateButtonStates() {
     const deleteBtn = document.getElementById('delete-btn');
-    const downloadBtn = document.getElementById('download-btn');
-    
-    if (!deleteBtn || !downloadBtn) return;
-    
-    const hasSelection = selectedCubes.length > 0;
-    deleteBtn.disabled = !hasSelection;
-    downloadBtn.disabled = !hasSelection;
+    if (selectedCube) {
+        deleteBtn.disabled = false;
+    } else {
+        deleteBtn.disabled = true;
+    }
 }
 
+// At the bottom of cubeManager.js
 window.setPositionMode = setPositionMode;
 window.PositionModes = PositionModes;
 // cubeManager.js end
