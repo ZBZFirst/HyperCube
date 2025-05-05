@@ -33,13 +33,13 @@ export function createUI(callbacks) {
     };
 }
 
-
-export function setupUI(data) {
+export function setupUI(data, selectedCubes, lastSelectedCube, onSelectCallback) {
     populateDataTable(data, (pmid, isSelected) => {
         const result = highlightCubeByPmid(pmid, isSelected, selectedCubes, lastSelectedCube);
         if (result) {
-            selectedCubes = result.selectedCubes;
-            lastSelectedCube = result.lastSelectedCube;
+            // These would now be handled by the callback
+            onSelectCallback(result.selectedCubes, result.lastSelectedCube);
+            
             if (isSelected && result.cube) {
                 updateTextZone(result.cube.userData);
                 centerCameraOnCube(result.cube);
