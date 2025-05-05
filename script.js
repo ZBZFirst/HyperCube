@@ -68,9 +68,6 @@ function setupUI(data) {
             selectedCubes = result.selectedCubes;
             lastSelectedCube = result.lastSelectedCube;
             
-            // Update button states based on selection
-            updateButtonStates();
-            
             // Update text display
             if (isSelected && result.cube) {
                 updateTextZone(result.cube.userData);
@@ -83,6 +80,8 @@ function setupUI(data) {
         }
     });
 }
+
+// Remove the updateButtonStates function from script.js since it's now in cubeManager.js
 
 function updateButtonStates() {
     const deleteBtn = document.getElementById('delete-btn');
