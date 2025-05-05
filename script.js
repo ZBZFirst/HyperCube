@@ -20,7 +20,10 @@ async function init() {
         if (pubmedData && pubmedData.length) {data = pubmedData;} 
             else {console.log("Falling back to CSV load");data = await loadData("pubmed_data.csv");if (!data?.length) throw new Error("No data loaded from either source");}
         createCubesFromData(data, sceneObjects.scene);
-        setupUI(data);
+        setupUI(data, selectedCubes, lastSelectedCube, (newSelectedCubes, newLastSelectedCube) => {
+            selectedCubes = newSelectedCubes;
+            lastSelectedCube = newLastSelectedCube;
+        });
         setupEventHandlers();
         setupSplitters();
         startAnimationLoop();} 
