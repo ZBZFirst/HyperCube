@@ -1,39 +1,34 @@
 // uiManager.js start
-import * as d3 from 'd3';
-import { SelectionState } from '../state/selectionState.js';
+import * as d3 from 'https://cdn.jsdelivr.net/npm/d3@7/+esm';
 
-export function createTable(containerId, onSelectionChange) {
-  const renderRow = (row) => {
-    const isSelected = SelectionState.has(row.PMID);
-    return `
-      <tr data-pmid="${row.PMID}" class="${isSelected ? 'selected' : ''}">
-        <td>${row.Title?.substring(0, 50)}${row.Title?.length > 50 ? '...' : ''}</td>
-        <td>
-          <input type="checkbox" class="select-checkbox" 
-                 ${isSelected ? 'checked' : ''}
-                 data-pmid="${row.PMID}">
-        </td>
-      </tr>
-    `;
-  };
-
-  const handleCheckboxChange = (event, pmid) => {
-    const checked = event.target.checked;
-    onSelectionChange(pmid, checked);
-  };
-
-  return {
-    update: (data) => {
-      const table = d3.select(containerId)
-        .selectAll('tr')
-        .data(data)
-        .join('tr')
-        .html(renderRow);
-      
-      table.select('.select-checkbox')
-        .on('change', (event, d) => handleCheckboxChange(event, d.PMID));
-    }
-  };
+export function createUI(callbacks) {
+    const uiContainer = d3.select('#data-container');
+    
+    return {
+        updateTable: (data) => {
+            const tbody = d3.select('#data-table tbody');
+            tbody.selectAll('tr').remove();
+            
+            const rows = tbody.selectAll('tr')
+                .data(data)
+                .enter()
+                .append('tr')
+                .attr('data-pmid', d => d.PMID);
+                
+            rows.append('td')
+                .text(d => d.Title?.substring(0, 50) + (d.Title?.length > 50 ? '...' : ''));
+                
+            rows.append('td')
+                .append('input')
+                .attr('type', 'checkbox')
+                .attr('class', 'select-checkbox')
+                .on('change', function(event, d) {
+                    const isSelected = event.target.checked;
+                    d3.select(this.closest('tr')).classed('selected', isSelected);
+                    callbacks.onSelect(d.PMID, isSelected);
+                });
+        }
+    };
 }
 
 
