@@ -1,27 +1,72 @@
 // createCube.js start
 import * as THREE from 'three';
 
+// Configuration - map these to your actual data columns
+const DATA_MAPPING = {
+    YEAR: 'PubYear',          // Publication year
+    JOURNAL: 'Journal',       // Journal name
+    RATING: 'Rating',         // User rating (if available)
+    TAGS: 'Tags',            // Tags/comma-separated
+    AUTHOR: 'Author_1',       // First author
+    CITATIONS: 'Citations',   // Citation count
+    TITLE: 'Title'           // Article title
+};
+
 export function createCube(data, allData) {
-    const size = calculateSizeBasedOnCitations(data.Citations);
+    // Safely get size with fallback
+    const size = calculateSizeBasedOnCitations(getField(data, DATA_MAPPING.CITATIONS));
+    
     const geometry = new THREE.BoxGeometry(size, size, size);
-    
-    // Get color scheme based on publication year
-    const baseColor = getColorForYear(data.PubYear);
-    
-    // Create materials for each face
+    const baseColor = getColorForYear(getField(data, DATA_MAPPING.YEAR));
+
+    // Create materials for each face with proper fallbacks
     const materials = [
-        createFaceMaterial(baseColor, data.PubYear, 'Year'),    // Right
-        createFaceMaterial(lightenColor(baseColor, 0.2), getJournalAbbreviation(data.Journal), 'Journal'), // Left
-        createFaceMaterial(darkenColor(baseColor, 0.2), data.Rating || '?', 'Rating'),  // Top
-        createFaceMaterial(complementColor(baseColor), getFirstTag(data.Tags), 'Tag'), // Bottom
-        createFaceMaterial(lightenColor(baseColor, 0.1), getFirstAuthorInitial(data.Author_1), 'Author'), // Front
-        createFaceMaterial(darkenColor(baseColor, 0.1), data.Citations || '0', 'Citations') // Back
+        createFaceMaterial(
+            baseColor,
+            getField(data, DATA_MAPPING.YEAR, 'Year?'),
+            'Year'
+        ),
+        createFaceMaterial(
+            lightenColor(baseColor, 0.2),
+            getJournalAbbreviation(getField(data, DATA_MAPPING.JOURNAL)),
+            'Journal'
+        ),
+        createFaceMaterial(
+            darkenColor(baseColor, 0.2),
+            getField(data, DATA_MAPPING.RATING, '?'),
+            'Rating'
+        ),
+        createFaceMaterial(
+            complementColor(baseColor),
+            getFirstTag(getField(data, DATA_MAPPING.TAGS)),
+            'Tag'
+        ),
+        createFaceMaterial(
+            lightenColor(baseColor, 0.1),
+            getFirstAuthorInitial(getField(data, DATA_MAPPING.AUTHOR)),
+            'Author'
+        ),
+        createFaceMaterial(
+            darkenColor(baseColor, 0.1),
+            getField(data, DATA_MAPPING.CITATIONS, '0'),
+            'Citations'
+        )
     ];
-    
+
     const cube = new THREE.Mesh(geometry, materials);
     cube.position.set(...calculatePosition(data, allData));
     cube.userData = data;
     return cube;
+}
+
+// Safe field access with fallback
+function getField(data, fieldName, fallback = '') {
+    if (!data) return fallback;
+    if (fieldName in data) {
+        const value = data[fieldName];
+        return value !== undefined && value !== null ? value : fallback;
+    }
+    return fallback;
 }
 
 // Helper function to calculate cube size based on citations
