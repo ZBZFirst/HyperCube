@@ -61,7 +61,6 @@ async function init() {
     }
 }
 
-// Update the setupUI function
 function setupUI(data) {
     populateDataTable(data, (pmid, isSelected) => {
         const result = highlightCubeByPmid(pmid, isSelected, selectedCubes, lastSelectedCube);
@@ -69,18 +68,29 @@ function setupUI(data) {
             selectedCubes = result.selectedCubes;
             lastSelectedCube = result.lastSelectedCube;
             
-            // Always update text zone when selecting, clear when deselecting
+            // Update button states based on selection
+            updateButtonStates();
+            
+            // Update text display
             if (isSelected && result.cube) {
                 updateTextZone(result.cube.userData);
                 centerCameraOnCube(result.cube);
             } else if (selectedCubes.length === 0) {
                 clearTextZone();
             } else if (lastSelectedCube) {
-                // Show last selected if we're deselecting something else
                 updateTextZone(lastSelectedCube.userData);
             }
         }
     });
+}
+
+function updateButtonStates() {
+    const deleteBtn = document.getElementById('delete-btn');
+    const downloadBtn = document.getElementById('download-btn');
+    
+    const hasSelection = selectedCubes.length > 0;
+    deleteBtn.disabled = !hasSelection;
+    downloadBtn.disabled = !hasSelection;
 }
 
 function setupEventHandlers() {
