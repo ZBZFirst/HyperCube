@@ -1,5 +1,5 @@
-import { SelectionState } from '../state/selectionState';
-import { highlightCubeByPmid } from '../core/cubeManager';
+import { SelectionState } from '../state/selectionState.js';
+import { highlightCubeByPmid } from '../core/cubeManager.js';
 
 export const SelectionService = {
   toggleSelection: (pmid, selected) => {
