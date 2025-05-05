@@ -32,6 +32,23 @@ export function createUI(callbacks) {
 }
 
 
+export function setupUI(data) {
+    populateDataTable(data, (pmid, isSelected) => {
+        const result = highlightCubeByPmid(pmid, isSelected, selectedCubes, lastSelectedCube);
+        if (result) {
+            selectedCubes = result.selectedCubes;
+            lastSelectedCube = result.lastSelectedCube;
+            if (isSelected && result.cube) {
+                updateTextZone(result.cube.userData);
+                centerCameraOnCube(result.cube);
+            } else if (selectedCubes.length === 0) {
+                clearTextZone();
+            } else if (lastSelectedCube) {
+                updateTextZone(lastSelectedCube.userData);
+            }
+        }
+    });
+}
 
 
 // uiManager.js end
