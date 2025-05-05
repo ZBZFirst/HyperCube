@@ -1,4 +1,4 @@
-// controlsSetup.js
+// controlsSetup.js start
 import * as THREE from 'three';
 import { PointerLockControls } from 'three/examples/jsm/controls/PointerLockControls.js';
 
@@ -57,3 +57,5 @@ export function setupPointerLock(controls, renderer) {
         }
     });
 }
+
+// controlsSetup.js end
