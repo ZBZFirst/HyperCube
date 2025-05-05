@@ -113,7 +113,9 @@ function createFaceMaterial(color, text, label) {
         map: texture,
         transparent: true,
         opacity: 0.95,
-        shininess: 30
+        shininess: 30,
+        emissive: 0x000000, 
+        emissiveIntensity: 0 
     });
 }
 
