@@ -145,13 +145,18 @@ export function highlightCubeByPmid(pmid, isSelected, selectedCubes = [], lastSe
         selectedCubes = selectedCubes.filter(c => c !== cube);
     }
 
-    // Update highlights
+    // Update highlights - handle both single material and array of materials
     cubes.forEach(c => {
-        if (selectedCubes.includes(c)) {
-            c.material.emissive.setHex(c === lastSelectedCube ? 0xFFD700 : 0x3498db);
-        } else {
-            c.material.emissive.setHex(0x000000);
-        }
+        const materials = Array.isArray(c.material) ? c.material : [c.material];
+        
+        materials.forEach(mat => {
+            if (mat.emissive) {  // Check if emissive exists
+                mat.emissive.setHex(selectedCubes.includes(c) ? 
+                    (c === lastSelectedCube ? 0xFFD700 : 0x3498db) : 0x000000);
+                mat.emissiveIntensity = selectedCubes.includes(c) ? 0.5 : 0;
+                mat.needsUpdate = true;
+            }
+        });
     });
 
     return { cube, selectedCubes, lastSelectedCube };
