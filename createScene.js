@@ -16,11 +16,13 @@ export function createScene() {
         const scene = setupScene();
         const camera = setupCamera(container);
         const renderer = setupRenderer(container);
-        const { controls, updateControls } = setupControls(camera, renderer);
-
-        // Make sure the renderer is focusable
-        renderer.domElement.tabIndex = 1;
-        renderer.domElement.style.outline = 'none';
+        
+        // Make canvas focusable and set tabindex
+        const canvas = renderer.domElement;
+        canvas.tabIndex = 1;
+        canvas.style.outline = 'none';
+        
+        const { controls, updateControls, dispose } = setupControls(camera, renderer);
 
         return {
             scene,
@@ -28,6 +30,7 @@ export function createScene() {
             renderer,
             controls,
             updateControls,
+            dispose
         };
     } catch (error) {
         console.error('Scene creation failed:', error);
