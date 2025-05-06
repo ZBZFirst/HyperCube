@@ -5,27 +5,7 @@ import { setupTraditionalControls } from './traditionalControls.js';
 
 export function setupControls(camera, renderer, scene, onSelectCallback) {
     try {
-        // Use our enhanced traditional controls
-        const { controls, update } = setupTraditionalControls(camera, renderer, scene, onSelectCallback);
-        
-        // Pointer lock activation
-        renderer.domElement.addEventListener('click', () => {
-            if (!controls.isLocked) {
-                renderer.domElement.requestPointerLock = 
-                    renderer.domElement.requestPointerLock || 
-                    renderer.domElement.mozRequestPointerLock || 
-                    renderer.domElement.webkitRequestPointerLock;
-                renderer.domElement.requestPointerLock();
-            }
-        });
-
-        return { 
-            controls, 
-            updateControls: update, // Use the update function from traditional controls
-            dispose: () => {
-                controls.dispose();
-            }
-        };
+        return setupTraditionalControls(camera, renderer, scene, onSelectCallback);
     } catch (error) {
         console.error("Controls initialization failed:", error);
         return { 
@@ -35,7 +15,6 @@ export function setupControls(camera, renderer, scene, onSelectCallback) {
         };
     }
 }
-
 export function setupPointerLock(controls, renderer) {
     document.addEventListener('click', (event) => {
         const uiElement = document.getElementById('data-container');
