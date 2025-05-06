@@ -103,7 +103,16 @@ async function init() {
         
         // 10. Start everything
         console.log("10. Starting animation loop...");
-        setupEventHandlers();
+
+        try {
+            setupEventHandlers();
+            setupSplitters();
+            console.log("UI setup complete");
+        } catch (uiError) {
+            console.error("UI setup failed:", uiError);
+            throw new Error(`UI initialization failed: ${uiError.message}`);
+        }
+        
         setupSplitters();
         startAnimationLoop();
         
