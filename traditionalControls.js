@@ -142,4 +142,4 @@ export function setupTraditionalControls(camera, renderer, scene, onSelectCallba
         update,
         dispose: () => {
             // Cleanup code
-        }}
+        }}}
