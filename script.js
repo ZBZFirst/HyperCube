@@ -13,68 +13,66 @@ let sceneObjects;
 let selectedCubes = [];
 let lastSelectedCube = null;
 
+// In script.js, update the init function:
 async function init() {
     try {
         showLoadingIndicator();
-        sceneObjects = createScene();
-        if (!sceneObjects) throw new Error("Scene initialization failed");
         
-        initCubeManager(sceneObjects.scene, sceneObjects.camera);
+        // First create basic scene objects
+        const container = document.getElementById('graphics-container');
+        const scene = setupScene();
+        const camera = setupCamera(container);
+        const renderer = setupRenderer(container);
         
+        // Initialize cube manager
+        initCubeManager(scene, camera);
+        
+        // Load data
         let data;
         const pubmedData = await attemptPubMedFetch();
-        if (pubmedData && pubmedData.length) {
-            data = pubmedData;
-        } else {
-            console.log("Falling back to CSV load");
-            data = await loadData("pubmed_data.csv");
-            if (!data?.length) throw new Error("No data loaded from either source");
-        }
-        
-        // Store the initial data
+        data = pubmedData || await loadData("pubmed_data.csv");
+        if (!data?.length) throw new Error("No data loaded");
         setData(data);
         
-        createCubesFromData(data, sceneObjects.scene);
+        // Create cubes
+        createCubesFromData(data, scene);
         
-        // Define the selection callback first
+        // Setup selection callback
         const onSelectCallback = (newSelectedCubes, newLastSelectedCube) => {
             selectedCubes = newSelectedCubes;
             lastSelectedCube = newLastSelectedCube;
-            console.log("Updated selection:", selectedCubes.map(c => c.userData.pmid));
-            
-            // Update text zone if we have a last selected cube
             if (newLastSelectedCube) {
                 updateTextZone(newLastSelectedCube.userData);
-            } else if (newSelectedCubes.length === 0) {
-                clearTextZone();
             }
         };
         
-        // Setup UI with the callback
-        setupUI(data, 
-            () => [...selectedCubes], // Getter function
-            () => lastSelectedCube,   // Getter function
-            onSelectCallback
-        );
+        // Setup UI
+        setupUI(data, () => [...selectedCubes], () => lastSelectedCube, onSelectCallback);
         
-        // Pass the same callback to controls setup
+        // Setup controls AFTER everything else is ready
+        const controls = setupTraditionalControls(camera, renderer, scene, onSelectCallback);
+        
+        // Store all objects
         sceneObjects = {
-            ...sceneObjects,
-            ...setupControls(
-                sceneObjects.camera, 
-                sceneObjects.renderer, 
-                sceneObjects.scene,
-                onSelectCallback  // Pass the callback here
-            )
+            scene,
+            camera,
+            renderer,
+            controls: controls.controls,
+            updateControls: controls.update
         };
         
         setupEventHandlers();
         setupSplitters();
         startAnimationLoop();
+        
     } catch (error) {
         console.error("Initialization failed:", error);
         showErrorToUser(error.message);
-        createFallbackScene();
+        try {
+            createFallbackScene();
+        } catch (fallbackError) {
+            console.error("Fallback scene failed:", fallbackError);
+        }
     } finally {
         removeLoadingIndicator();
     }
