@@ -189,7 +189,7 @@ export function getData() {
 }
 
 export function deleteSelectedFromData(pmidsToDelete) {
-    if (!Array.isArray(pmidsToDelete) return;
+    if (!Array.isArray(pmidsToDelete)) return;
     
     // Filter out the items to delete
     data = data.filter(item => !pmidsToDelete.includes(item.PMID));
