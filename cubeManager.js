@@ -133,6 +133,7 @@ export function updateCubeVisibility(cube) {
 }
 
 export function highlightCubeByPmid(pmid, isSelected, selectedCubes = [], lastSelectedCube = null) {
+    console.log("Highlight called:", { pmid, isSelected, currentSelected: selectedCubes.map(c => c?.userData.pmid),currentLast: lastSelectedCube?.userData.pmid});
     const cube = cubes.find(c => c.userData.pmid === pmid);
     if (!cube) return null;
 
