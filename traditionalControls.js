@@ -157,8 +157,8 @@ export function setupTraditionalControls(camera, renderer, scene, onSelectCallba
             clearTimeout(timeoutId);
         };
     };
-
-    // Collision detection
+    
+        // Collision detection
     const checkCollision = (projectile) => {
         let hitDetected = false;
         
@@ -166,12 +166,20 @@ export function setupTraditionalControls(camera, renderer, scene, onSelectCallba
             if (object !== projectile && object.userData?.pmid && 
                 projectile.position.distanceTo(object.position) < 1) {
                 
-                // Highlight the hit cube
-                const result = highlightCubeByPmid(object.userData.pmid, true, [], null);
-                if (result && onSelectCallback) {
-                    onSelectCallback(result.selectedCubes, result.lastSelectedCube);
-                    updateTextZone(object.userData);
-                    hitDetected = true;
+                // Find the corresponding table row
+                const row = document.querySelector(`tr[data-pmid="${object.userData.pmid}"]`);
+                if (row) {
+                    const checkbox = row.querySelector('.select-checkbox');
+                    if (checkbox) {
+                        // Toggle the checkbox state
+                        checkbox.checked = !checkbox.checked;
+                        
+                        // Trigger the change event to use the existing selection logic
+                        const event = new Event('change');
+                        checkbox.dispatchEvent(event);
+                        
+                        hitDetected = true;
+                    }
                 }
             }
         });
