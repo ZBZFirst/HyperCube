@@ -6,7 +6,7 @@ import { createUI, setupUI, setupSplitters, showLoadingIndicator, removeLoadingI
 import { loadData, exportFilteredData, populateDataTable, updateTextZone, attemptPubMedFetch, getData, addAnnotation } from './dataManager.js';
 import { createCubesFromData, deleteSelectedCubes, getCubes, highlightCubeByPmid, centerCameraOnCube, initCubeManager } from './cubeManager.js';
 import { hidePubMedFetchOverlay } from './pubmedOverlay.js';
-import { deleteFromData, deleteSelectedFromData } from './deleteCubes.js';
+import { deleteFromData, deleteSelectedFromData, deleteSelectedCubes } from './deleteCubes.js';
 import { exportFilteredData, handleExport } from './saveCubes.js';
 
 let sceneObjects;
