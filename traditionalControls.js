@@ -22,7 +22,15 @@ export function setupTraditionalControls(camera, renderer, scene, onSelectCallba
     // Setup pointer lock
     const setupPointerLock = () => {
         const canvas = renderer.domElement;
+        const hintElement = document.getElementById('pointer-lock-hint');
         
+        const onPointerLockChange = () => {
+            isPointerLockEnabled = (document.pointerLockElement === canvas);
+            if (hintElement) {
+                hintElement.style.display = isPointerLockEnabled ? 'none' : 'block';
+            }
+        };
+    
         // Request pointer lock on click
         canvas.addEventListener('click', () => {
             if (!isPointerLockEnabled && document.pointerLockElement !== canvas) {
@@ -32,11 +40,14 @@ export function setupTraditionalControls(camera, renderer, scene, onSelectCallba
                 canvas.requestPointerLock();
             }
         });
-
+    
         // Pointer lock change event handlers
         document.addEventListener('pointerlockchange', onPointerLockChange);
         document.addEventListener('mozpointerlockchange', onPointerLockChange);
         document.addEventListener('webkitpointerlockchange', onPointerLockChange);
+    
+        // Initial state
+        onPointerLockChange();
     };
 
     const onPointerLockChange = () => {
