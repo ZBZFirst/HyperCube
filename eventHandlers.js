@@ -1,5 +1,5 @@
-import { getData, setData, clearTextZone, updateTextZone, populateDataTable, deleteSelectedFromData } from './dataManager.js';
-import { deleteSelectedCubes } from './deleteCubes.js';
+import { getData, setData, clearTextZone, updateTextZone, populateDataTable } from './dataManager.js';
+import { deleteSelectedCubes, deleteSelectedFromData } from './deleteCubes.js';
 import { highlightCubeByPmid } from './cubeManager.js';
 import { showErrorToUser } from './uiManager.js';
 import * as d3 from 'https://cdn.jsdelivr.net/npm/d3@7/+esm';
