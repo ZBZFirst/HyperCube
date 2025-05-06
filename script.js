@@ -10,7 +10,7 @@ import { deleteSelectedFromData } from './deleteCubes.js';
 import { exportFilteredData } from './saveCubes.js';
 import { setupControls } from './controlsSetup.js';
 
-let sceneObjects;
+let sceneObjects = null; // Single declaration
 let selectedCubes = [];
 let lastSelectedCube = null;
 
