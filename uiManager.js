@@ -36,11 +36,19 @@ export function createUI(callbacks) {
     };
 }
 
-export function setupUI(data, selectedCubes, lastSelectedCube, onSelectCallback) {
+export function setupUI(data, getSelectedCubes, getLastSelectedCube, onSelectCallback) {
     populateDataTable(data, (pmid, isSelected) => {
-        const result = highlightCubeByPmid(pmid, isSelected, selectedCubes, lastSelectedCube);
+        const currentSelected = getSelectedCubes();
+        const currentLast = getLastSelectedCube();
+        
+        const result = highlightCubeByPmid(
+            pmid, 
+            isSelected, 
+            currentSelected,
+            currentLast
+        );
+        
         if (result) {
-            // These would now be handled by the callback
             onSelectCallback(result.selectedCubes, result.lastSelectedCube);
             
             if (isSelected && result.cube) {
