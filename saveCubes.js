@@ -1,23 +1,10 @@
 // saveCubes.js
+import * as d3 from 'https://cdn.jsdelivr.net/npm/d3@7/+esm';
 import { getData } from './dataManager.js';
 
-export function handleExport(selectedCubes) {
-  if (selectedCubes.length === 0) {
-    alert("Please select at least one article to export");
-    return;
-  }
-
-  try {
-    exportFilteredData();
-  } catch (error) {
-    console.error("Export failed:", error);
-    alert("Failed to export data");
-  }
-}
-
-
 export function exportFilteredData() {
-  if (!data.length) {
+  const data = getData();
+  if (!data || !data.length) {
     alert("No data available to export");
     return;
   }
