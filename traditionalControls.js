@@ -4,6 +4,7 @@ import { highlightCubeByPmid } from './cubeManager.js';
 import { updateTextZone } from './dataManager.js';
 
 export function setupTraditionalControls(camera, renderer, scene, onSelectCallback) {
+    // Initialize PointerLockControls
     const controls = new PointerLockControls(camera, renderer.domElement);
     const velocity = new THREE.Vector3();
     const speed = 5;
@@ -12,134 +13,194 @@ export function setupTraditionalControls(camera, renderer, scene, onSelectCallba
     // Track all active projectiles
     const activeProjectiles = new Set();
     
-    // Keyboard controls
+    // Keyboard state tracking
     const keysPressed = {};
     
-    document.addEventListener('keydown', (e) => {
-        keysPressed[e.key.toLowerCase()] = true;
-        if (e.key === ' ' || e.key === 'Control') e.preventDefault();
+    // Pointer lock state management
+    let isPointerLockEnabled = false;
+
+    // Setup pointer lock
+    const setupPointerLock = () => {
+        const canvas = renderer.domElement;
         
-        // Add shape generation on 'g' key press
-        if (e.key.toLowerCase() === 'g') {
-            generateShape(camera, scene);
+        // Request pointer lock on click
+        canvas.addEventListener('click', () => {
+            if (!isPointerLockEnabled && document.pointerLockElement !== canvas) {
+                canvas.requestPointerLock = canvas.requestPointerLock || 
+                                          canvas.mozRequestPointerLock || 
+                                          canvas.webkitRequestPointerLock;
+                canvas.requestPointerLock();
+            }
+        });
+
+        // Pointer lock change event handlers
+        document.addEventListener('pointerlockchange', onPointerLockChange);
+        document.addEventListener('mozpointerlockchange', onPointerLockChange);
+        document.addEventListener('webkitpointerlockchange', onPointerLockChange);
+    };
+
+    // Handle pointer lock state changes
+    const onPointerLockChange = () => {
+        isPointerLockEnabled = (document.pointerLockElement === renderer.domElement);
+    };
+
+    // Keyboard event handlers
+    const onKeyDown = (e) => {
+        // Ignore if focused on input elements
+        if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) {
+            return;
         }
-    });
-    
-    document.addEventListener('keyup', (e) => {
+
+        keysPressed[e.key.toLowerCase()] = true;
+        
+        // Prevent default for control keys
+        if ([' ', 'control', 'shift'].includes(e.key.toLowerCase())) {
+            e.preventDefault();
+        }
+        
+        // Generate projectile on 'g' key
+        if (e.key.toLowerCase() === 'g' && isPointerLockEnabled) {
+            generateProjectile();
+        }
+    };
+
+    const onKeyUp = (e) => {
         keysPressed[e.key.toLowerCase()] = false;
-    });
+    };
 
-    // Fix for pointer lock
-    renderer.domElement.addEventListener('click', () => {
-        if (controls.isLocked) return;
-        if (typeof controls.lock === 'function') {
-            controls.lock().catch(e => console.log("Pointer lock failed:", e));
-        } else {
-            // Fallback for older Three.js versions
-            renderer.domElement.requestPointerLock = 
-                renderer.domElement.requestPointerLock || 
-                renderer.domElement.mozRequestPointerLock || 
-                renderer.domElement.webkitRequestPointerLock;
-            renderer.domElement.requestPointerLock();
-        }
-    });
-
-    function update(delta) {
+    // Movement update function
+    const update = (delta) => {
+        if (!isPointerLockEnabled) return;
+        
+        // Calculate movement direction
         const forward = (keysPressed['w'] ? -1 : 0) + (keysPressed['s'] ? 1 : 0);
         const right = (keysPressed['d'] ? 1 : 0) + (keysPressed['a'] ? -1 : 0);
         const up = (keysPressed[' '] ? 1 : 0) + (keysPressed['control'] ? -1 : 0);
         
+        // Update velocity
         velocity.set(
             right * speed * delta,
             up * altitudeSpeed * delta,
             forward * speed * delta
         );
         
+        // Apply movement
         controls.moveRight(velocity.x);
         controls.moveForward(velocity.z);
         camera.position.y = Math.max(0.5, camera.position.y + velocity.y);
-    }
-    
-    // Function to generate a new shape
-    function generateShape(camera, scene) {
-        // Create a simple cube
+    };
+
+    // Projectile system
+    const generateProjectile = () => {
         const geometry = new THREE.BoxGeometry(0.5, 0.5, 0.5);
         const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-        const cube = new THREE.Mesh(geometry, material);
+        const projectile = new THREE.Mesh(geometry, material);
         
-        // Position the cube at the camera's location
-        cube.position.copy(camera.position);
-        
-        // Get camera direction
+        // Position at camera with small forward offset
+        projectile.position.copy(camera.position);
         const direction = new THREE.Vector3();
         camera.getWorldDirection(direction);
+        projectile.position.add(direction.multiplyScalar(1));
         
-        // Add cube to scene
-        scene.add(cube);
-        activeProjectiles.add(cube);
+        scene.add(projectile);
+        activeProjectiles.add(projectile);
         
-        // Set up movement parameters
+        // Movement parameters
         const maxDistance = 20;
-        const speed = 0.2;
+        const projectileSpeed = 0.2;
         let distanceTraveled = 0;
         
-        // Set timeout for max lifetime (5 seconds)
+        // Auto-remove after 5 seconds
         const timeoutId = setTimeout(() => {
-            if (scene.children.includes(cube)) {
-                scene.remove(cube);
-            }
-            activeProjectiles.delete(cube);
+            removeProjectile(projectile);
         }, 5000);
         
-        // Animation function
-        function animateCube() {
-            if (distanceTraveled < maxDistance && scene.children.includes(cube)) {
-                cube.position.add(direction.clone().multiplyScalar(speed));
-                distanceTraveled += speed;
-                
-                // Check for collisions with other cubes
-                if (checkCollisions(cube, scene)) {
-                    // If collision occurred, remove the projectile
-                    scene.remove(cube);
-                    activeProjectiles.delete(cube);
-                    clearTimeout(timeoutId);
-                    return;
-                }
-                
-                requestAnimationFrame(animateCube);
-            } else {
-                scene.remove(cube);
-                activeProjectiles.delete(cube);
-                clearTimeout(timeoutId);
+        // Animation loop
+        const animateProjectile = () => {
+            if (distanceTraveled >= maxDistance || !scene.children.includes(projectile)) {
+                removeProjectile(projectile);
+                return;
             }
-        }
+            
+            // Move projectile
+            const moveDirection = new THREE.Vector3();
+            camera.getWorldDirection(moveDirection);
+            projectile.position.add(moveDirection.multiplyScalar(projectileSpeed));
+            distanceTraveled += projectileSpeed;
+            
+            // Check collisions
+            if (checkCollision(projectile)) {
+                removeProjectile(projectile);
+                return;
+            }
+            
+            requestAnimationFrame(animateProjectile);
+        };
         
-        animateCube();
-    }
-    
-    function checkCollisions(cube, scene) {
-        let collisionOccurred = false;
+        animateProjectile();
+        
+        // Cleanup function
+        const removeProjectile = (proj) => {
+            if (scene.children.includes(proj)) {
+                scene.remove(proj);
+            }
+            activeProjectiles.delete(proj);
+            clearTimeout(timeoutId);
+        };
+    };
+
+    // Collision detection
+    const checkCollision = (projectile) => {
+        let hitDetected = false;
         
         scene.children.forEach(object => {
-            if (object !== cube && object.userData && object.userData.pmid) {
-                if (cube.position.distanceTo(object.position) < 1) {
-                    // Select the cube that was hit
-                    const result = highlightCubeByPmid(object.userData.pmid, true, [], null);
-                    if (result) {
-                        // Update the text zone with the selected cube's data
-                        updateTextZone(object.userData);
-                        collisionOccurred = true;
-                    }
+            if (object !== projectile && object.userData?.pmid && 
+                projectile.position.distanceTo(object.position) < 1) {
+                
+                // Highlight the hit cube
+                const result = highlightCubeByPmid(object.userData.pmid, true, [], null);
+                if (result && onSelectCallback) {
+                    onSelectCallback(result.selectedCubes, result.lastSelectedCube);
+                    updateTextZone(object.userData);
+                    hitDetected = true;
                 }
             }
         });
         
-        return collisionOccurred;
-    }
-    
+        return hitDetected;
+    };
+
+    // Cleanup function
+    const dispose = () => {
+        // Remove event listeners
+        document.removeEventListener('keydown', onKeyDown);
+        document.removeEventListener('keyup', onKeyUp);
+        document.removeEventListener('pointerlockchange', onPointerLockChange);
+        document.removeEventListener('mozpointerlockchange', onPointerLockChange);
+        document.removeEventListener('webkitpointerlockchange', onPointerLockChange);
+        
+        // Clean up projectiles
+        activeProjectiles.forEach(projectile => {
+            if (scene.children.includes(projectile)) {
+                scene.remove(projectile);
+            }
+        });
+        activeProjectiles.clear();
+        
+        // Exit pointer lock if active
+        if (isPointerLockEnabled) {
+            document.exitPointerLock();
+        }
+    };
+
+    // Initialize everything
+    setupPointerLock();
+    document.addEventListener('keydown', onKeyDown);
+    document.addEventListener('keyup', onKeyUp);
+
     return { 
         controls, 
         update,
-        dispose: () => {
-            // Cleanup code
-        }}}
+        dispose
+    };
+}
