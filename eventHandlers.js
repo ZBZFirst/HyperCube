@@ -1,17 +1,16 @@
 // eventHandlers.js
-import { deleteSelectedFromData, getData, exportFilteredData } from './dataManager.js';
+import { getData, setData } from './dataManager.js';
 import { deleteSelectedCubes, highlightCubeByPmid, centerCameraOnCube } from './cubeManager.js';
-import { populateDataTable, updateTextZone, clearTextZone } from './uiManager.js';
-import { showErrorToUser } from './uiManager.js';
+import { populateDataTable, updateTextZone, clearTextZone, showErrorToUser } from './uiManager.js';
 
-export function setupEventHandlers(selectedCubes, lastSelectedCube, updateSelection) {
+export function setupEventHandlers(selectedCubes, lastSelectedCube, updateSelection, refreshUI) {
     document.getElementById('delete-btn').addEventListener('click', () => 
-        handleDelete(selectedCubes, lastSelectedCube, updateSelection));
+        handleDelete(selectedCubes, updateSelection, refreshUI));
     
     document.getElementById('download-btn').addEventListener('click', handleDownload);
 }
 
-export async function handleDelete(selectedCubes, lastSelectedCube, updateSelection) {
+export async function handleDelete(selectedCubes, updateSelection, refreshUI) {
     if (selectedCubes.length === 0) {
         showErrorToUser("Please select at least one article first");
         return;
@@ -21,7 +20,9 @@ export async function handleDelete(selectedCubes, lastSelectedCube, updateSelect
         const pmidsToDelete = selectedCubes.map(c => c.userData.pmid);
         
         // Update data
-        deleteSelectedFromData(pmidsToDelete);
+        const currentData = getData();
+        const newData = currentData.filter(item => !pmidsToDelete.includes(item.PMID));
+        setData(newData);
         
         // Update scene
         deleteSelectedCubes(selectedCubes);
@@ -30,29 +31,36 @@ export async function handleDelete(selectedCubes, lastSelectedCube, updateSelect
         updateSelection([], null);
         
         // Refresh UI
-        refreshUIAfterDelete();
+        refreshUI();
     } catch (error) {
         console.error("Deletion failed:", error);
         showErrorToUser("Failed to delete selected articles");
     }
 }
 
-function refreshUIAfterDelete() {
-    populateDataTable(
-        getData(),
-        (pmid, isSelected) => {
-            const result = highlightCubeByPmid(pmid, isSelected, [], null);
-            if (result?.cube && isSelected) {
-                centerCameraOnCube(result.cube);
-            }
-        }
-    );
-    clearTextZone();
-}
-
 export async function handleDownload() {
     try {
-        await exportFilteredData();
+        const data = getData();
+        if (!data || !data.length) {
+            showErrorToUser("No data available to export");
+            return;
+        }
+
+        const exportData = data.map(item => ({
+            ...item,
+            Notes: item.Notes || '',
+            Rating: item.Rating || '',
+            Tags: item.Tags || ''
+        }));
+
+        const blob = new Blob([d3.csvFormat(exportData)], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `pubmed_export_${new Date().toISOString().slice(0,10)}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
     } catch (error) {
         console.error("Export failed:", error);
         showErrorToUser("Failed to export data");
