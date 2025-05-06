@@ -7,7 +7,21 @@ export function setupControls(camera, renderer) {
         const controls = new PointerLockControls(camera, renderer.domElement);
         
         const keysPressed = {};
+        const movementSpeed = 5;
+        const altitudeSpeed = 3;
         
+        // Add event listeners for pointer lock state changes
+        controls.addEventListener('lock', () => {
+            console.log('Pointer lock acquired');
+            document.getElementById('pointer-lock-hint').style.display = 'none';
+        });
+        
+        controls.addEventListener('unlock', () => {
+            console.log('Pointer lock released');
+            document.getElementById('pointer-lock-hint').style.display = 'block';
+        });
+
+        // Keyboard controls
         document.addEventListener('keydown', (e) => {
             keysPressed[e.key.toLowerCase()] = true;
             if (e.key === ' ' || e.key === 'Control') e.preventDefault();
@@ -21,13 +35,11 @@ export function setupControls(camera, renderer) {
             if (!controls.isLocked) return;
             
             const velocity = new THREE.Vector3();
-            const speed = 5;
-            const altitudeSpeed = 3;
 
-            if (keysPressed['w']) velocity.z -= speed * delta;
-            if (keysPressed['s']) velocity.z += speed * delta;
-            if (keysPressed['a']) velocity.x -= speed * delta;
-            if (keysPressed['d']) velocity.x += speed * delta;
+            if (keysPressed['w']) velocity.z -= movementSpeed * delta;
+            if (keysPressed['s']) velocity.z += movementSpeed * delta;
+            if (keysPressed['a']) velocity.x -= movementSpeed * delta;
+            if (keysPressed['d']) velocity.x += movementSpeed * delta;
             if (keysPressed['shift']) velocity.y += altitudeSpeed * delta;
             if (keysPressed['control']) velocity.y -= altitudeSpeed * delta;
 
@@ -35,6 +47,15 @@ export function setupControls(camera, renderer) {
             controls.moveForward(velocity.z);
             camera.position.y += velocity.y;
         };
+
+        // Setup click handler for the renderer
+        renderer.domElement.addEventListener('click', () => {
+            if (!controls.isLocked) {
+                controls.lock().catch(e => {
+                    console.log("Pointer lock failed:", e);
+                });
+            }
+        });
 
         return { controls, updateControls };
     } catch (error) {
