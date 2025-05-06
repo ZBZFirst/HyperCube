@@ -1,10 +1,11 @@
 // controlsSetup.js start
 import * as THREE from 'three';
 import { PointerLockControls } from 'three/examples/jsm/controls/PointerLockControls.js';
+import { setupTraditionalControls } from './traditionalControls.js';
 
-export function setupControls(camera, renderer) {
+export function setupControls(camera, renderer, scene) {
     try {
-        const controls = new PointerLockControls(camera, renderer.domElement);
+        const controls = setupTraditionalControls(camera, renderer, scene);
         
         const keysPressed = {};
         const movementSpeed = 5;
