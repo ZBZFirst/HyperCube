@@ -1,8 +1,8 @@
 // eventHandlers.js
-import { getData, setData } from './dataManager.js';
+import { getData, setData, clearTextZone ,updateTextZone } from './dataManager.js';
 import { deleteSelectedCubes } from './deleteCubes.js';
 import { highlightCubeByPmid, centerCameraOnCube } from './cubeManager.js';
-import { populateDataTable, updateTextZone, clearTextZone, showErrorToUser } from './uiManager.js';
+import { populateDataTable, showErrorToUser } from './uiManager.js';
 import * as d3 from 'https://cdn.jsdelivr.net/npm/d3@7/+esm';
 
 export function setupEventHandlers(selectedCubes, lastSelectedCube, updateSelection, refreshUI, scene) {
