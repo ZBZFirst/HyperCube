@@ -131,37 +131,37 @@ export function updateCubeVisibility(cube) {
     cube.material.transparent = true;
     cube.material.needsUpdate = true;
 }
+
 export function highlightCubeByPmid(pmid, isSelected, selectedCubes = [], lastSelectedCube = null) {
     const cube = cubes.find(c => c.userData.pmid === pmid);
     if (!cube) return null;
 
     // Update selection state
+    let newSelectedCubes = [...selectedCubes];
+    let newLastSelectedCube = lastSelectedCube;
+
     if (isSelected) {
-        if (!selectedCubes.includes(cube)) {
-            selectedCubes = [...selectedCubes, cube];
+        if (!newSelectedCubes.includes(cube)) {
+            newSelectedCubes.push(cube);
         }
-        lastSelectedCube = cube;
+        newLastSelectedCube = cube;
     } else {
-        selectedCubes = selectedCubes.filter(c => c !== cube);
-        if (lastSelectedCube === cube) {
-            lastSelectedCube = selectedCubes.length > 0 ? selectedCubes[0] : null;
+        newSelectedCubes = newSelectedCubes.filter(c => c !== cube);
+        if (newLastSelectedCube === cube) {
+            newLastSelectedCube = newSelectedCubes.length > 0 ? newSelectedCubes[0] : null;
         }
     }
 
     // Update all cube highlights
     cubes.forEach(c => {
         try {
-            // Handle both single material and material array cases
             const materials = Array.isArray(c.material) ? c.material : [c.material];
-            
             materials.forEach(mat => {
                 if (mat.emissive) {
-                    if (selectedCubes.includes(c)) {
-                        // Selected cubes are blue, last selected is gold
-                        mat.emissive.setHex(c === lastSelectedCube ? 0xFFD700 : 0x3498db);
+                    if (newSelectedCubes.includes(c)) {
+                        mat.emissive.setHex(c === newLastSelectedCube ? 0xFFD700 : 0x3498db);
                         mat.emissiveIntensity = 0.5;
                     } else {
-                        // Deselected cubes return to normal
                         mat.emissive.setHex(0x000000);
                         mat.emissiveIntensity = 0;
                     }
@@ -173,7 +173,11 @@ export function highlightCubeByPmid(pmid, isSelected, selectedCubes = [], lastSe
         }
     });
 
-    return { cube, selectedCubes, lastSelectedCube };
+    return { 
+        cube, 
+        selectedCubes: newSelectedCubes, 
+        lastSelectedCube: newLastSelectedCube 
+    };
 }
 
 export function getCubes() {
