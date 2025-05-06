@@ -1,4 +1,5 @@
 // saveCubes.js
+import { getData } from './dataManager.js';
 
 export function handleExport(selectedCubes) {
   if (selectedCubes.length === 0) {
