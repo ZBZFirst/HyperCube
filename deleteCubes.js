@@ -1,5 +1,4 @@
 // deleteCubes.js
-import { deleteSelectedCubes } from './cubeManager.js';
 
 export function handleDelete(selectedCubes, updateSelection, refreshUI) {
   if (selectedCubes.length === 0) {
@@ -37,4 +36,13 @@ export function deleteFromData(pmid) {
   const index = data.findIndex(item => item.PMID === pmid);
   if (index !== -1) data.splice(index, 1);
   return data;
+}
+
+export function deleteSelectedCubes(selectedCubes) {
+    selectedCubes.forEach(cube => {
+        scene.remove(cube);
+        const index = cubes.indexOf(cube);
+        if (index !== -1) cubes.splice(index, 1);
+    });
+    return [];
 }
