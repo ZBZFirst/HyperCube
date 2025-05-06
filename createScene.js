@@ -18,18 +18,19 @@ export function createScene() {
         const renderer = setupRenderer(container);
         const { controls, updateControls } = setupControls(camera, renderer);
 
-        // Return a consistent object structure
+        // Make sure the renderer is focusable
+        renderer.domElement.tabIndex = 1;
+        renderer.domElement.style.outline = 'none';
+
         return {
             scene,
             camera,
             renderer,
             controls,
             updateControls,
-            // Add any other necessary components here
         };
     } catch (error) {
         console.error('Scene creation failed:', error);
-        // Return null or a fallback scene if needed
         return null;
     }
 }
