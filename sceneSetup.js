@@ -1,22 +1,40 @@
 import * as THREE from 'three';
 import { createDynamicBackground } from './timeBasedBackground.js';
 
+// To access the entire grid system:
+const gridSystem = scene.userData.gridSystem;
+
+// To access specific grid components:
+const mainGrid = gridSystem.mainGrid;  // THREE.Group containing all default grids
+const yearGrids = gridSystem.yearGrids; // THREE.Group for year-specific grids
+const journalGrids = gridSystem.journalGrids; // THREE.Group for journal grids
+
+// To access individual grids within main grid:
+const groundGrid = mainGrid.getObjectByName('GroundGrid');
+const xzGrid = mainGrid.getObjectByName('XZGrid');
+const yzGrid = mainGrid.getObjectByName('YZGrid');
+
+// In sceneSetup.js
 export function setupScene() {
     const scene = new THREE.Scene();
-    
+    console.log('[Scene] Creating new scene');
+
     // 1. Dynamic background
     const backgroundSystem = createDynamicBackground(scene);
     scene.userData.backgroundSystem = backgroundSystem;
-    
+    console.log('[Scene] Background system created');
+
     // 2. Enhanced lighting
+    console.log('[Scene] Setting up lighting');
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
     scene.add(ambientLight);
     
     const directionalLight = new THREE.DirectionalLight(0xffffff, 0.9);
     directionalLight.position.set(1, 1, 1).normalize();
     scene.add(directionalLight);
-    
-    // 3. Enhanced grid system with multiple visualization modes
+
+    // 3. Grid system initialization
+    console.log('[Scene] Initializing grid system');
     const gridSystem = {
         mainGrid: createMainGrid(),
         yearGrids: new THREE.Group(),
@@ -24,11 +42,17 @@ export function setupScene() {
         currentMode: 'default'
     };
     
+    // Add all grid components to scene
     scene.add(gridSystem.mainGrid);
+    console.log(`[Scene] Added main grid at position: ${gridSystem.mainGrid.position.toArray()}`);
+    
     scene.add(gridSystem.yearGrids);
     scene.add(gridSystem.journalGrids);
-    scene.userData.gridSystem = gridSystem;
     
+    // Store grid system reference
+    scene.userData.gridSystem = gridSystem;
+    console.log('[Scene] Grid system initialized and stored in scene.userData.gridSystem');
+
     // 4. Initial bounds
     backgroundSystem.updateSize(
         new THREE.Vector3(-20, -5, -20),
@@ -39,23 +63,28 @@ export function setupScene() {
 }
 
 function createMainGrid() {
+    console.log('[Grid] Creating main grid');
     const group = new THREE.Group();
+    group.name = 'MainGridGroup';
     
-    // Primary ground grid (more visible)
+    // Primary ground grid
     const groundGrid = new THREE.GridHelper(30, 30, 0x888888, 0x444444);
-    groundGrid.position.y = -0.01; // Slightly below objects
+    groundGrid.position.y = -0.01;
     groundGrid.name = 'GroundGrid';
+    console.log(`[Grid] Created ground grid at ${groundGrid.position.toArray()}`);
     
-    // Vertical grids for better spatial orientation
+    // Vertical grids
     const xzGrid = new THREE.GridHelper(30, 30, 0x666666, 0x333333);
     xzGrid.rotation.x = Math.PI / 2;
     xzGrid.position.y = 15;
     xzGrid.name = 'XZGrid';
+    console.log(`[Grid] Created XZ grid at ${xzGrid.position.toArray()}`);
     
     const yzGrid = new THREE.GridHelper(30, 30, 0x666666, 0x333333);
     yzGrid.rotation.z = Math.PI / 2;
     yzGrid.position.x = -15;
     yzGrid.name = 'YZGrid';
+    console.log(`[Grid] Created YZ grid at ${yzGrid.position.toArray()}`);
     
     group.add(groundGrid);
     group.add(xzGrid);
