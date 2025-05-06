@@ -18,14 +18,13 @@ async function init() {
     try {
         showLoadingIndicator();
         
-        // First create basic scene objects
+        // Create base scene objects
         const container = document.getElementById('graphics-container');
-        const scene = setupScene();
-        const camera = setupCamera(container);
-        const renderer = setupRenderer(container);
+        const sceneObjects = createScene(container);
+        if (!sceneObjects) throw new Error("Scene initialization failed");
         
         // Initialize cube manager
-        initCubeManager(scene, camera);
+        initCubeManager(sceneObjects.scene, sceneObjects.camera);
         
         // Load data
         let data;
@@ -35,7 +34,7 @@ async function init() {
         setData(data);
         
         // Create cubes
-        createCubesFromData(data, scene);
+        createCubesFromData(data, sceneObjects.scene);
         
         // Setup selection callback
         const onSelectCallback = (newSelectedCubes, newLastSelectedCube) => {
@@ -49,17 +48,17 @@ async function init() {
         // Setup UI
         setupUI(data, () => [...selectedCubes], () => lastSelectedCube, onSelectCallback);
         
-        // Setup controls AFTER everything else is ready
-        const controls = setupTraditionalControls(camera, renderer, scene, onSelectCallback);
+        // Setup controls with the callback
+        const { controls, updateControls } = setupControls(
+            sceneObjects.camera,
+            sceneObjects.renderer,
+            sceneObjects.scene,
+            onSelectCallback
+        );
         
-        // Store all objects
-        sceneObjects = {
-            scene,
-            camera,
-            renderer,
-            controls: controls.controls,
-            updateControls: controls.update
-        };
+        // Add controls to scene objects
+        sceneObjects.controls = controls;
+        sceneObjects.updateControls = updateControls;
         
         setupEventHandlers();
         setupSplitters();
