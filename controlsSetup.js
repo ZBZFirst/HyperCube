@@ -9,31 +9,30 @@ export function setupControls(camera, renderer) {
         const keysPressed = {};
         const movementSpeed = 5;
         const altitudeSpeed = 3;
-        
-        // Add event listeners for pointer lock state changes
-        controls.addEventListener('lock', () => {
-            console.log('Pointer lock acquired');
-            const hint = document.getElementById('pointer-lock-hint');
-            if (hint) hint.style.display = 'none';
-        });
-        
-        controls.addEventListener('unlock', () => {
-            console.log('Pointer lock released');
-            const hint = document.getElementById('pointer-lock-hint');
-            if (hint) hint.style.display = 'block';
-        });
 
-        // Keyboard controls
+        // Keyboard control handlers
         const onKeyDown = (e) => {
+            // Only handle keys when pointer lock is active
+            if (controls.isLocked) {
+                // Check if we're in an input field
+                const activeElement = document.activeElement;
+                const isInputField = activeElement && 
+                    (activeElement.tagName === 'INPUT' || 
+                     activeElement.tagName === 'TEXTAREA');
+                
+                // Only prevent default for navigation keys when not in input field
+                if (!isInputField && [' ', 'w', 'a', 's', 'd', 'shift', 'control', 'ctrl'].includes(e.key.toLowerCase())) {
+                    e.preventDefault();
+                }
+            }
             keysPressed[e.key.toLowerCase()] = true;
-            // Prevent spacebar from scrolling page
-            if (e.key === ' ') e.preventDefault();
         };
         
         const onKeyUp = (e) => {
             keysPressed[e.key.toLowerCase()] = false;
         };
 
+        // Add event listeners
         document.addEventListener('keydown', onKeyDown);
         document.addEventListener('keyup', onKeyUp);
 
@@ -54,33 +53,25 @@ export function setupControls(camera, renderer) {
             camera.position.y += velocity.y;
         };
 
-        // Setup click handler for the renderer
+        // Pointer lock activation
         renderer.domElement.addEventListener('click', () => {
             if (!controls.isLocked) {
-                // Show the hint first
-                const hint = document.getElementById('pointer-lock-hint');
-                if (hint) hint.style.display = 'block';
-                
-                // Request pointer lock
-                renderer.domElement.requestPointerLock = renderer.domElement.requestPointerLock || 
+                renderer.domElement.requestPointerLock = 
+                    renderer.domElement.requestPointerLock || 
                     renderer.domElement.mozRequestPointerLock || 
                     renderer.domElement.webkitRequestPointerLock;
-                
                 renderer.domElement.requestPointerLock();
             }
         });
 
-        // Cleanup function
-        const dispose = () => {
-            document.removeEventListener('keydown', onKeyDown);
-            document.removeEventListener('keyup', onKeyUp);
-            controls.dispose();
-        };
-
         return { 
             controls, 
             updateControls,
-            dispose 
+            dispose: () => {
+                document.removeEventListener('keydown', onKeyDown);
+                document.removeEventListener('keyup', onKeyUp);
+                controls.dispose();
+            }
         };
     } catch (error) {
         console.error("Controls initialization failed:", error);
