@@ -92,6 +92,7 @@ export function setupTraditionalControls(camera, renderer, scene, onSelectCallba
 
     // Projectile system
     const generateProjectile = () => {
+        console.groupCollapsed('[Projectile] New projectile created');
         const geometry = new THREE.BoxGeometry(0.5, 0.5, 0.5);
         const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
         const projectile = new THREE.Mesh(geometry, material);
@@ -104,6 +105,10 @@ export function setupTraditionalControls(camera, renderer, scene, onSelectCallba
         
         scene.add(projectile);
         activeProjectiles.add(projectile);
+        console.log('Projectile added to scene', {
+        position: projectile.position.clone(),
+        direction: direction.clone()
+        });
         
         // Movement parameters
         const maxDistance = 20;
@@ -112,6 +117,7 @@ export function setupTraditionalControls(camera, renderer, scene, onSelectCallba
         
         // Auto-remove after 5 seconds
         const timeoutId = setTimeout(() => {
+            console.log('Projectile timeout reached - removing');
             removeProjectile(projectile);
         }, 5000);
         
@@ -119,6 +125,7 @@ export function setupTraditionalControls(camera, renderer, scene, onSelectCallba
         const animateProjectile = () => {
             if (distanceTraveled >= maxDistance || !scene.children.includes(projectile)) {
                 removeProjectile(projectile);
+                console.log('Projectile reached max distance - removing');
                 return;
             }
             
@@ -131,6 +138,7 @@ export function setupTraditionalControls(camera, renderer, scene, onSelectCallba
             // Check collisions
             if (checkCollision(projectile)) {
                 removeProjectile(projectile);
+                console.log('Projectile reached a target - removing');
                 return;
             }
             
@@ -141,6 +149,7 @@ export function setupTraditionalControls(camera, renderer, scene, onSelectCallba
         
         // Cleanup function
         const removeProjectile = (proj) => {
+            console.log('Removing projectile');
             if (scene.children.includes(proj)) {
                 scene.remove(proj);
             }
