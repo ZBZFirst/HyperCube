@@ -63,29 +63,28 @@ export function setupSplitters() {
   const verticalSplitter = document.getElementById('vertical-splitter');
   const horizontalSplitter = document.getElementById('horizontal-splitter');
   const mainContent = document.getElementById('main-content');
-    
-  // Initialize grid templates if not set
-  if (!mainContent.style.gridTemplateColumns) {
-    mainContent.style.gridTemplateColumns = 'minmax(150px, 300px) 8px 1fr';
-  }
-  if (!mainContent.style.gridTemplateRows) {
-    mainContent.style.gridTemplateRows = '1fr 8px minmax(100px, 200px)';
-  }
+  
+  console.log('Initializing splitters...'); // Debug log
 
-  // Vertical splitter (now between text and graphics)
+  // Vertical splitter (between text and graphics)
   verticalSplitter.addEventListener('mousedown', (e) => {
     e.preventDefault();
+    console.log('Vertical splitter drag start'); // Debug log
+    
     const startX = e.clientX;
-    const gridTemplateColumns = mainContent.style.gridTemplateColumns || 
-                              window.getComputedStyle(mainContent).gridTemplateColumns;
-    const startWidth = parseInt(gridTemplateColumns.split(' ')[0]);
-
+    const gridTemplateColumns = window.getComputedStyle(mainContent).gridTemplateColumns;
+    const columns = gridTemplateColumns.split(' ');
+    const startTextWidth = parseFloat(columns[0]);
+    
     function doDrag(e) {
-      const newWidth = startWidth + (e.clientX - startX);
-      mainContent.style.gridTemplateColumns = `${Math.max(150, newWidth)}px 8px 1fr`;
+      const newTextWidth = startTextWidth + (e.clientX - startX);
+      // Ensure text container stays within min/max bounds
+      const clampedWidth = Math.max(150, Math.min(300, newTextWidth));
+      mainContent.style.gridTemplateColumns = `${clampedWidth}px 8px 1fr`;
     }
 
     function stopDrag() {
+      console.log('Vertical splitter drag end'); // Debug log
       document.removeEventListener('mousemove', doDrag);
       document.removeEventListener('mouseup', stopDrag);
     }
@@ -94,22 +93,25 @@ export function setupSplitters() {
     document.addEventListener('mouseup', stopDrag);
   });
 
-  // Horizontal splitter (now controls data table height)
+  // Horizontal splitter (between graphics and data table)
   horizontalSplitter.addEventListener('mousedown', (e) => {
     e.preventDefault();
+    console.log('Horizontal splitter drag start'); // Debug log
+    
     const startY = e.clientY;
-    const gridTemplateRows = mainContent.style.gridTemplateRows || 
-                           window.getComputedStyle(mainContent).gridTemplateRows;
-    // Changed to adjust the space between graphics and data table
-    const startMainHeight = parseInt(gridTemplateRows.split(' ')[0]);
-
+    const gridTemplateRows = window.getComputedStyle(mainContent).gridTemplateRows;
+    const rows = gridTemplateRows.split(' ');
+    const startGraphicsHeight = parseFloat(rows[0]);
+    
     function doDrag(e) {
-      const newMainHeight = startMainHeight + (e.clientY - startY);
-      // Adjust the first row (graphics area) which affects data table position
-      mainContent.style.gridTemplateRows = `${Math.max(100, newMainHeight)}px 8px minmax(100px, 200px)`;
+      const newGraphicsHeight = startGraphicsHeight + (e.clientY - startY);
+      // Ensure graphics container stays within reasonable bounds
+      const clampedHeight = Math.max(100, newGraphicsHeight);
+      mainContent.style.gridTemplateRows = `${clampedHeight}px 8px minmax(100px, 200px)`;
     }
 
     function stopDrag() {
+      console.log('Horizontal splitter drag end'); // Debug log
       document.removeEventListener('mousemove', doDrag);
       document.removeEventListener('mouseup', stopDrag);
     }
