@@ -5,6 +5,7 @@ import { createCubesFromData, getCubes, highlightCubeByPmid, centerCameraOnCube,
 import { hidePubMedFetchOverlay } from './pubmedOverlay.js';
 import { deleteSelectedFromData } from './deleteCubes.js';
 import { exportFilteredData } from './saveCubes.js';
+import * as THREE from 'three';
 
 export function createUI(callbacks) {
     const uiContainer = d3.select('#data-container');
