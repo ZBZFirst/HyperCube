@@ -1,3 +1,11 @@
+/* ========== BASE UNITS ========== */
+:root {
+  --base-unit: 1vmin; /* This will scale with viewport */
+  --button-zone-height: calc(6 * var(--base-unit));
+  --splitter-thickness: calc(0.8 * var(--base-unit));
+  --padding-unit: calc(1.5 * var(--base-unit));
+}
+
 /* ========== MAIN LAYOUT ========== */
 #app-container {
   position: fixed;
@@ -7,32 +15,28 @@
   height: 100vh;
   display: grid;
   grid-template-rows: 1fr auto; /* Main content and button zone */
-  grid-template-columns: 1fr; /* Single column layout */
+  overflow: hidden;
 }
 
 #main-content {
   display: grid;
-  grid-template-columns: minmax(150px, 500px) 8px 1fr; /* Text | Splitter | Graphics */
-  grid-template-rows: 1fr 8px minmax(100px, 500px); /* Main area | Splitter | Data */
+  grid-template-columns: minmax(15rem, 50rem) var(--splitter-thickness) 1fr;
+  grid-template-rows: 1fr var(--splitter-thickness) minmax(10rem, 50rem);
   grid-template-areas:
     "text    vsplit  graphics"
     "hsplit  hsplit  hsplit"
     "data    data    data";
-  height: calc(100vh - 60px); /* Account for button zone */
-  overflow: hidden;
+  height: calc(100vh - var(--button-zone-height));
 }
 
 /* ========== CONTENT AREAS ========== */
-#data-container {
-  grid-area: data;
+#data-container,
+#text-container {
+  padding: var(--padding-unit);
   overflow-y: auto;
-  padding: 15px;
-  background: #f8f8f8;
-  border-top: 1px solid #ddd;
 }
 
 #graphics-container {
-  grid-area: graphics;
   position: relative;
   overflow: hidden;
 }
@@ -43,23 +47,19 @@
   display: block;
 }
 
-#text-container {
-  grid-area: text;
-  padding: 15px;
-  overflow-y: auto;
-  background: #f0f0f0;
+/* ========== SPLITTERS ========== */
+.splitter {
+  background: #ddd;
+  transition: background 0.2s;
 }
 
-/* ========== SPLITTERS ========== */
 #vertical-splitter {
   grid-area: vsplit;
-  background: #ddd;
   cursor: col-resize;
 }
 
 #horizontal-splitter {
   grid-area: hsplit;
-  background: #ddd;
   cursor: row-resize;
 }
 
@@ -69,63 +69,72 @@
 
 /* ========== BUTTON ZONE ========== */
 #button-container {
-  height: 60px;
+  height: var(--button-zone-height);
+  min-height: 6rem; /* Fallback for very small screens */
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 10px;
-  padding: 0 20px;
+  gap: var(--padding-unit);
+  padding: 0 var(--padding-unit);
   background: #f8f8f8;
   border-top: 1px solid #ddd;
 }
 
 .action-button {
-  padding: 8px 16px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
+  padding: calc(0.8 * var(--base-unit)) calc(1.6 * var(--base-unit));
+  font-size: calc(1.6 * var(--base-unit));
 }
 
-.delete {
-  background: #f44336;
-  color: white;
+/* ========== MOBILE ADJUSTMENTS ========== */
+@media (max-width: 768px) {
+  :root {
+    --base-unit: 1.5vmin; /* Slightly larger base for mobile */
+  }
+  
+  #main-content {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto var(--splitter-thickness) auto var(--splitter-thickness) auto;
+    grid-template-areas:
+      "text"
+      "hsplit1"
+      "graphics"
+      "hsplit2"
+      "data";
+  }
+  
+  #vertical-splitter {
+    display: none;
+  }
+  
+  #button-container {
+    flex-wrap: wrap;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
 }
 
-#download-btn {
-  background: #4CAF50;
-  color: white;
+/* ========== TEXT ELEMENTS ========== */
+#selected-title {
+  font-size: calc(2 * var(--base-unit));
+  margin-bottom: calc(1 * var(--base-unit));
 }
 
-/* View controls styling */
-.view-controls {
-  display: flex;
-  gap: 8px;
-  margin-left: auto; /* Pushes to the right */
+.metadata-row {
+  font-size: calc(1.4 * var(--base-unit));
+  margin-bottom: calc(0.5 * var(--base-unit));
 }
 
-.view-button {
-  padding: 8px 12px;
-  background: #2c3e50;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  transition: all 0.2s;
+#abstract-text {
+  font-size: calc(1.6 * var(--base-unit));
+  line-height: 1.4;
+  margin-top: calc(1 * var(--base-unit));
 }
 
-.view-button:hover {
-  background: #34495e;
+/* ========== TABLE STYLING ========== */
+#data-table {
+  font-size: calc(1.4 * var(--base-unit));
+  width: 100%;
 }
 
-.view-button .icon {
-  font-size: 14px;
-}
-
-/* Highlight the active view mode */
-.view-button.active {
-  background: #3498db;
-  box-shadow: 0 0 5px rgba(52, 152, 219, 0.5);
+#data-table th, #data-table td {
+  padding: calc(0.5 * var(--base-unit));
 }
