@@ -46,14 +46,13 @@ export function setupUI(data, getSelectedCubes, getLastSelectedCube, onSelectCal
         if (result) {
             onSelectCallback(result.selectedCubes, result.lastSelectedCube);
             
-            // Use result.selectedCubes instead of undefined selectedCubes
-            if (isSelected && result.cube) {
-                updateTextZone(result.cube.userData);
-                centerCameraOnCube(result.cube);
-            } else if (result.selectedCubes.length === 0) {
-                clearTextZone();
-            } else if (result.lastSelectedCube) {
+            // Force text zone update for any selection change
+            if (result.lastSelectedCube) {
+                console.log('Updating text zone from selection change');
                 updateTextZone(result.lastSelectedCube.userData);
+            } else if (result.selectedCubes.length === 0) {
+                console.log('Clearing text zone - no selections');
+                clearTextZone();
             }
         }
     });
