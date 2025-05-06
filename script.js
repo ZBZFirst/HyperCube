@@ -8,7 +8,6 @@ import { createCubesFromData, getCubes, highlightCubeByPmid, centerCameraOnCube,
 import { hidePubMedFetchOverlay } from './pubmedOverlay.js';
 import { deleteSelectedFromData } from './deleteCubes.js';
 import { exportFilteredData } from './saveCubes.js';
-import { setupScene } from './sceneSetup.js';
 
 let sceneObjects;
 let selectedCubes = [];
