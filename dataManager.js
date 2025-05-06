@@ -1,137 +1,10 @@
-// dataManager.js start
+// dataManager.js
 import * as d3 from 'https://cdn.jsdelivr.net/npm/d3@7/+esm';
-import { fetchPubMedData, DEFAULT_API_KEY  } from './pubmedFetcher.js';
+import { fetchPubMedData, DEFAULT_API_KEY } from './pubmedFetcher.js';
 
 let data = [];
 
-/* ========== PRIVATE HELPER FUNCTIONS ========== */
-
-function initializeItemFields(item) {
-  item.includeArticle = item.includeArticle || "true";
-  item.rationale = item.rationale || "";
-  item.tags = item.tags || "";
-  return item;
-}
-
-function updateCompletionStatus(item) {
-  item.complete = item.Notes && item.Rating && item.Tags;
-  return item;
-}
-
-function createTitleCell(row, d) {
-  row.append('td')
-    .text(d => d.Title?.substring(0, 50) + (d.Title?.length > 50 ? '...' : ''));
-}
-
-function createCheckboxCell(row, onSelect) {  // Changed parameter list
-  row.append('td')
-    .append('input')
-    .attr('type', 'checkbox')
-    .attr('class', 'select-checkbox')
-    .on('change', function(event) {
-      const pmid = d3.select(this.closest('tr')).attr('data-pmid');
-      onSelect(pmid, event.target.checked);  // Now properly using the passed callback
-    });
-}
-
-function createNotesCell(row, d) {
-  row.append('td')
-    .append('input')
-    .attr('type', 'text')
-    .attr('class', 'notes-input')
-    .attr('value', d => d.Notes || '')
-    .on('change', function(event, d) {
-      addAnnotation(d.PMID, 'Notes', event.target.value);
-      d3.select(this.closest('tr')).classed('complete', d.complete);
-    });
-}
-
-function createRatingCell(row, d) {
-  const select = row.append('td')
-    .append('select')
-    .attr('class', 'rating-select')
-    .on('change', function(event, d) {
-      addAnnotation(d.PMID, 'Rating', event.target.value);
-      d3.select(this.closest('tr')).classed('complete', d.complete);
-    });
-  
-  select.selectAll('option')
-    .data([...Array(6).keys()].slice(1))
-    .enter()
-    .append('option')
-    .attr('value', d => d)
-    .text(d => d)
-    .filter((d, i, nodes) => d === nodes[i].__data__.Rating)
-    .attr('selected', true);
-}
-
-function createTagsCell(row, d) {
-  row.append('td')
-    .append('input')
-    .attr('type', 'text')
-    .attr('class', 'tags-input')
-    .attr('value', d => d.Tags || '')
-    .on('change', function(event, d) {
-      addAnnotation(d.PMID, 'Tags', event.target.value);
-      d3.select(this.closest('tr')).classed('complete', d.complete);
-    });
-}
-
-function setupTableRows(tbody, data, onSelect) {
-  return tbody.selectAll('tr')
-    .data(data)
-    .enter()
-    .append('tr')
-    .attr('data-pmid', d => d.PMID)
-    .classed('complete', d => d.complete)
-    .on('keydown', function(event) {
-    });
-}
-
-export async function attemptPubMedFetch() {
-    return new Promise((resolve) => {
-        const overlay = showPubMedFetchOverlay();
-        
-        // We'll handle the resolution in the button click handlers
-        overlay.querySelector('button').onclick = async () => {
-            const fetchButton = overlay.querySelector('button');
-            fetchButton.disabled = true;
-            fetchButton.textContent = 'Fetching...';
-            
-            try {
-                const searchTerm = overlay.querySelector('#pubmed-search-term').value.trim();
-                const apiKey = overlay.querySelector('#pubmed-api-key').value.trim() || DEFAULT_API_KEY;
-                
-                const data = await fetchPubMedData(searchTerm, apiKey);
-                hidePubMedFetchOverlay();
-                resolve(data);
-            } catch (error) {
-                console.error("PubMed fetch failed:", error);
-                fetchButton.textContent = 'Try Again';
-                fetchButton.disabled = false;
-                // Don't resolve here - let user try again or cancel
-            }
-        };
-        
-        // Handle cancel button
-        overlay.querySelectorAll('button')[1].onclick = () => {
-            hidePubMedFetchOverlay();
-            resolve(null); // Signal to load from CSV
-        };
-    });
-}
-
-function createExportBlob(data) {
-  const exportData = data.map(item => ({
-    ...item,
-    Notes: item.Notes || '',
-    Rating: item.Rating || '',
-    Tags: item.Tags || ''
-  }));
-  return new Blob([d3.csvFormat(exportData)], { type: 'text/csv;charset=utf-8;' });
-}
-
-/* ========== PUBLIC API FUNCTIONS ========== */
+/* ========== CORE DATA FUNCTIONS ========== */
 
 export async function loadData(url) {
   try {
@@ -144,6 +17,10 @@ export async function loadData(url) {
   }
 }
 
+export function getData() {
+  return data;
+}
+
 export function addAnnotation(pmid, field, value) {
   const item = data.find(d => d.PMID === pmid);
   if (item) {
@@ -153,6 +30,86 @@ export function addAnnotation(pmid, field, value) {
   }
   return false;
 }
+
+export function deleteSelectedFromData(pmidsToDelete) {
+  if (!Array.isArray(pmidsToDelete)) return;
+  data = data.filter(item => !pmidsToDelete.includes(item.PMID));
+  return data;
+}
+
+export function deleteFromData(pmid) {
+  const index = data.findIndex(item => item.PMID === pmid);
+  if (index !== -1) data.splice(index, 1);
+  return data;
+}
+
+/* ========== UI TABLE FUNCTIONS ========== */
+
+export function populateDataTable(data, onSelect) {
+  const tbody = d3.select('#data-table tbody');
+  tbody.selectAll('tr').remove();
+
+  const rows = tbody.selectAll('tr')
+    .data(data)
+    .enter()
+    .append('tr')
+    .attr('data-pmid', d => d.PMID)
+    .classed('complete', d => d.complete);
+
+  // Title column
+  rows.append('td')
+    .text(d => d.Title?.substring(0, 50) + (d.Title?.length > 50 ? '...' : ''));
+
+  // Checkbox column
+  rows.append('td')
+    .append('input')
+    .attr('type', 'checkbox')
+    .attr('class', 'select-checkbox')
+    .on('change', function(event) {
+      const pmid = d3.select(this.closest('tr')).attr('data-pmid');
+      onSelect(pmid, event.target.checked);
+    });
+
+  // Notes column
+  rows.append('td')
+    .append('input')
+    .attr('type', 'text')
+    .attr('class', 'notes-input')
+    .attr('value', d => d.Notes || '')
+    .on('change', function(event, d) {
+      addAnnotation(d.PMID, 'Notes', event.target.value);
+    });
+
+  // Rating column
+  const ratingSelect = rows.append('td')
+    .append('select')
+    .attr('class', 'rating-select');
+    
+  ratingSelect.selectAll('option')
+    .data([...Array(6).keys()].slice(1))
+    .enter()
+    .append('option')
+    .attr('value', d => d)
+    .text(d => d)
+    .filter((d, i, nodes) => d === nodes[i].__data__.Rating)
+    .attr('selected', true);
+    
+  ratingSelect.on('change', function(event, d) {
+    addAnnotation(d.PMID, 'Rating', event.target.value);
+  });
+
+  // Tags column
+  rows.append('td')
+    .append('input')
+    .attr('type', 'text')
+    .attr('class', 'tags-input')
+    .attr('value', d => d.Tags || '')
+    .on('change', function(event, d) {
+      addAnnotation(d.PMID, 'Tags', event.target.value);
+    });
+}
+
+/* ========== TEXT ZONE FUNCTIONS ========== */
 
 export function updateTextZone(article) {
   document.getElementById('selected-title').textContent = article.Title;
@@ -171,260 +128,360 @@ export function updateTextZone(article) {
   document.getElementById('abstract-text').textContent = article.Abstract || 'No abstract available';
 }
 
-export function populateDataTable(data, onSelect) {
-  const tbody = d3.select('#data-table tbody');
-  tbody.selectAll('tr').remove();
-
-  const rows = setupTableRows(tbody, data, onSelect);
-  
-  createTitleCell(rows);
-  createCheckboxCell(rows, onSelect);
-  createNotesCell(rows);
-  createRatingCell(rows);
-  createTagsCell(rows);
+export function clearTextZone() {
+  document.getElementById('selected-title').textContent = 'No article selected';
+  document.getElementById('pmid-text').textContent = '-';
+  document.getElementById('year-text').textContent = '-';
+  document.getElementById('source-text').textContent = '-';
+  document.getElementById('doi-link').textContent = '-';
+  document.getElementById('pmc-link').textContent = '-';
+  document.getElementById('abstract-text').textContent = 'Select an article to view its abstract';
 }
 
-export function getData() {
-  return data;
-}
-
-export function deleteSelectedFromData(pmidsToDelete) {
-    if (!Array.isArray(pmidsToDelete)) return;
-    
-    // Filter out the items to delete
-    data = data.filter(item => !pmidsToDelete.includes(item.PMID));
-    
-    return data;
-}
-
-/* ========== OVERLAY COMPONENT FUNCTIONS ========== */
-
-function createOverlayContainer() {
-  const overlay = document.createElement('div');
-  overlay.id = 'pubmed-fetch-overlay';
-  Object.assign(overlay.style, {
-    position: 'fixed',
-    top: '0',
-    left: '0',
-    width: '100%',
-    height: '100%',
-    backgroundColor: 'rgba(0,0,0,0.9)',
-    zIndex: '10000',
-    display: 'flex',
-    flexDirection: 'column',
-    justifyContent: 'center',
-    alignItems: 'center',
-    color: 'white',
-    padding: '20px',
-    boxSizing: 'border-box'
-  });
-  return overlay;
-}
-
-function createFormContainer() {
-  const form = document.createElement('div');
-  Object.assign(form.style, {
-    width: '100%',
-    maxWidth: '500px',
-    backgroundColor: '#222',
-    padding: '30px',
-    borderRadius: '10px',
-    boxShadow: '0 0 20px rgba(0,0,0,0.5)'
-  });
-  return form;
-}
-
-function createSearchTermInput() {
-  const input = document.createElement('input');
-  input.type = 'text';
-  input.id = 'pubmed-search-term';
-  input.value = 'Liquid Mechanical Ventilation Life Support Humans';
-  Object.assign(input.style, {
-    width: '100%',
-    padding: '10px',
-    marginBottom: '20px',
-    borderRadius: '5px',
-    border: 'none'
-  });
-  
-  // Ensure spacebar works
-  input.addEventListener('keydown', (e) => e.key === ' ' && e.stopPropagation());
-  return input;
-}
-
-function createApiKeyInput() {
-  const input = document.createElement('input');
-  input.type = 'text';
-  input.id = 'pubmed-api-key';
-  
-  // Now shows the actual default key in placeholder
-  input.placeholder = `Leave blank to use default key`;
-  
-  // Visual indication it's using a default value
-  input.title = `Default key: ${DEFAULT_API_KEY}\n\nRate limits may apply with shared keys`;
-  
-  Object.assign(input.style, {
-    width: '100%',
-    padding: '10px',
-    marginBottom: '30px',
-    borderRadius: '5px',
-    border: 'none',
-    fontFamily: 'monospace' // Better for API key display
-  });
-
-  return input;
-}
-
-function createActionButton(text, color, onClick) {
-  const button = document.createElement('button');
-  button.textContent = text;
-  Object.assign(button.style, {
-    padding: '10px 20px',
-    backgroundColor: color,
-    color: 'white',
-    border: 'none',
-    borderRadius: '5px',
-    cursor: 'pointer',
-    flex: '1'
-  });
-  button.addEventListener('click', onClick);
-  return button;
-}
-
-function createSpinner() {
-  const spinner = document.createElement('div');
-  Object.assign(spinner.style, {
-    border: '5px solid rgba(255,255,255,0.3)',
-    borderTop: '5px solid #fff',
-    borderRadius: '50%',
-    width: '30px',
-    height: '30px',
-    animation: 'spin 1s linear infinite',
-    margin: '20px auto'
-  });
-  return spinner;
-}
-
-function addSpinAnimation() {
-  const style = document.createElement('style');
-  style.textContent = `
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-  `;
-  document.head.appendChild(style);
-  return style;
-}
-
-/* ========== MAIN OVERLAY FUNCTION ========== */
-
-export function showPubMedFetchOverlay() {
-  // Create overlay structure
-  const overlay = createOverlayContainer();
-  const form = createFormContainer();
-  
-  // Add title
-  const title = document.createElement('h2');
-  title.textContent = 'Fetch PubMed Data';
-  title.style.cssText = 'margin-top: 0; text-align: center;';
-  form.appendChild(title);
-  
-  // Add search term input
-  form.appendChild(createLabel('Search Term:'));
-  const searchInput = createSearchTermInput();
-  form.appendChild(searchInput);
-  
-  // Add API key input
-  form.appendChild(createLabel('PubMed API Key (optional):'));
-  form.appendChild(createApiKeyInput());
-  
-  // Create buttons container
-  const buttonsContainer = document.createElement('div');
-  buttonsContainer.style.cssText = 'display: flex; justify-content: space-between; gap: 10px;';
-  
-  // Add buttons
-  buttonsContainer.appendChild(
-    createActionButton('Fetch from PubMed', '#4CAF50', handleFetchClick)
-  );
-  buttonsContainer.appendChild(
-    createActionButton('Load from CSV', '#f44336', () => hidePubMedFetchOverlay())
-  );
-  
-  form.appendChild(buttonsContainer);
-  overlay.appendChild(form);
-  document.body.appendChild(overlay);
-  
-  // Add spin animation
-  addSpinAnimation();
-  
-  // Focus on input
-  searchInput.focus();
-  
-  return overlay;
-  
-  function handleFetchClick() {
-    const fetchButton = this;
-    fetchButton.disabled = true;
-    fetchButton.textContent = 'Fetching...';
-    
-    const spinner = createSpinner();
-    fetchButton.parentNode.insertBefore(spinner, fetchButton.nextSibling);
-    
-    const searchTerm = searchInput.value.trim();
-    const apiKey = document.getElementById('pubmed-api-key').value.trim() || DEFAULT_API_KEY;
-    
-    return fetchPubMedData(searchTerm, apiKey)
-      .finally(() => {
-        spinner.remove();
-        fetchButton.textContent = 'Fetch from PubMed';
-        fetchButton.disabled = false;
-      });
-  }
-}
-
-function createLabel(text) {
-  const label = document.createElement('label');
-  label.textContent = text;
-  label.style.cssText = 'display: block; margin-bottom: 5px;';
-  return label;
-}
-
-export function hidePubMedFetchOverlay() {
-    const overlay = document.getElementById('pubmed-fetch-overlay');
-    if (overlay) {
-        overlay.remove();
-    }
-    // Also remove the style element we added
-    const styles = document.querySelectorAll('style');
-    styles.forEach(style => {
-        if (style.textContent.includes('spin')) {
-            style.remove();
-        }
-    });
-}
-
-export function deleteFromData(pmid) {
-  const index = data.findIndex(item => item.PMID === pmid);
-  if (index !== -1) {
-    data.splice(index, 1);
-  }
-  return data;
-}
+/* ========== EXPORT FUNCTIONS ========== */
 
 export function exportFilteredData() {
   if (!data.length) {
     alert("No data available to export");
     return;
   }
-  
-  const blob = createExportBlob(data);
+
+  const exportData = data.map(item => ({
+    ...item,
+    Notes: item.Notes || '',
+    Rating: item.Rating || '',
+    Tags: item.Tags || ''
+  }));
+
+  const blob = new Blob([d3.csvFormat(exportData)], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
-  link.setAttribute('href', url);
-  link.setAttribute('download', `pubmed_export_${new Date().toISOString().slice(0,10)}.csv`);
+  link.href = url;
+  link.download = `pubmed_export_${new Date().toISOString().slice(0,10)}.csv`;
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
 }
-// dataManager.js end
+
+/* ========== PUBMED FETCH FUNCTIONS ========== */
+
+export async function attemptPubMedFetch() {
+  const overlay = showPubMedFetchOverlay();
+  
+  return new Promise((resolve) => {
+    overlay.querySelector('button').onclick = async () => {
+      const fetchButton = overlay.querySelector('button');
+      fetchButton.disabled = true;
+      fetchButton.textContent = 'Fetching...';
+      
+      try {
+        const searchTerm = overlay.querySelector('#pubmed-search-term').value.trim();
+        const apiKey = overlay.querySelector('#pubmed-api-key').value.trim() || DEFAULT_API_KEY;
+        const result = await fetchPubMedData(searchTerm, apiKey);
+        hidePubMedFetchOverlay();
+        resolve(result);
+      } catch (error) {
+        console.error("PubMed fetch failed:", error);
+        fetchButton.textContent = 'Try Again';
+        fetchButton.disabled = false;
+      }
+    };
+    
+    overlay.querySelectorAll('button')[1].onclick = () => {
+      hidePubMedFetchOverlay();
+      resolve(null);
+    };
+  });
+}
+
+/* ========== PRIVATE HELPER FUNCTIONS ========== */
+
+function initializeItemFields(item) {
+  item.includeArticle = item.includeArticle || "true";
+  item.rationale = item.rationale || "";
+  item.tags = item.tags || "";
+  return item;
+}
+
+function updateCompletionStatus(item) {
+  item.complete = item.Notes && item.Rating && item.Tags;
+  return item;
+}
+
+export function showPubMedFetchOverlay() {
+  // Create overlay container with modern styling
+  const overlay = document.createElement('div');
+  overlay.id = 'pubmed-fetch-overlay';
+  overlay.className = 'pubmed-overlay';
+  
+  // Create modal content
+  const modal = document.createElement('div');
+  modal.className = 'pubmed-modal';
+  
+  // Add title
+  const title = document.createElement('h2');
+  title.textContent = 'Fetch PubMed Data';
+  title.className = 'modal-title';
+  
+  // Create form
+  const form = document.createElement('form');
+  form.className = 'pubmed-form';
+  
+  // Search term input
+  const searchGroup = createFormGroup(
+    'Search Term:', 
+    'pubmed-search-term', 
+    'text', 
+    'Liquid Mechanical Ventilation Life Support Humans'
+  );
+  
+  // API key input
+  const apiKeyGroup = createFormGroup(
+    'PubMed API Key (optional):', 
+    'pubmed-api-key', 
+    'text', 
+    '', 
+    `Default key will be used if left blank`
+  );
+  
+  // Action buttons
+  const buttonGroup = document.createElement('div');
+  buttonGroup.className = 'button-group';
+  
+  const fetchBtn = createButton('Fetch from PubMed', 'primary', handleFetch);
+  const cancelBtn = createButton('Load from CSV', 'secondary', hidePubMedFetchOverlay);
+  
+  buttonGroup.append(fetchBtn, cancelBtn);
+  
+  // Loading indicator
+  const spinner = document.createElement('div');
+  spinner.className = 'spinner';
+  spinner.style.display = 'none';
+  
+  // Assemble the modal
+  form.append(searchGroup, apiKeyGroup, buttonGroup, spinner);
+  modal.append(title, form);
+  overlay.appendChild(modal);
+  
+  // Add to DOM
+  document.body.appendChild(overlay);
+  
+  // Focus on search input
+  searchGroup.querySelector('input').focus();
+  
+  // Add CSS dynamically
+  addOverlayStyles();
+  
+  return overlay;
+
+  // Helper functions
+  function createFormGroup(labelText, id, type, value, placeholder = '') {
+    const group = document.createElement('div');
+    group.className = 'form-group';
+    
+    const label = document.createElement('label');
+    label.textContent = labelText;
+    label.htmlFor = id;
+    
+    const input = document.createElement('input');
+    input.type = type;
+    input.id = id;
+    input.value = value;
+    input.placeholder = placeholder;
+    
+    group.append(label, input);
+    return group;
+  }
+
+  function createButton(text, variant, onClick) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = `btn btn-${variant}`;
+    btn.textContent = text;
+    btn.addEventListener('click', onClick);
+    return btn;
+  }
+
+  async function handleFetch() {
+    const fetchBtn = modal.querySelector('.btn-primary');
+    const spinner = modal.querySelector('.spinner');
+    const searchInput = document.getElementById('pubmed-search-term');
+    const apiKeyInput = document.getElementById('pubmed-api-key');
+    
+    // UI feedback
+    fetchBtn.disabled = true;
+    spinner.style.display = 'block';
+    
+    try {
+      const searchTerm = searchInput.value.trim();
+      const apiKey = apiKeyInput.value.trim() || DEFAULT_API_KEY;
+      
+      if (!searchTerm) {
+        throw new Error('Please enter a search term');
+      }
+      
+      return await fetchPubMedData(searchTerm, apiKey);
+    } catch (error) {
+      console.error("PubMed fetch failed:", error);
+      showErrorInModal(error.message);
+      throw error;
+    } finally {
+      spinner.style.display = 'none';
+      fetchBtn.disabled = false;
+    }
+  }
+
+  function showErrorInModal(message) {
+    // Remove any existing error
+    const existingError = modal.querySelector('.error-message');
+    if (existingError) existingError.remove();
+    
+    const errorEl = document.createElement('p');
+    errorEl.className = 'error-message';
+    errorEl.textContent = message;
+    errorEl.style.color = '#ff6b6b';
+    errorEl.style.marginTop = '10px';
+    
+    modal.querySelector('form').appendChild(errorEl);
+  }
+}
+
+function addOverlayStyles() {
+  const style = document.createElement('style');
+  style.textContent = `
+    .pubmed-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(0,0,0,0.8);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+    
+    .pubmed-modal {
+      background: #2d3436;
+      border-radius: 8px;
+      padding: 30px;
+      width: 100%;
+      max-width: 500px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+      animation: modalFadeIn 0.3s ease-out;
+    }
+    
+    .modal-title {
+      color: #f5f6fa;
+      margin-top: 0;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    
+    .pubmed-form {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    
+    .form-group label {
+      color: #dfe6e9;
+      font-size: 14px;
+    }
+    
+    .form-group input {
+      padding: 12px 15px;
+      border: 1px solid #636e72;
+      border-radius: 4px;
+      background: #3d484d;
+      color: white;
+      font-size: 16px;
+    }
+    
+    .form-group input:focus {
+      outline: none;
+      border-color: #0984e3;
+    }
+    
+    .button-group {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    
+    .btn {
+      padding: 12px 20px;
+      border: none;
+      border-radius: 4px;
+      font-size: 16px;
+      cursor: pointer;
+      flex: 1;
+      transition: all 0.2s;
+    }
+    
+    .btn-primary {
+      background: #0984e3;
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      background: #0779cf;
+    }
+    
+    .btn-primary:disabled {
+      background: #636e72;
+      cursor: not-allowed;
+    }
+    
+    .btn-secondary {
+      background: #3d484d;
+      color: white;
+    }
+    
+    .btn-secondary:hover {
+      background: #2d3436;
+    }
+    
+    .spinner {
+      border: 3px solid rgba(255,255,255,0.1);
+      border-top: 3px solid #0984e3;
+      border-radius: 50%;
+      width: 24px;
+      height: 24px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    @keyframes modalFadeIn {
+      from { opacity: 0; transform: translateY(-20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  `;
+  
+  document.head.appendChild(style);
+}
+
+function hidePubMedFetchOverlay() {
+  const overlay = document.getElementById('pubmed-fetch-overlay');
+  if (overlay) overlay.remove();
+  
+  // Remove spin animation style
+  const styles = document.querySelectorAll('style');
+  styles.forEach(style => {
+    if (style.textContent.includes('spin')) style.remove();
+  });
+}
