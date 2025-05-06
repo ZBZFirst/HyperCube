@@ -2,6 +2,7 @@
 import * as d3 from 'https://cdn.jsdelivr.net/npm/d3@7/+esm';
 import { fetchPubMedData, DEFAULT_API_KEY } from './pubmedFetcher.js';
 import { showPubMedFetchOverlay, hidePubMedFetchOverlay } from './pubmedOverlay.js';
+
 import { deleteFromData, deleteSelectedFromData, deleteSelectedCubes } from './deleteCubes.js';
 import { exportFilteredData, handleExport } from './saveCubes.js';
 
@@ -22,6 +23,11 @@ export async function loadData(url) {
 
 export function getData() {
   return data;
+}
+
+
+export function setData(newData) {
+  data = newData;
 }
 
 export function addAnnotation(pmid, field, value) {
