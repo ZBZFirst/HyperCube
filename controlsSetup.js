@@ -3,10 +3,10 @@ import * as THREE from 'three';
 import { PointerLockControls } from 'three/examples/jsm/controls/PointerLockControls.js';
 import { setupTraditionalControls } from './traditionalControls.js';
 
-export function setupControls(camera, renderer, scene) {
+export function setupControls(camera, renderer, scene, onSelectCallback) {
     try {
         // Use our enhanced traditional controls
-        const { controls, update } = setupTraditionalControls(camera, renderer, scene);
+        const { controls, update } = setupTraditionalControls(camera, renderer, scene, onSelectCallback);
         
         // Pointer lock activation
         renderer.domElement.addEventListener('click', () => {
