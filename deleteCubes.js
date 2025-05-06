@@ -1,6 +1,7 @@
 // deleteCubes.js
 import { getData, setData } from './dataManager.js';
 
+// For data operations
 export function deleteSelectedFromData(pmidsToDelete) {
   const currentData = getData();
   if (!Array.isArray(pmidsToDelete)) return currentData;
@@ -10,14 +11,13 @@ export function deleteSelectedFromData(pmidsToDelete) {
   return newData;
 }
 
-export function deleteFromData(pmid) {
-  const currentData = getData();
-  const index = currentData.findIndex(item => item.PMID === pmid);
-  if (index !== -1) {
-    const newData = [...currentData];
-    newData.splice(index, 1);
-    setData(newData);
-    return newData;
-  }
-  return currentData;
+// For scene operations
+export function deleteSelectedCubes(selectedCubes, scene) {
+  if (!selectedCubes || !selectedCubes.length) return [];
+  
+  selectedCubes.forEach(cube => {
+    scene.remove(cube);
+  });
+  
+  return [];
 }
