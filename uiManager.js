@@ -3,8 +3,8 @@ import * as d3 from 'https://cdn.jsdelivr.net/npm/d3@7/+esm';
 import { loadData, populateDataTable, updateTextZone, attemptPubMedFetch, getData, addAnnotation } from './dataManager.js';
 import { createCubesFromData, getCubes, highlightCubeByPmid, centerCameraOnCube, initCubeManager } from './cubeManager.js';
 import { hidePubMedFetchOverlay } from './pubmedOverlay.js';
-import { deleteFromData, deleteSelectedFromData, deleteSelectedCubes } from './deleteCubes.js';
-import { exportFilteredData, handleExport } from './saveCubes.js';
+import { deleteFromData, deleteSelectedFromData } from './deleteCubes.js';
+import { exportFilteredData } from './saveCubes.js';
 
 export function createUI(callbacks) {
     const uiContainer = d3.select('#data-container');
