@@ -1,13 +1,15 @@
-// traditionalControls.js
 import * as THREE from 'three';
 import { PointerLockControls } from 'three/examples/jsm/controls/PointerLockControls.js';
-import { createCube } from './createCube.js';
+import { highlightCubeByPmid } from './cubeManager.js';
 
 export function setupTraditionalControls(camera, renderer, scene) {
     const controls = new PointerLockControls(camera, renderer.domElement);
     const velocity = new THREE.Vector3();
     const speed = 5;
     const altitudeSpeed = 3;
+    
+    // Track all active projectiles
+    const activeProjectiles = new Set();
     
     // Keyboard controls
     const keysPressed = {};
@@ -66,24 +68,41 @@ export function setupTraditionalControls(camera, renderer, scene) {
         
         // Add cube to scene
         scene.add(cube);
+        activeProjectiles.add(cube);
         
         // Set up movement parameters
         const maxDistance = 20;
         const speed = 0.2;
         let distanceTraveled = 0;
         
+        // Set timeout for max lifetime (5 seconds)
+        const timeoutId = setTimeout(() => {
+            if (scene.children.includes(cube)) {
+                scene.remove(cube);
+            }
+            activeProjectiles.delete(cube);
+        }, 5000);
+        
         // Animation function
         function animateCube() {
-            if (distanceTraveled < maxDistance) {
+            if (distanceTraveled < maxDistance && scene.children.includes(cube)) {
                 cube.position.add(direction.clone().multiplyScalar(speed));
                 distanceTraveled += speed;
                 
                 // Check for collisions with other cubes
-                checkCollisions(cube, scene);
+                if (checkCollisions(cube, scene)) {
+                    // If collision occurred, remove the projectile
+                    scene.remove(cube);
+                    activeProjectiles.delete(cube);
+                    clearTimeout(timeoutId);
+                    return;
+                }
                 
                 requestAnimationFrame(animateCube);
             } else {
                 scene.remove(cube);
+                activeProjectiles.delete(cube);
+                clearTimeout(timeoutId);
             }
         }
         
@@ -92,18 +111,19 @@ export function setupTraditionalControls(camera, renderer, scene) {
     
     // Function to check for collisions with other cubes
     function checkCollisions(cube, scene) {
+        let collisionOccurred = false;
+        
         scene.children.forEach(object => {
             if (object !== cube && object.userData && object.userData.pmid) {
                 if (cube.position.distanceTo(object.position) < 1) {
                     // Select the cube that was hit
-                    const result = highlightCubeByPmid(object.userData.pmid, true, [], null);
-                    if (result) {
-                        // Update the UI or perform other actions
-                        console.log('Cube selected:', object.userData.pmid);
-                    }
+                    highlightCubeByPmid(object.userData.pmid, true, [], null);
+                    collisionOccurred = true;
                 }
             }
         });
+        
+        return collisionOccurred;
     }
     
     return { controls, update };
