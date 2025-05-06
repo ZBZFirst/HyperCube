@@ -100,13 +100,13 @@ export function setupSplitters() {
     const startY = e.clientY;
     const gridTemplateRows = mainContent.style.gridTemplateRows || 
                            window.getComputedStyle(mainContent).gridTemplateRows;
-    // Changed index from [2] to [0] because text is now first row
-    const startHeight = parseInt(gridTemplateRows.split(' ')[0]);
+    // Changed to adjust the space between graphics and data table
+    const startMainHeight = parseInt(gridTemplateRows.split(' ')[0]);
 
     function doDrag(e) {
-      const newHeight = startHeight - (e.clientY - startY);
-      // Changed to adjust first row (text) which pushes data table up/down
-      mainContent.style.gridTemplateRows = `${Math.max(100, newHeight)}px 8px minmax(100px, 200px)`;
+      const newMainHeight = startMainHeight + (e.clientY - startY);
+      // Adjust the first row (graphics area) which affects data table position
+      mainContent.style.gridTemplateRows = `${Math.max(100, newMainHeight)}px 8px minmax(100px, 200px)`;
     }
 
     function stopDrag() {
