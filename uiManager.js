@@ -41,23 +41,19 @@ export function setupUI(data, getSelectedCubes, getLastSelectedCube, onSelectCal
         const currentSelected = getSelectedCubes();
         const currentLast = getLastSelectedCube();
         
-        const result = highlightCubeByPmid(
-            pmid, 
-            isSelected, 
-            currentSelected,
-            currentLast
-        );
+        const result = highlightCubeByPmid(pmid, isSelected, currentSelected, currentLast);
         
         if (result) {
             onSelectCallback(result.selectedCubes, result.lastSelectedCube);
             
+            // Use result.selectedCubes instead of undefined selectedCubes
             if (isSelected && result.cube) {
                 updateTextZone(result.cube.userData);
                 centerCameraOnCube(result.cube);
-            } else if (selectedCubes.length === 0) {
+            } else if (result.selectedCubes.length === 0) {
                 clearTextZone();
-            } else if (lastSelectedCube) {
-                updateTextZone(lastSelectedCube.userData);
+            } else if (result.lastSelectedCube) {
+                updateTextZone(result.lastSelectedCube.userData);
             }
         }
     });
