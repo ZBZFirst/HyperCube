@@ -133,10 +133,18 @@ export function updateCubeVisibility(cube) {
 }
 
 export function highlightCubeByPmid(pmid, isSelected, selectedCubes = [], lastSelectedCube = null) {
-    selectedCubes = selectedCubes.filter(c => c !== null && c !== undefined);
-    console.log("Highlight called:", { pmid, isSelected, currentSelected: selectedCubes.map(c => c?.userData.pmid),currentLast: lastSelectedCube?.userData.pmid});
+    console.groupCollapsed(`[highlightCubeByPmid] pmid:${pmid} isSelected:${isSelected}`);
+    console.log('Current selection state:', {
+        selected: selectedCubes.map(c => c?.userData.pmid),
+        last: lastSelectedCube?.userData.pmid
+    });
+
     const cube = cubes.find(c => c.userData.pmid === pmid);
-    if (!cube) return null;
+    if (!cube) {
+        console.warn('Cube not found for pmid:', pmid);
+        console.groupEnd();
+        return null;
+    }
 
     // Update selection state
     let newSelectedCubes = [...selectedCubes];
@@ -154,27 +162,31 @@ export function highlightCubeByPmid(pmid, isSelected, selectedCubes = [], lastSe
         }
     }
 
-    // Update all cube highlights
-    cubes.forEach(c => {
-        try {
-            const materials = Array.isArray(c.material) ? c.material : [c.material];
-            materials.forEach(mat => {
-                if (mat.emissive) {
-                    if (newSelectedCubes.includes(c)) {
-                        mat.emissive.setHex(c === newLastSelectedCube ? 0xFFD700 : 0x3498db);
-                        mat.emissiveIntensity = 0.5;
-                    } else {
-                        mat.emissive.setHex(0x000000);
-                        mat.emissiveIntensity = 0;
-                    }
-                    mat.needsUpdate = true;
-                }
-            });
-        } catch (e) {
-            console.warn('Error updating cube highlight:', e);
-        }
+    console.log('New selection state:', {
+        selected: newSelectedCubes.map(c => c.userData.pmid),
+        last: newLastSelectedCube?.userData.pmid
     });
 
+    // Update cube appearances
+    cubes.forEach(c => {
+        const materials = Array.isArray(c.material) ? c.material : [c.material];
+        materials.forEach(mat => {
+            if (mat.emissive) {
+                if (newSelectedCubes.includes(c)) {
+                    const isLastSelected = c === newLastSelectedCube;
+                    mat.emissive.setHex(isLastSelected ? 0xFFD700 : 0x3498db);
+                    mat.emissiveIntensity = 0.5;
+                    console.log(`Highlighting cube ${c.userData.pmid} as ${isLastSelected ? 'last selected' : 'selected'}`);
+                } else {
+                    mat.emissive.setHex(0x000000);
+                    mat.emissiveIntensity = 0;
+                }
+                mat.needsUpdate = true;
+            }
+        });
+    });
+
+    console.groupEnd();
     return { 
         cube, 
         selectedCubes: newSelectedCubes, 
