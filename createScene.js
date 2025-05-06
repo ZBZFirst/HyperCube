@@ -1,13 +1,12 @@
-// createScene.js start
+// createScene.js
 import * as THREE from 'three';
 import { setupScene } from './sceneSetup.js';
 import { setupCamera } from './cameraSetup.js';
 import { setupRenderer } from './rendererSetup.js';
-import { setupControls, setupPointerLock } from './controlsSetup.js';
+import { setupControls } from './controlsSetup.js';
 
-export function createScene() {
+export function createScene(container) {
     try {
-        const container = document.getElementById('graphics-container');
         if (!container) {
             throw new Error('Graphics container not found!');
         }
@@ -22,19 +21,13 @@ export function createScene() {
         canvas.tabIndex = 1;
         canvas.style.outline = 'none';
         
-        const { controls, updateControls, dispose } = setupControls(camera, renderer, scene);
-
         return {
             scene,
             camera,
-            renderer,
-            controls,
-            updateControls,
-            dispose
+            renderer
         };
     } catch (error) {
         console.error('Scene creation failed:', error);
         return null;
     }
 }
-// createScene.js end
