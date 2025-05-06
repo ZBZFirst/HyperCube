@@ -13,23 +13,29 @@ export function setupControls(camera, renderer) {
         // Add event listeners for pointer lock state changes
         controls.addEventListener('lock', () => {
             console.log('Pointer lock acquired');
-            document.getElementById('pointer-lock-hint').style.display = 'none';
+            const hint = document.getElementById('pointer-lock-hint');
+            if (hint) hint.style.display = 'none';
         });
         
         controls.addEventListener('unlock', () => {
             console.log('Pointer lock released');
-            document.getElementById('pointer-lock-hint').style.display = 'block';
+            const hint = document.getElementById('pointer-lock-hint');
+            if (hint) hint.style.display = 'block';
         });
 
         // Keyboard controls
-        document.addEventListener('keydown', (e) => {
+        const onKeyDown = (e) => {
             keysPressed[e.key.toLowerCase()] = true;
-            if (e.key === ' ' || e.key === 'Control') e.preventDefault();
-        });
+            // Prevent spacebar from scrolling page
+            if (e.key === ' ') e.preventDefault();
+        };
         
-        document.addEventListener('keyup', (e) => {
+        const onKeyUp = (e) => {
             keysPressed[e.key.toLowerCase()] = false;
-        });
+        };
+
+        document.addEventListener('keydown', onKeyDown);
+        document.addEventListener('keyup', onKeyUp);
 
         const updateControls = (delta) => {
             if (!controls.isLocked) return;
@@ -41,7 +47,7 @@ export function setupControls(camera, renderer) {
             if (keysPressed['a']) velocity.x -= movementSpeed * delta;
             if (keysPressed['d']) velocity.x += movementSpeed * delta;
             if (keysPressed['shift']) velocity.y += altitudeSpeed * delta;
-            if (keysPressed['control']) velocity.y -= altitudeSpeed * delta;
+            if (keysPressed['control'] || keysPressed['ctrl']) velocity.y -= altitudeSpeed * delta;
 
             controls.moveRight(velocity.x);
             controls.moveForward(velocity.z);
@@ -51,18 +57,37 @@ export function setupControls(camera, renderer) {
         // Setup click handler for the renderer
         renderer.domElement.addEventListener('click', () => {
             if (!controls.isLocked) {
-                controls.lock().catch(e => {
-                    console.log("Pointer lock failed:", e);
-                });
+                // Show the hint first
+                const hint = document.getElementById('pointer-lock-hint');
+                if (hint) hint.style.display = 'block';
+                
+                // Request pointer lock
+                renderer.domElement.requestPointerLock = renderer.domElement.requestPointerLock || 
+                    renderer.domElement.mozRequestPointerLock || 
+                    renderer.domElement.webkitRequestPointerLock;
+                
+                renderer.domElement.requestPointerLock();
             }
         });
 
-        return { controls, updateControls };
+        // Cleanup function
+        const dispose = () => {
+            document.removeEventListener('keydown', onKeyDown);
+            document.removeEventListener('keyup', onKeyUp);
+            controls.dispose();
+        };
+
+        return { 
+            controls, 
+            updateControls,
+            dispose 
+        };
     } catch (error) {
         console.error("Controls initialization failed:", error);
         return { 
             controls: null, 
-            updateControls: () => {} 
+            updateControls: () => {},
+            dispose: () => {} 
         };
     }
 }
