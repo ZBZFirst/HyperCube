@@ -22,7 +22,7 @@ export function createScene() {
         canvas.tabIndex = 1;
         canvas.style.outline = 'none';
         
-        const { controls, updateControls, dispose } = setupControls(camera, renderer);
+        const { controls, updateControls, dispose } = setupControls(camera, renderer, scene);
 
         return {
             scene,
@@ -37,5 +37,4 @@ export function createScene() {
         return null;
     }
 }
-
 // createScene.js end
