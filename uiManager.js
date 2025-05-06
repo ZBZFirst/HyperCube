@@ -64,6 +64,7 @@ export function setupSplitters() {
   const horizontalSplitter = document.getElementById('horizontal-splitter');
   const mainContent = document.getElementById('main-content');
     
+  // Initialize grid templates if not set
   if (!mainContent.style.gridTemplateColumns) {
     mainContent.style.gridTemplateColumns = 'minmax(150px, 300px) 8px 1fr';
   }
@@ -71,6 +72,7 @@ export function setupSplitters() {
     mainContent.style.gridTemplateRows = '1fr 8px minmax(100px, 200px)';
   }
 
+  // Vertical splitter (now between text and graphics)
   verticalSplitter.addEventListener('mousedown', (e) => {
     e.preventDefault();
     const startX = e.clientX;
@@ -92,17 +94,19 @@ export function setupSplitters() {
     document.addEventListener('mouseup', stopDrag);
   });
 
+  // Horizontal splitter (now controls data table height)
   horizontalSplitter.addEventListener('mousedown', (e) => {
     e.preventDefault();
     const startY = e.clientY;
-    // Get computed style if inline style isn't set
     const gridTemplateRows = mainContent.style.gridTemplateRows || 
                            window.getComputedStyle(mainContent).gridTemplateRows;
-    const startHeight = parseInt(gridTemplateRows.split(' ')[2]);
+    // Changed index from [2] to [0] because text is now first row
+    const startHeight = parseInt(gridTemplateRows.split(' ')[0]);
 
     function doDrag(e) {
       const newHeight = startHeight - (e.clientY - startY);
-      mainContent.style.gridTemplateRows = `1fr 8px ${Math.max(100, newHeight)}px`;
+      // Changed to adjust first row (text) which pushes data table up/down
+      mainContent.style.gridTemplateRows = `${Math.max(100, newHeight)}px 8px minmax(100px, 200px)`;
     }
 
     function stopDrag() {
