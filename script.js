@@ -103,27 +103,27 @@ function setupEventHandlers() {
         // Update data
         deleteSelectedFromData(pmidsToDelete);
         
-        // Update scene and selection state
+        // Update scene
         selectedCubes = deleteSelectedCubes(selectedCubes, sceneObjects.scene);
         
-        // IMPORTANT: Clear lastSelectedCube if it was deleted
+        // Update lastSelectedCube if it was deleted
         if (lastSelectedCube && pmidsToDelete.includes(lastSelectedCube.userData.pmid)) {
             lastSelectedCube = selectedCubes.length > 0 ? selectedCubes[0] : null;
         }
         
-        // Refresh UI
+        // Force text zone update
+        if (lastSelectedCube) {
+            updateTextZone(lastSelectedCube.userData);
+        } else {
+            clearTextZone();
+        }
+        
+        // Refresh table with current state
         populateDataTable(getData(), (pmid, isSelected) => {
             const result = highlightCubeByPmid(pmid, isSelected, selectedCubes, lastSelectedCube);
             if (result) {
                 selectedCubes = result.selectedCubes;
                 lastSelectedCube = result.lastSelectedCube;
-                
-                // Force text zone update if we have a last selected cube
-                if (lastSelectedCube) {
-                    updateTextZone(lastSelectedCube.userData);
-                } else {
-                    clearTextZone();
-                }
             }
         });
     });
