@@ -12,8 +12,8 @@
 
 #main-content {
   display: grid;
-  grid-template-columns: minmax(150px, 300px) 8px 1fr; /* Text | Splitter | Graphics */
-  grid-template-rows: 1fr 8px minmax(100px, 200px); /* Main area | Splitter | Data */
+  grid-template-columns: minmax(150px, 500px) 8px 1fr; /* Text | Splitter | Graphics */
+  grid-template-rows: 1fr 8px minmax(100px, 500px); /* Main area | Splitter | Data */
   grid-template-areas:
     "text    vsplit  graphics"
     "hsplit  hsplit  hsplit"
