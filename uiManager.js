@@ -59,67 +59,6 @@ export function setupUI(data, getSelectedCubes, getLastSelectedCube, onSelectCal
     });
 }
 
-export function setupSplitters() {
-  const verticalSplitter = document.getElementById('vertical-splitter');
-  const horizontalSplitter = document.getElementById('horizontal-splitter');
-  const mainContent = document.getElementById('main-content');
-  
-  console.log('Initializing splitters...'); // Debug log
-
-  // Vertical splitter (between text and graphics)
-  verticalSplitter.addEventListener('mousedown', (e) => {
-    e.preventDefault();
-    console.log('Vertical splitter drag start'); // Debug log
-    
-    const startX = e.clientX;
-    const gridTemplateColumns = window.getComputedStyle(mainContent).gridTemplateColumns;
-    const columns = gridTemplateColumns.split(' ');
-    const startTextWidth = parseFloat(columns[0]);
-    
-    function doDrag(e) {
-      const newTextWidth = startTextWidth + (e.clientX - startX);
-      // Ensure text container stays within min/max bounds
-      const clampedWidth = Math.max(150, Math.min(300, newTextWidth));
-      mainContent.style.gridTemplateColumns = `${clampedWidth}px 8px 1fr`;
-    }
-
-    function stopDrag() {
-      console.log('Vertical splitter drag end'); // Debug log
-      document.removeEventListener('mousemove', doDrag);
-      document.removeEventListener('mouseup', stopDrag);
-    }
-
-    document.addEventListener('mousemove', doDrag);
-    document.addEventListener('mouseup', stopDrag);
-  });
-
-  // Horizontal splitter (between graphics and data table)
-  horizontalSplitter.addEventListener('mousedown', (e) => {
-    e.preventDefault();
-    console.log('Horizontal splitter drag start'); // Debug log
-    
-    const startY = e.clientY;
-    const gridTemplateRows = window.getComputedStyle(mainContent).gridTemplateRows;
-    const rows = gridTemplateRows.split(' ');
-    const startGraphicsHeight = parseFloat(rows[0]);
-    
-    function doDrag(e) {
-      const newGraphicsHeight = startGraphicsHeight + (e.clientY - startY);
-      // Ensure graphics container stays within reasonable bounds
-      const clampedHeight = Math.max(100, newGraphicsHeight);
-      mainContent.style.gridTemplateRows = `${clampedHeight}px 8px minmax(100px, 200px)`;
-    }
-
-    function stopDrag() {
-      console.log('Horizontal splitter drag end'); // Debug log
-      document.removeEventListener('mousemove', doDrag);
-      document.removeEventListener('mouseup', stopDrag);
-    }
-
-    document.addEventListener('mousemove', doDrag);
-    document.addEventListener('mouseup', stopDrag);
-  });
-}
 
 export function showLoadingIndicator() {
     const loader = document.createElement('div');
