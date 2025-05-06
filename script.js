@@ -78,7 +78,7 @@ function setupEventHandlers() {
             console.error("Export failed:", error);
             showErrorToUser("Failed to export data");
         }
-    });
+    })};
 
 function startAnimationLoop() {
     function animate() {
