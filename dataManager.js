@@ -109,21 +109,32 @@ export function populateDataTable(data, onSelect) {
 /* ========== TEXT ZONE FUNCTIONS ========== */
 
 export function updateTextZone(article) {
-  document.getElementById('selected-title').textContent = article.Title;
-  document.getElementById('pmid-text').textContent = article.PMID;
-  document.getElementById('year-text').textContent = article.PubYear;
-  document.getElementById('source-text').textContent = article.Source;
-  
-  const doiLink = document.getElementById('doi-link');
-  doiLink.textContent = article.DOI || '-';
-  doiLink.href = article.DOI ? `https://doi.org/${article.DOI}` : '#';
-  
-  const pmcLink = document.getElementById('pmc-link');
-  pmcLink.textContent = article.PMC ? `PMC${article.PMC}` : '-';
-  pmcLink.href = article.PMC ? `https://www.ncbi.nlm.nih.gov/pmc/articles/PMC${article.PMC}` : '#';
-  
-  document.getElementById('abstract-text').textContent = article.Abstract || 'No abstract available';
+    if (!article || typeof article !== 'object') {
+        console.warn('Invalid article data:', article);
+        clearTextZone();
+        return;
+    }
+    
+    // Ensure required fields exist
+    const safeArticle = {Title: article.Title || 'No title available',PMID: article.PMID || '-',PubYear: article.PubYear || '-',Source: article.Source || '-',DOI: article.DOI || '',PMC_ID: article.PMC_ID || '',Abstract: article.Abstract || 'No abstract available'};
+    
+    // Update DOM elements
+    document.getElementById('selected-title').textContent = safeArticle.Title;
+    document.getElementById('pmid-text').textContent = safeArticle.PMID;
+    document.getElementById('year-text').textContent = safeArticle.PubYear;
+    document.getElementById('source-text').textContent = safeArticle.Source;
+    
+    const doiLink = document.getElementById('doi-link');
+    doiLink.textContent = safeArticle.DOI || '-';
+    doiLink.href = safeArticle.DOI ? `https://doi.org/${safeArticle.DOI}` : '#';
+    
+    const pmcLink = document.getElementById('pmc-link');
+    pmcLink.textContent = safeArticle.PMC_ID ? `PMC${safeArticle.PMC_ID}` : '-';
+    pmcLink.href = safeArticle.PMC_ID ? `https://www.ncbi.nlm.nih.gov/pmc/articles/PMC${safeArticle.PMC_ID}/` : '#';
+    
+    document.getElementById('abstract-text').textContent = safeArticle.Abstract;
 }
+
 
 export function clearTextZone() {
   document.getElementById('selected-title').textContent = 'No article selected';
