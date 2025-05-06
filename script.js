@@ -9,6 +9,7 @@ import { hidePubMedFetchOverlay } from './pubmedOverlay.js';
 import { deleteSelectedFromData } from './deleteCubes.js';
 import { exportFilteredData } from './saveCubes.js';
 import { setupControls } from './controlsSetup.js';
+import { setupEventHandlers } from './eventHandlers.js';
 
 let sceneObjects = null;
 let selectedCubes = [];
