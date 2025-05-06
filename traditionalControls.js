@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { PointerLockControls } from 'three/examples/jsm/controls/PointerLockControls.js';
 import { highlightCubeByPmid } from './cubeManager.js';
+import { updateTextZone } from './dataManager.js';
 
 export function setupTraditionalControls(camera, renderer, scene) {
     const controls = new PointerLockControls(camera, renderer.domElement);
@@ -109,7 +110,6 @@ export function setupTraditionalControls(camera, renderer, scene) {
         animateCube();
     }
     
-    // Function to check for collisions with other cubes
     function checkCollisions(cube, scene) {
         let collisionOccurred = false;
         
@@ -117,8 +117,12 @@ export function setupTraditionalControls(camera, renderer, scene) {
             if (object !== cube && object.userData && object.userData.pmid) {
                 if (cube.position.distanceTo(object.position) < 1) {
                     // Select the cube that was hit
-                    highlightCubeByPmid(object.userData.pmid, true, [], null);
-                    collisionOccurred = true;
+                    const result = highlightCubeByPmid(object.userData.pmid, true, [], null);
+                    if (result) {
+                        // Update the text zone with the selected cube's data
+                        updateTextZone(object.userData);
+                        collisionOccurred = true;
+                    }
                 }
             }
         });
