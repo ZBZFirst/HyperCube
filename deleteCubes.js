@@ -1,4 +1,5 @@
 // deleteCubes.js
+import { getData } from './dataManager.js';
 
 export function handleDelete(selectedCubes, updateSelection, refreshUI) {
   if (selectedCubes.length === 0) {
