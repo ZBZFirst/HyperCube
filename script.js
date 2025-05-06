@@ -96,36 +96,61 @@ function setupEventHandlers() {
     });
     
     document.getElementById('delete-btn').addEventListener('click', () => {
-        if (selectedCubes.length === 0) return;
+        console.group('[Delete Operation]');
         
+        if (selectedCubes.length === 0) {
+            console.log('No cubes selected for deletion');
+            console.groupEnd();
+            return;
+        }
+    
+        // Store PMIDs before deletion for reference
         const pmidsToDelete = selectedCubes.map(c => c.userData.pmid);
-        
-        // Update data
-        deleteSelectedFromData(pmidsToDelete);
-        
+        console.log('Deleting PMIDs:', pmidsToDelete);
+    
+        // Update data store
+        console.log('Updating data store...');
+        const newData = deleteSelectedFromData(pmidsToDelete);
+        setData(newData);
+    
         // Update scene
+        console.log('Updating scene...');
         selectedCubes = deleteSelectedCubes(selectedCubes, sceneObjects.scene);
         
         // Update lastSelectedCube if it was deleted
         if (lastSelectedCube && pmidsToDelete.includes(lastSelectedCube.userData.pmid)) {
+            console.log('Last selected cube was deleted - updating reference');
             lastSelectedCube = selectedCubes.length > 0 ? selectedCubes[0] : null;
+            console.log('New lastSelectedCube:', lastSelectedCube?.userData.pmid);
         }
-        
-        // Force text zone update
+    
+        // Force UI updates
+        console.log('Updating UI state...');
         if (lastSelectedCube) {
+            console.log('Updating text zone with remaining selection');
             updateTextZone(lastSelectedCube.userData);
         } else {
+            console.log('No selections remain - clearing text zone');
             clearTextZone();
         }
-        
-        // Refresh table with current state
-        populateDataTable(getData(), (pmid, isSelected) => {
+    
+        // Refresh table with proper selection handling
+        console.log('Refreshing data table...');
+        populateDataTable(newData, (pmid, isSelected) => {
             const result = highlightCubeByPmid(pmid, isSelected, selectedCubes, lastSelectedCube);
             if (result) {
                 selectedCubes = result.selectedCubes;
                 lastSelectedCube = result.lastSelectedCube;
+                
+                // Ensure text zone updates for new selections
+                if (isSelected && result.cube) {
+                    updateTextZone(result.cube.userData);
+                }
             }
         });
+    
+        console.log('Delete operation complete');
+        console.groupEnd();
     });
     }
 
