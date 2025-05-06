@@ -64,36 +64,101 @@ function createMainGrid() {
     return group;
 }
 
-export function updateGridForYearMode(scene, yearRange, articleCount) {
+export function updateGridForYearMode(scene, yearRange, articleCount, yearPositions) {
     const gridSystem = scene.userData.gridSystem;
-    
-    // Clear previous year grids
     gridSystem.yearGrids.clear();
+
+    // Calculate required grid dimensions based on year positions
+    const minX = Math.min(...yearPositions.map(p => p.x));
+    const maxX = Math.max(...yearPositions.map(p => p.x));
+    const minY = Math.min(...yearPositions.map(p => p.y));
+    const maxY = Math.max(...yearPositions.map(p => p.y));
     
-    // Calculate grid parameters based on data
+    const gridWidth = maxX - minX + 10; // +10 for padding
+    const gridDepth = maxY - minY + 10;
+    const gridHeight = (yearRange.max - yearRange.min) * 2 + 5;
+
+    // Create adaptive ground grid
+    const groundGrid = new THREE.GridHelper(
+        Math.max(gridWidth, gridDepth), // Size (square)
+        Math.floor(Math.max(gridWidth, gridDepth) / 2), // Divisions
+        0x888888, 0x444444
+    );
+    groundGrid.position.set(
+        (minX + maxX) / 2, // Center X
+        -0.01,             // Just below objects
+        (minY + maxY) / 2  // Center Z
+    );
+    groundGrid.name = 'YearGroundGrid';
+    gridSystem.yearGrids.add(groundGrid);
+
+    // Create vertical grid planes that extend to contain all years
+    const xzGrid = new THREE.GridHelper(
+        gridWidth,
+        Math.floor(gridWidth / 2),
+        0x666666, 0x333333
+    );
+    xzGrid.rotation.x = Math.PI / 2;
+    xzGrid.position.set(
+        (minX + maxX) / 2,
+        gridHeight / 2,
+        maxY + 2 // Position just beyond furthest points
+    );
+    gridSystem.yearGrids.add(xzGrid);
+
+    const yzGrid = new THREE.GridHelper(
+        gridHeight,
+        Math.floor(gridHeight / 2),
+        0x666666, 0x333333
+    );
+    yzGrid.rotation.z = Math.PI / 2;
+    yzGrid.position.set(
+        minX - 2, // Position just before first points
+        gridHeight / 2,
+        (minY + maxY) / 2
+    );
+    gridSystem.yearGrids.add(yzGrid);
+
+    // Add year markers along the YZ grid
     const yearSpan = yearRange.max - yearRange.min;
-    const gridSpacing = Math.max(1, Math.floor(yearSpan / 10));
-    const gridSize = Math.max(30, articleCount * 0.5);
+    const yearStep = Math.max(1, Math.floor(yearSpan / 10));
     
-    // Create year indicator grids
-    for (let year = yearRange.min; year <= yearRange.max; year += gridSpacing) {
-        const grid = new THREE.GridHelper(gridSize, 10, 0x3366ff, 0x2244aa);
-        grid.position.y = (year - yearRange.min) * 2; // Scale for visibility
-        grid.position.x = gridSize / 2;
+    for (let year = yearRange.min; year <= yearRange.max; year += yearStep) {
+        const yPos = (year - yearRange.min) * 2;
         
-        // Add year label
-        const label = createTextLabel(`${year}`, 0xffffff);
-        label.position.set(gridSize + 1, (year - yearRange.min) * 2, 0);
+        // Year label on YZ plane
+        const label = createTextLabel(`${year}`, new THREE.Color(0xffffff));
+        label.position.set(
+            minX - 3, // Left of YZ grid
+            yPos,
+            (minY + maxY) / 2
+        );
         gridSystem.yearGrids.add(label);
         
-        gridSystem.yearGrids.add(grid);
+        // Tick mark on YZ grid
+        const tickGeometry = new THREE.BufferGeometry().setFromPoints([
+            new THREE.Vector3(minX - 0.5, yPos, (minY + maxY) / 2),
+            new THREE.Vector3(minX - 1.5, yPos, (minY + maxY) / 2)
+        ]);
+        const tick = new THREE.Line(
+            tickGeometry,
+            new THREE.LineBasicMaterial({ color: 0xffffff })
+        );
+        gridSystem.yearGrids.add(tick);
     }
-    
+
     // Set grid visibility
     gridSystem.mainGrid.visible = false;
     gridSystem.yearGrids.visible = true;
     gridSystem.journalGrids.visible = false;
     gridSystem.currentMode = 'year';
+
+    // Update background bounds to contain everything
+    updateSceneBackground(
+        scene,
+        new THREE.Vector3(minX - 5, -1, minY - 5),
+        new THREE.Vector3(maxX + 5, gridHeight + 5, maxY + 5)
+    );
 }
 
 export function updateGridForJournalMode(scene, journals) {
