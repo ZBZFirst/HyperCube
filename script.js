@@ -94,15 +94,19 @@ async function init() {
         
         // 9. Setup controls
         console.log("9. Setting up controls...");
-        const { controls, updateControls } = setupControls(
+        const controlsResult = setupControls(
             sceneObjects.camera,
             sceneObjects.renderer,
             sceneObjects.scene,
             onSelectCallback
         );
-        sceneObjects.controls = controls;
-        sceneObjects.updateControls = updateControls;
-        console.log("Controls initialized:", controls);
+        console.log("Controls result structure:", {
+            controls: !!controlsResult.controls,
+            updateControls: !!controlsResult.updateControls,
+            dispose: !!controlsResult.dispose
+        });
+        sceneObjects.controls = controlsResult.controls;
+        sceneObjects.updateControls = controlsResult.updateControls;
         
         // 10. Start everything
         console.log("10. Starting animation loop...");
