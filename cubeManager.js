@@ -131,11 +131,11 @@ export function updateCubeVisibility(cube) {
     cube.material.transparent = true;
     cube.material.needsUpdate = true;
 }
-
 export function highlightCubeByPmid(pmid, isSelected, selectedCubes = [], lastSelectedCube = null) {
     const cube = cubes.find(c => c.userData.pmid === pmid);
     if (!cube) return null;
 
+    // Update selection state
     if (isSelected) {
         if (!selectedCubes.includes(cube)) {
             selectedCubes = [...selectedCubes, cube];
@@ -143,20 +143,34 @@ export function highlightCubeByPmid(pmid, isSelected, selectedCubes = [], lastSe
         lastSelectedCube = cube;
     } else {
         selectedCubes = selectedCubes.filter(c => c !== cube);
+        if (lastSelectedCube === cube) {
+            lastSelectedCube = selectedCubes.length > 0 ? selectedCubes[0] : null;
+        }
     }
 
-    // Update highlights - handle both single material and array of materials
+    // Update all cube highlights
     cubes.forEach(c => {
-        const materials = Array.isArray(c.material) ? c.material : [c.material];
-        
-        materials.forEach(mat => {
-            if (mat.emissive) {  // Check if emissive exists
-                mat.emissive.setHex(selectedCubes.includes(c) ? 
-                    (c === lastSelectedCube ? 0xFFD700 : 0x3498db) : 0x000000);
-                mat.emissiveIntensity = selectedCubes.includes(c) ? 0.5 : 0;
-                mat.needsUpdate = true;
-            }
-        });
+        try {
+            // Handle both single material and material array cases
+            const materials = Array.isArray(c.material) ? c.material : [c.material];
+            
+            materials.forEach(mat => {
+                if (mat.emissive) {
+                    if (selectedCubes.includes(c)) {
+                        // Selected cubes are blue, last selected is gold
+                        mat.emissive.setHex(c === lastSelectedCube ? 0xFFD700 : 0x3498db);
+                        mat.emissiveIntensity = 0.5;
+                    } else {
+                        // Deselected cubes return to normal
+                        mat.emissive.setHex(0x000000);
+                        mat.emissiveIntensity = 0;
+                    }
+                    mat.needsUpdate = true;
+                }
+            });
+        } catch (e) {
+            console.warn('Error updating cube highlight:', e);
+        }
     });
 
     return { cube, selectedCubes, lastSelectedCube };
