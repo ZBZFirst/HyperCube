@@ -140,40 +140,62 @@ async function init() {
         removeLoadingIndicator();
     }
 }
-
 function startAnimationLoop() {
     if (!sceneObjects) {
         console.error("Cannot start animation - sceneObjects is null");
         return;
     }
     
+    let lastTime = performance.now();
     let frameCount = 0;
-    function animate() {
+    
+    function animate(currentTime) {
         frameCount++;
         requestAnimationFrame(animate);
         
-        // Log every 100 frames
-        if (frameCount % 10000 === 0) {
-            console.log(`Rendering frame ${frameCount}`, {
-                cameraPosition: sceneObjects.camera.position,
-                sceneChildren: sceneObjects.scene.children.length,
-                rendererSize: [
-                    sceneObjects.renderer.domElement.width,
-                    sceneObjects.renderer.domElement.height
-                ]
-            });
-        }
+        // Calculate actual delta time in seconds
+        const deltaTime = (currentTime - lastTime) / 1000;
+        lastTime = currentTime;
         
-        if (sceneObjects.controls && sceneObjects.updateControls) {
-            sceneObjects.updateControls(0.016);
+        // Debug logging
+        if (frameCount % 100 === 0) { // Log every 100 frames
+            console.groupCollapsed(`Frame ${frameCount} Update`);
+            console.log("Delta time:", deltaTime);
+            console.log("Controls available:", !!sceneObjects.controls);
+            console.log("Update function available:", !!sceneObjects.updateControls);
+            
+            if (sceneObjects.controls && sceneObjects.updateControls) {
+                console.log("Calling updateControls with delta:", deltaTime);
+                sceneObjects.updateControls(deltaTime);
+                console.log("Camera position after update:", sceneObjects.camera.position);
+            }
+            
+            console.groupEnd();
+        } else {
+            // Normal operation without logging
+            if (sceneObjects.controls && sceneObjects.updateControls) {
+                sceneObjects.updateControls(deltaTime);
+            }
         }
         
         sceneObjects.renderer.render(sceneObjects.scene, sceneObjects.camera);
     }
     
     console.log("Starting animation loop");
-    animate();
+    animate(performance.now());
 }
+
+
+
+
+
+
+
+
+
+
+
+
 
 // Rest of your code (setupEventHandlers etc.) remains unchanged
 init();
