@@ -2,6 +2,8 @@
 import * as d3 from 'https://cdn.jsdelivr.net/npm/d3@7/+esm';
 import { fetchPubMedData, DEFAULT_API_KEY } from './pubmedFetcher.js';
 import { showPubMedFetchOverlay, hidePubMedFetchOverlay } from './pubmedOverlay.js';
+import { deleteFromData, deleteSelectedFromData } from './deleteCubes.js';
+import { exportFilteredData, handleExport } from './saveCubes.js';
 
 let data = [];
 
@@ -32,17 +34,6 @@ export function addAnnotation(pmid, field, value) {
   return false;
 }
 
-export function deleteSelectedFromData(pmidsToDelete) {
-  if (!Array.isArray(pmidsToDelete)) return;
-  data = data.filter(item => !pmidsToDelete.includes(item.PMID));
-  return data;
-}
-
-export function deleteFromData(pmid) {
-  const index = data.findIndex(item => item.PMID === pmid);
-  if (index !== -1) data.splice(index, 1);
-  return data;
-}
 
 /* ========== UI TABLE FUNCTIONS ========== */
 
@@ -137,31 +128,6 @@ export function clearTextZone() {
   document.getElementById('doi-link').textContent = '-';
   document.getElementById('pmc-link').textContent = '-';
   document.getElementById('abstract-text').textContent = 'Select an article to view its abstract';
-}
-
-/* ========== EXPORT FUNCTIONS ========== */
-
-export function exportFilteredData() {
-  if (!data.length) {
-    alert("No data available to export");
-    return;
-  }
-
-  const exportData = data.map(item => ({
-    ...item,
-    Notes: item.Notes || '',
-    Rating: item.Rating || '',
-    Tags: item.Tags || ''
-  }));
-
-  const blob = new Blob([d3.csvFormat(exportData)], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = `pubmed_export_${new Date().toISOString().slice(0,10)}.csv`;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
 }
 
 /* ========== PUBMED FETCH FUNCTIONS ========== */
