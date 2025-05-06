@@ -153,7 +153,7 @@ function startAnimationLoop() {
         requestAnimationFrame(animate);
         
         // Log every 100 frames
-        if (frameCount % 100 === 0) {
+        if (frameCount % 10000 === 0) {
             console.log(`Rendering frame ${frameCount}`, {
                 cameraPosition: sceneObjects.camera.position,
                 sceneChildren: sceneObjects.scene.children.length,
