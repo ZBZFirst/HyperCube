@@ -4,7 +4,7 @@ import * as d3 from 'https://cdn.jsdelivr.net/npm/d3@7/+esm';
 import { createScene } from './createScene.js';
 import { createUI, setupUI, setupSplitters, showLoadingIndicator, removeLoadingIndicator, showErrorToUser, clearTextZone, createFallbackScene } from './uiManager.js';
 import { loadData, exportFilteredData, populateDataTable, updateTextZone, attemptPubMedFetch, getData, addAnnotation } from './dataManager.js';
-import { createCubesFromData, deleteSelectedCubes, getCubes, highlightCubeByPmid, centerCameraOnCube, initCubeManager } from './cubeManager.js';
+import { createCubesFromData, getCubes, highlightCubeByPmid, centerCameraOnCube, initCubeManager } from './cubeManager.js';
 import { hidePubMedFetchOverlay } from './pubmedOverlay.js';
 import { deleteFromData, deleteSelectedFromData, deleteSelectedCubes } from './deleteCubes.js';
 import { exportFilteredData, handleExport } from './saveCubes.js';
