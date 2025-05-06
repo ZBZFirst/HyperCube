@@ -97,7 +97,6 @@ export function setupTraditionalControls(camera, renderer, scene, onSelectCallba
     // Movement update function with logging
     const update = (delta) => {
         if (!isPointerLockEnabled) {
-            console.log('Movement update skipped - pointer lock not active');
             return;
         }
         
@@ -105,17 +104,7 @@ export function setupTraditionalControls(camera, renderer, scene, onSelectCallba
         const forward = (keysPressed['w'] ? -1 : 0) + (keysPressed['s'] ? 1 : 0);
         const right = (keysPressed['d'] ? 1 : 0) + (keysPressed['a'] ? -1 : 0);
         const up = (keysPressed[' '] ? 1 : 0) + (keysPressed['control'] ? -1 : 0);
-        
-        console.groupCollapsed(`Movement Update (delta: ${delta.toFixed(4)})`);
-        console.log('Movement inputs:', {
-            W: keysPressed['w'],
-            A: keysPressed['a'],
-            S: keysPressed['s'],
-            D: keysPressed['d'],
-            SPACE: keysPressed[' '],
-            CONTROL: keysPressed['control']
-        });
-        console.log('Calculated directions:', { forward, right, up });
+
         
         // Update velocity
         velocity.set(
@@ -124,23 +113,18 @@ export function setupTraditionalControls(camera, renderer, scene, onSelectCallba
             forward * speed * delta
         );
         
-        console.log('Velocity vector:', velocity.clone());
         
         // Apply movement
         if (velocity.x !== 0) {
-            console.log(`Moving right by ${velocity.x.toFixed(2)}`);
             controls.moveRight(velocity.x);
         }
         if (velocity.z !== 0) {
-            console.log(`Moving forward by ${velocity.z.toFixed(2)}`);
             controls.moveForward(velocity.z);
         }
         if (velocity.y !== 0) {
-            console.log(`Changing altitude by ${velocity.y.toFixed(2)}`);
             camera.position.y = Math.max(0.5, camera.position.y + velocity.y);
         }
         
-        console.log('New camera position:', camera.position.clone());
         console.groupEnd();
     };
 
