@@ -475,7 +475,7 @@ function addOverlayStyles() {
   document.head.appendChild(style);
 }
 
-function hidePubMedFetchOverlay() {
+export function hidePubMedFetchOverlay() {
   const overlay = document.getElementById('pubmed-fetch-overlay');
   if (overlay) overlay.remove();
   
