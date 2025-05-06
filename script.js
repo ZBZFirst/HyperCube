@@ -84,6 +84,8 @@ async function init() {
             if (newLastSelectedCube) {
                 updateTextZone(newLastSelectedCube.userData);
             }
+            // Update event handlers with new selection state
+            setupEventHandlers(selectedCubes, lastSelectedCube, sceneObjects.scene);
         };
         
         // 8. Setup UI
@@ -106,7 +108,7 @@ async function init() {
         console.log("10. Starting animation loop...");
 
         try {
-            setupEventHandlers();
+            setupEventHandlers(selectedCubes, lastSelectedCube, sceneObjects.scene);
             setupSplitters();
             console.log("UI setup complete");
         } catch (uiError) {
