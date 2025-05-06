@@ -137,5 +137,9 @@ export function setupTraditionalControls(camera, renderer, scene, onSelectCallba
         return collisionOccurred;
     }
     
-    return { controls, update };
-}
+    return { 
+        controls, 
+        update,
+        dispose: () => {
+            // Cleanup code
+        }}
