@@ -113,7 +113,6 @@ async function init() {
             throw new Error(`UI initialization failed: ${uiError.message}`);
         }
         
-        setupSplitters();
         startAnimationLoop();
         
         console.log("Initialization completed successfully");
