@@ -16,40 +16,81 @@ let lastSelectedCube = null;
 
 async function init() {
     try {
+        console.groupCollapsed("Initialization started");
         showLoadingIndicator();
-        
-        // 1. Get container first
+
+        // 1. Get container
         const container = document.getElementById('graphics-container');
+        console.log("1. Container:", container);
         if (!container) throw new Error("Graphics container not found");
-        
-        // 2. Initialize scene (using the TOP-LEVEL variable)
-        sceneObjects = createScene(container); // No 'const' or 'let' here!
+
+        // 2. Create scene objects
+        console.log("2. Creating scene objects...");
+        sceneObjects = createScene(container);
+        console.log("Scene objects created:", {
+            scene: sceneObjects?.scene,
+            camera: sceneObjects?.camera,
+            renderer: sceneObjects?.renderer,
+            canvas: sceneObjects?.renderer?.domElement,
+            canvasDimensions: sceneObjects?.renderer?.domElement 
+                ? `${sceneObjects.renderer.domElement.width}x${sceneObjects.renderer.domElement.height}`
+                : 'N/A',
+            canvasInDOM: container.contains(sceneObjects?.renderer?.domElement)
+        });
+
         if (!sceneObjects) throw new Error("Scene initialization failed");
-        
-        // 3. Initialize cube manager
+
+        // 3. Add debug objects
+        console.log("3. Adding debug objects...");
+        const axesHelper = new THREE.AxesHelper(5);
+        sceneObjects.scene.add(axesHelper);
+        const gridHelper = new THREE.GridHelper(10, 10);
+        sceneObjects.scene.add(gridHelper);
+        const testCube = new THREE.Mesh(
+            new THREE.BoxGeometry(1, 1, 1),
+            new THREE.MeshBasicMaterial({ color: 0xff0000 })
+        );
+        sceneObjects.scene.add(testCube);
+        console.log("Debug objects added:", sceneObjects.scene.children);
+
+        // 4. Initialize cube manager
+        console.log("4. Initializing cube manager...");
         initCubeManager(sceneObjects.scene, sceneObjects.camera);
         
-        // 4. Load data
+        // 5. Load data
+        console.log("5. Loading data...");
         let data;
         const pubmedData = await attemptPubMedFetch();
         data = pubmedData || await loadData("pubmed_data.csv");
+        console.log("Data loaded, first item:", data?.[0]);
         if (!data?.length) throw new Error("No data loaded");
         setData(data);
         
-        // 5. Create cubes
-        createCubesFromData(data, sceneObjects.scene);
+        // 6. Create cubes
+        console.log("6. Creating cubes...");
+        const cubes = createCubesFromData(data, sceneObjects.scene);
+        console.log(`Created ${cubes.length} cubes`, cubes);
         
-        // 6. Setup selection callback
+        // 7. Setup selection callback
+        console.log("7. Setting up selection callback...");
         const onSelectCallback = (newSelectedCubes, newLastSelectedCube) => {
+            console.log("Selection changed:", {
+                newSelectedCount: newSelectedCubes.length,
+                newLastSelected: newLastSelectedCube?.userData?.PMID
+            });
             selectedCubes = newSelectedCubes;
             lastSelectedCube = newLastSelectedCube;
-            if (newLastSelectedCube) updateTextZone(newLastSelectedCube.userData);
+            if (newLastSelectedCube) {
+                updateTextZone(newLastSelectedCube.userData);
+            }
         };
         
-        // 7. Setup UI
+        // 8. Setup UI
+        console.log("8. Setting up UI...");
         setupUI(data, () => [...selectedCubes], () => lastSelectedCube, onSelectCallback);
         
-        // 8. Setup controls
+        // 9. Setup controls
+        console.log("9. Setting up controls...");
         const { controls, updateControls } = setupControls(
             sceneObjects.camera,
             sceneObjects.renderer,
@@ -58,15 +99,27 @@ async function init() {
         );
         sceneObjects.controls = controls;
         sceneObjects.updateControls = updateControls;
+        console.log("Controls initialized:", controls);
         
-        // 9. Start everything
+        // 10. Start everything
+        console.log("10. Starting animation loop...");
         setupEventHandlers();
         setupSplitters();
-        startAnimationLoop(); // Now uses the top-level sceneObjects
+        startAnimationLoop();
+        
+        console.log("Initialization completed successfully");
+        console.groupEnd();
         
     } catch (error) {
         console.error("Initialization failed:", error);
-        showErrorToUser(error.message);
+        console.log("Current state:", {
+            sceneObjects,
+            selectedCubes,
+            lastSelectedCube,
+            THREE: !!THREE,
+            container: document.getElementById('graphics-container')
+        });
+        showErrorToUser(`Initialization failed: ${error.message}`);
         try {
             createFallbackScene();
         } catch (fallbackError) {
@@ -77,12 +130,28 @@ async function init() {
     }
 }
 
-// Modified to use top-level sceneObjects
 function startAnimationLoop() {
-    if (!sceneObjects) return; // Safety check
+    if (!sceneObjects) {
+        console.error("Cannot start animation - sceneObjects is null");
+        return;
+    }
     
+    let frameCount = 0;
     function animate() {
+        frameCount++;
         requestAnimationFrame(animate);
+        
+        // Log every 100 frames
+        if (frameCount % 100 === 0) {
+            console.log(`Rendering frame ${frameCount}`, {
+                cameraPosition: sceneObjects.camera.position,
+                sceneChildren: sceneObjects.scene.children.length,
+                rendererSize: [
+                    sceneObjects.renderer.domElement.width,
+                    sceneObjects.renderer.domElement.height
+                ]
+            });
+        }
         
         if (sceneObjects.controls && sceneObjects.updateControls) {
             sceneObjects.updateControls(0.016);
@@ -91,6 +160,7 @@ function startAnimationLoop() {
         sceneObjects.renderer.render(sceneObjects.scene, sceneObjects.camera);
     }
     
+    console.log("Starting animation loop");
     animate();
 }
 
