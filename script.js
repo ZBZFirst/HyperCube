@@ -65,32 +65,25 @@ function setupEventHandlers() {
             const pmidsToDelete = selectedCubes.map(c => c.userData.pmid);
             
             // Update data
-            deleteSelectedFromData(pmidsToDelete);
+            const newData = deleteSelectedFromData(pmidsToDelete);
             
             // Update scene
             selectedCubes = deleteSelectedCubes(selectedCubes, sceneObjects.scene);
             lastSelectedCube = null;
-
+    
             // Refresh UI with updated data
             populateDataTable(
-                getData(),
+                newData,
                 (pmid, isSelected) => {
                     const result = highlightCubeByPmid(pmid, isSelected, selectedCubes, lastSelectedCube);
                     if (result) {
                         selectedCubes = result.selectedCubes;
                         lastSelectedCube = result.lastSelectedCube;
-                        if (result.cube && isSelected) {
-                            centerCameraOnCube(result.cube);
-                        }
                     }
                 }
             );
             
-            if (lastSelectedCube) {
-                updateTextZone(lastSelectedCube.userData);
-            } else {
-                clearTextZone();
-            }
+            clearTextZone();
         } catch (error) {
             console.error("Delete failed:", error);
             showErrorToUser("Failed to delete selected articles");
