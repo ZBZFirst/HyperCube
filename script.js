@@ -21,6 +21,8 @@ async function init() {
         
         // Create base scene objects
         const container = document.getElementById('graphics-container');
+        if (!sceneObjects) throw new Error("Scene initialization failed");
+
         const sceneObjects = createScene(container);
         if (!sceneObjects) throw new Error("Scene initialization failed");
         
@@ -161,14 +163,20 @@ function setupEventHandlers() {
 }
 
 
-function startAnimationLoop() {
+
+function startAnimationLoop(sceneObjects) {
     function animate() {
         requestAnimationFrame(animate);
-        if (sceneObjects && sceneObjects.updateControls) {
+        
+        // Update controls if they exist
+        if (sceneObjects.controls && sceneObjects.updateControls) {
             sceneObjects.updateControls(0.016);
-            sceneObjects.renderer.render(sceneObjects.scene, sceneObjects.camera);
         }
+        
+        // Render scene
+        sceneObjects.renderer.render(sceneObjects.scene, sceneObjects.camera);
     }
+    
     animate();
 }
 
