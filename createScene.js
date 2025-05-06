@@ -33,7 +33,7 @@ export function createScene(container) {
         }
 
         // 5. Add debug cube if in development
-        if (process.env.NODE_ENV === 'development') {
+        if (typeof DEBUG !== 'undefined' && DEBUG) {
             const geometry = new THREE.BoxGeometry(1, 1, 1);
             const material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
             const cube = new THREE.Mesh(geometry, material);
