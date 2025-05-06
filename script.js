@@ -36,15 +36,37 @@ async function init() {
         
         createCubesFromData(data, sceneObjects.scene);
         
+        // Define the selection callback first
+        const onSelectCallback = (newSelectedCubes, newLastSelectedCube) => {
+            selectedCubes = newSelectedCubes;
+            lastSelectedCube = newLastSelectedCube;
+            console.log("Updated selection:", selectedCubes.map(c => c.userData.pmid));
+            
+            // Update text zone if we have a last selected cube
+            if (newLastSelectedCube) {
+                updateTextZone(newLastSelectedCube.userData);
+            } else if (newSelectedCubes.length === 0) {
+                clearTextZone();
+            }
+        };
+        
+        // Setup UI with the callback
         setupUI(data, 
             () => [...selectedCubes], // Getter function
             () => lastSelectedCube,   // Getter function
-            (newSelectedCubes, newLastSelectedCube) => {
-                selectedCubes = newSelectedCubes;
-                lastSelectedCube = newLastSelectedCube;
-                console.log("Updated selection:", selectedCubes.map(c => c.userData.pmid));
-            }
+            onSelectCallback
         );
+        
+        // Pass the same callback to controls setup
+        sceneObjects = {
+            ...sceneObjects,
+            ...setupControls(
+                sceneObjects.camera, 
+                sceneObjects.renderer, 
+                sceneObjects.scene,
+                onSelectCallback  // Pass the callback here
+            )
+        };
         
         setupEventHandlers();
         setupSplitters();
