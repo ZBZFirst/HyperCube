@@ -2,7 +2,7 @@
 import * as d3 from 'https://cdn.jsdelivr.net/npm/d3@7/+esm';
 import { fetchPubMedData, DEFAULT_API_KEY } from './pubmedFetcher.js';
 import { showPubMedFetchOverlay, hidePubMedFetchOverlay } from './pubmedOverlay.js';
-import { deleteFromData, deleteSelectedFromData } from './deleteCubes.js';
+import { deleteSelectedFromData } from './deleteCubes.js';
 import { exportFilteredData } from './saveCubes.js';
 
 let data = [];
