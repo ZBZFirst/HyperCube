@@ -1,44 +1,65 @@
-// eventHandlers.js
-import { getData, setData, clearTextZone ,updateTextZone, populateDataTable } from './dataManager.js';
+import { getData, setData, clearTextZone, updateTextZone, populateDataTable, deleteSelectedFromData } from './dataManager.js';
 import { deleteSelectedCubes } from './deleteCubes.js';
-import { highlightCubeByPmid, centerCameraOnCube } from './cubeManager.js';
-import {  showErrorToUser } from './uiManager.js';
+import { highlightCubeByPmid } from './cubeManager.js';
+import { showErrorToUser } from './uiManager.js';
 import * as d3 from 'https://cdn.jsdelivr.net/npm/d3@7/+esm';
 
-export function setupEventHandlers(selectedCubes, lastSelectedCube, updateSelection, refreshUI, scene) {
-    document.getElementById('delete-btn').addEventListener('click', () => 
-        handleDelete(selectedCubes, updateSelection, refreshUI, scene));
-    
+// Store references to current state
+let currentSelectedCubes = [];
+let currentLastSelectedCube = null;
+let currentScene = null;
+
+export function setupEventHandlers(selectedCubes, lastSelectedCube, scene) {
+    // Update our stored references
+    currentSelectedCubes = selectedCubes;
+    currentLastSelectedCube = lastSelectedCube;
+    currentScene = scene;
+
+    // Clear existing event listeners to avoid duplicates
+    document.getElementById('delete-btn').replaceWith(document.getElementById('delete-btn').cloneNode(true));
+    document.getElementById('download-btn').replaceWith(document.getElementById('download-btn').cloneNode(true));
+
+    // Setup new event listeners
+    document.getElementById('delete-btn').addEventListener('click', handleDelete);
     document.getElementById('download-btn').addEventListener('click', handleDownload);
 }
 
-export async function handleDelete(selectedCubes, updateSelection, refreshUI, scene) {
-    if (selectedCubes.length === 0) {
-        showErrorToUser("Please select at least one article first");
-        return;
-    }
-
+async function handleDelete() {
     try {
-        const pmidsToDelete = selectedCubes.map(c => c.userData.pmid);
+        if (!currentSelectedCubes || currentSelectedCubes.length === 0) {
+            showErrorToUser("Please select at least one article first");
+            return;
+        }
+
+        const pmidsToDelete = currentSelectedCubes.map(c => c.userData.pmid);
         
         // Update data
-        deleteSelectedFromData(pmidsToDelete);
+        const newData = deleteSelectedFromData(pmidsToDelete);
+        setData(newData);
         
         // Update scene
-        selectedCubes = deleteSelectedCubes(selectedCubes, scene);
+        deleteSelectedCubes(currentSelectedCubes, currentScene);
         
-        // Update selection state
-        updateSelection([], null);
+        // Clear selection
+        currentSelectedCubes = [];
+        currentLastSelectedCube = null;
         
         // Refresh UI
-        refreshUI();
+        clearTextZone();
+        populateDataTable(newData, (pmid, isSelected) => {
+            const result = highlightCubeByPmid(pmid, isSelected, currentSelectedCubes, currentLastSelectedCube);
+            if (result) {
+                currentSelectedCubes = result.selectedCubes;
+                currentLastSelectedCube = result.lastSelectedCube;
+            }
+        });
     } catch (error) {
         console.error("Deletion failed:", error);
         showErrorToUser("Failed to delete selected articles");
     }
 }
 
-export async function handleDownload() {
+async function handleDownload() {
     try {
         const data = getData();
         if (!data || !data.length) {
@@ -60,7 +81,10 @@ export async function handleDownload() {
         link.download = `pubmed_export_${new Date().toISOString().slice(0,10)}.csv`;
         document.body.appendChild(link);
         link.click();
-        document.body.removeChild(link);
+        setTimeout(() => {
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        }, 100);
     } catch (error) {
         console.error("Export failed:", error);
         showErrorToUser("Failed to export data");
