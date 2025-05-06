@@ -47,6 +47,8 @@ function setupEventHandlers() {
         deleteSelectedFromData(pmidsToDelete);
         selectedCubes = deleteSelectedCubes(selectedCubes);
         lastSelectedCube = null;
+
+        // Refresh UI with updated data
         populateDataTable(
             getData(),
             (pmid, isSelected) => {
@@ -60,19 +62,23 @@ function setupEventHandlers() {
                 }
             }
         );
+        
         if (lastSelectedCube) {
             updateTextZone(lastSelectedCube.userData);
+        } else {
+            clearTextZone();
         }
     });
-    document.getElementById('download-btn').addEventListener('click', async () => {
+    
+    // Update the export handler:
+    document.getElementById('download-btn').addEventListener('click', () => {
         try {
-            await exportFilteredData();
+            exportFilteredData();
         } catch (error) {
             console.error("Export failed:", error);
             showErrorToUser("Failed to export data");
         }
     });
-}
 
 function startAnimationLoop() {
     function animate() {
