@@ -39,43 +39,83 @@ export function setupTraditionalControls(camera, renderer, scene, onSelectCallba
         document.addEventListener('webkitpointerlockchange', onPointerLockChange);
     };
 
-    // Handle pointer lock state changes
     const onPointerLockChange = () => {
         isPointerLockEnabled = (document.pointerLockElement === renderer.domElement);
+        console.log(`Pointer lock ${isPointerLockEnabled ? 'acquired' : 'released'}`);
+        if (!isPointerLockEnabled) {
+            console.log('Current keys state cleared');
+            // Clear all key states when losing pointer lock
+            Object.keys(keysPressed).forEach(key => {
+                keysPressed[key] = false;
+            });
+        }
     };
 
-    // Keyboard event handlers
+    // Keyboard event handlers with logging
     const onKeyDown = (e) => {
+        const key = e.key.toLowerCase();
+        
         // Ignore if focused on input elements
         if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) {
+            console.log(`Key ${key} ignored (input element focused)`);
             return;
         }
-
-        keysPressed[e.key.toLowerCase()] = true;
+    
+        console.groupCollapsed(`Key DOWN: ${key}`);
+        console.log('Key pressed:', key);
+        console.log('Pointer lock active:', isPointerLockEnabled);
+        console.log('Current keys pressed:', Object.keys(keysPressed).filter(k => keysPressed[k]));
+        
+        keysPressed[key] = true;
         
         // Prevent default for control keys
-        if ([' ', 'control', 'shift'].includes(e.key.toLowerCase())) {
+        if ([' ', 'control', 'shift'].includes(key)) {
             e.preventDefault();
+            console.log('Prevented default for control key');
         }
         
         // Generate projectile on 'g' key
-        if (e.key.toLowerCase() === 'g' && isPointerLockEnabled) {
+        if (key === 'g' && isPointerLockEnabled) {
+            console.log('Triggering projectile generation');
             generateProjectile();
         }
-    };
-
-    const onKeyUp = (e) => {
-        keysPressed[e.key.toLowerCase()] = false;
-    };
-
-    // Movement update function
-    const update = (delta) => {
-        if (!isPointerLockEnabled) return;
         
-        // Calculate movement direction
+        console.groupEnd();
+    };
+    
+    const onKeyUp = (e) => {
+        const key = e.key.toLowerCase();
+        console.groupCollapsed(`Key UP: ${key}`);
+        console.log('Key released:', key);
+        console.log('Current keys pressed before release:', Object.keys(keysPressed).filter(k => keysPressed[k]));
+        
+        keysPressed[key] = false;
+        
+        console.groupEnd();
+    };
+    
+    // Movement update function with logging
+    const update = (delta) => {
+        if (!isPointerLockEnabled) {
+            console.log('Movement update skipped - pointer lock not active');
+            return;
+        }
+        
+        // Calculate movement direction with logging
         const forward = (keysPressed['w'] ? -1 : 0) + (keysPressed['s'] ? 1 : 0);
         const right = (keysPressed['d'] ? 1 : 0) + (keysPressed['a'] ? -1 : 0);
         const up = (keysPressed[' '] ? 1 : 0) + (keysPressed['control'] ? -1 : 0);
+        
+        console.groupCollapsed(`Movement Update (delta: ${delta.toFixed(4)})`);
+        console.log('Movement inputs:', {
+            W: keysPressed['w'],
+            A: keysPressed['a'],
+            S: keysPressed['s'],
+            D: keysPressed['d'],
+            SPACE: keysPressed[' '],
+            CONTROL: keysPressed['control']
+        });
+        console.log('Calculated directions:', { forward, right, up });
         
         // Update velocity
         velocity.set(
@@ -84,10 +124,24 @@ export function setupTraditionalControls(camera, renderer, scene, onSelectCallba
             forward * speed * delta
         );
         
+        console.log('Velocity vector:', velocity.clone());
+        
         // Apply movement
-        controls.moveRight(velocity.x);
-        controls.moveForward(velocity.z);
-        camera.position.y = Math.max(0.5, camera.position.y + velocity.y);
+        if (velocity.x !== 0) {
+            console.log(`Moving right by ${velocity.x.toFixed(2)}`);
+            controls.moveRight(velocity.x);
+        }
+        if (velocity.z !== 0) {
+            console.log(`Moving forward by ${velocity.z.toFixed(2)}`);
+            controls.moveForward(velocity.z);
+        }
+        if (velocity.y !== 0) {
+            console.log(`Changing altitude by ${velocity.y.toFixed(2)}`);
+            camera.position.y = Math.max(0.5, camera.position.y + velocity.y);
+        }
+        
+        console.log('New camera position:', camera.position.clone());
+        console.groupEnd();
     };
 
     // Projectile system
@@ -218,6 +272,8 @@ export function setupTraditionalControls(camera, renderer, scene, onSelectCallba
     return { 
         controls, 
         update,
-        dispose
+        dispose,
+        _keysPressed: keysPressed,
+        _isPointerLockEnabled: () => isPointerLockEnabled
     };
 }
