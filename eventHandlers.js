@@ -9,36 +9,104 @@ let currentSelectedCubes = [];
 let currentLastSelectedCube = null;
 let currentScene = null;
 
+// State verification utility
+function verifyState(context) {
+    const state = {
+        context,
+        selectedCubes: {
+            count: currentSelectedCubes?.length || 0,
+            valid: Array.isArray(currentSelectedCubes),
+            samplePmid: currentSelectedCubes?.[0]?.userData?.PMID
+        },
+        lastSelectedCube: {
+            exists: !!currentLastSelectedCube,
+            pmid: currentLastSelectedCube?.userData?.PMID
+        },
+        scene: {
+            exists: !!currentScene,
+            childrenCount: currentScene?.children?.length || 0
+        },
+        data: {
+            count: getData()?.length || 0,
+            loaded: !!getData()
+        },
+        domElements: {
+            deleteBtn: !!document.getElementById('delete-btn'),
+            downloadBtn: !!document.getElementById('download-btn')
+        }
+    };
+
+    console.groupCollapsed(`State verification (${context})`);
+    console.log('Full state:', state);
+    
+    // Check for critical issues
+    if (!state.selectedCubes.valid) {
+        console.error('Invalid selectedCubes - expected array');
+    }
+    if (!state.scene.exists) {
+        console.error('Scene reference missing');
+    }
+    if (!state.data.loaded) {
+        console.warn('No data loaded');
+    }
+    
+    console.groupEnd();
+    return state;
+}
+
 export function setupEventHandlers(selectedCubes, lastSelectedCube, scene) {
+    verifyState('setupEventHandlers-start');
+    
     // Update our stored references
-    currentSelectedCubes = selectedCubes;
+    currentSelectedCubes = selectedCubes || [];
     currentLastSelectedCube = lastSelectedCube;
     currentScene = scene;
 
     // Clear existing event listeners to avoid duplicates
-    document.getElementById('delete-btn').replaceWith(document.getElementById('delete-btn').cloneNode(true));
-    document.getElementById('download-btn').replaceWith(document.getElementById('download-btn').cloneNode(true));
+    const deleteBtn = document.getElementById('delete-btn');
+    const downloadBtn = document.getElementById('download-btn');
+    
+    if (deleteBtn) {
+        deleteBtn.replaceWith(deleteBtn.cloneNode(true));
+    }
+    if (downloadBtn) {
+        downloadBtn.replaceWith(downloadBtn.cloneNode(true));
+    }
 
     // Setup new event listeners
-    document.getElementById('delete-btn').addEventListener('click', handleDelete);
-    document.getElementById('download-btn').addEventListener('click', handleDownload);
+    document.getElementById('delete-btn')?.addEventListener('click', handleDelete);
+    document.getElementById('download-btn')?.addEventListener('click', handleDownload);
+    
+    verifyState('setupEventHandlers-end');
 }
 
 async function handleDelete() {
+    const state = verifyState('handleDelete-start');
+    
     try {
-        if (!currentSelectedCubes || currentSelectedCubes.length === 0) {
+        if (!state.selectedCubes.count) {
             showErrorToUser("Please select at least one article first");
             return;
         }
 
-        const pmidsToDelete = currentSelectedCubes.map(c => c.userData.pmid);
+        const pmidsToDelete = currentSelectedCubes.map(c => c.userData?.PMID).filter(Boolean);
         
+        if (!pmidsToDelete.length) {
+            console.error('No valid PMIDs to delete', currentSelectedCubes);
+            showErrorToUser("Invalid selection - no articles to delete");
+            return;
+        }
+
         // Update data
         const newData = deleteSelectedFromData(pmidsToDelete);
         setData(newData);
         
         // Update scene
-        deleteSelectedCubes(currentSelectedCubes, currentScene);
+        if (currentScene) {
+            deleteSelectedCubes(currentSelectedCubes, currentScene);
+        } else {
+            console.error('No scene reference for deletion');
+        }
         
         // Clear selection
         currentSelectedCubes = [];
@@ -53,21 +121,25 @@ async function handleDelete() {
                 currentLastSelectedCube = result.lastSelectedCube;
             }
         });
+        
+        verifyState('handleDelete-success');
     } catch (error) {
         console.error("Deletion failed:", error);
+        verifyState('handleDelete-error');
         showErrorToUser("Failed to delete selected articles");
     }
 }
 
 async function handleDownload() {
+    const state = verifyState('handleDownload-start');
+    
     try {
-        const data = getData();
-        if (!data || !data.length) {
+        if (!state.data.count) {
             showErrorToUser("No data available to export");
             return;
         }
 
-        const exportData = data.map(item => ({
+        const exportData = getData().map(item => ({
             ...item,
             Notes: item.Notes || '',
             Rating: item.Rating || '',
@@ -81,12 +153,17 @@ async function handleDownload() {
         link.download = `pubmed_export_${new Date().toISOString().slice(0,10)}.csv`;
         document.body.appendChild(link);
         link.click();
+        
         setTimeout(() => {
             document.body.removeChild(link);
             URL.revokeObjectURL(url);
+            verifyState('handleDownload-cleanup');
         }, 100);
+        
+        verifyState('handleDownload-success');
     } catch (error) {
         console.error("Export failed:", error);
+        verifyState('handleDownload-error');
         showErrorToUser("Failed to export data");
     }
 }
