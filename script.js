@@ -60,99 +60,86 @@ async function init() {
 
 
 function setupEventHandlers() {
-    document.getElementById('delete-btn').addEventListener('click', () => {
-        if (selectedCubes.length === 0) {
-            alert("Please select at least one article first");
-            return;
-        }
-        
-        try {
-            const pmidsToDelete = selectedCubes.map(c => c.userData.pmid);
-            
-            // Update data
-            const newData = deleteSelectedFromData(pmidsToDelete);
-            
-            // Update scene
-            selectedCubes = deleteSelectedCubes(selectedCubes, sceneObjects.scene);
-            lastSelectedCube = null;
-    
-            // Refresh UI with updated data
-            populateDataTable(
-                newData,
-                (pmid, isSelected) => {
-                    const result = highlightCubeByPmid(pmid, isSelected, selectedCubes, lastSelectedCube);
-                    if (result) {
-                        selectedCubes = result.selectedCubes;
-                        lastSelectedCube = result.lastSelectedCube;
-                    }
-                }
-            );
-            
-            clearTextZone();
-        } catch (error) {
-            console.error("Delete failed:", error);
-            showErrorToUser("Failed to delete selected articles");
-        }
-    });
-    
+    // DELETE Button Handler (merged)
     document.getElementById('delete-btn').addEventListener('click', () => {
         console.group('[Delete Operation]');
-        
+
         if (selectedCubes.length === 0) {
+            alert("Please select at least one article first");
             console.log('No cubes selected for deletion');
             console.groupEnd();
             return;
         }
-    
-        // Store PMIDs before deletion for reference
-        const pmidsToDelete = selectedCubes.map(c => c.userData.pmid);
-        console.log('Deleting PMIDs:', pmidsToDelete);
-    
-        // Update data store
-        console.log('Updating data store...');
-        const newData = deleteSelectedFromData(pmidsToDelete);
-        setData(newData);
-    
-        // Update scene
-        console.log('Updating scene...');
-        selectedCubes = deleteSelectedCubes(selectedCubes, sceneObjects.scene);
-        
-        // Update lastSelectedCube if it was deleted
-        if (lastSelectedCube && pmidsToDelete.includes(lastSelectedCube.userData.pmid)) {
-            console.log('Last selected cube was deleted - updating reference');
-            lastSelectedCube = selectedCubes.length > 0 ? selectedCubes[0] : null;
-            console.log('New lastSelectedCube:', lastSelectedCube?.userData.pmid);
-        }
-    
-        // Force UI updates
-        console.log('Updating UI state...');
-        if (lastSelectedCube) {
-            console.log('Updating text zone with remaining selection');
-            updateTextZone(lastSelectedCube.userData);
-        } else {
-            console.log('No selections remain - clearing text zone');
-            clearTextZone();
-        }
-    
-        // Refresh table with proper selection handling
-        console.log('Refreshing data table...');
-        populateDataTable(newData, (pmid, isSelected) => {
-            const result = highlightCubeByPmid(pmid, isSelected, selectedCubes, lastSelectedCube);
-            if (result) {
-                selectedCubes = result.selectedCubes;
-                lastSelectedCube = result.lastSelectedCube;
-                
-                // Ensure text zone updates for new selections
-                if (isSelected && result.cube) {
-                    updateTextZone(result.cube.userData);
-                }
+
+        try {
+            const pmidsToDelete = selectedCubes.map(c => c.userData.pmid);
+            console.log('Deleting PMIDs:', pmidsToDelete);
+
+            // Update data store
+            console.log('Updating data store...');
+            const newData = deleteSelectedFromData(pmidsToDelete);
+            setData(newData);
+
+            // Update scene
+            console.log('Updating scene...');
+            selectedCubes = deleteSelectedCubes(selectedCubes, sceneObjects.scene);
+
+            // Update lastSelectedCube if it was deleted
+            if (lastSelectedCube && pmidsToDelete.includes(lastSelectedCube.userData.pmid)) {
+                console.log('Last selected cube was deleted - updating reference');
+                lastSelectedCube = selectedCubes.length > 0 ? selectedCubes[0] : null;
+                console.log('New lastSelectedCube:', lastSelectedCube?.userData.pmid);
             }
-        });
-    
-        console.log('Delete operation complete');
+
+            // Force UI updates
+            console.log('Updating UI state...');
+            if (lastSelectedCube) {
+                console.log('Updating text zone with remaining selection');
+                updateTextZone(lastSelectedCube.userData);
+            } else {
+                console.log('No selections remain - clearing text zone');
+                clearTextZone();
+            }
+
+            // Refresh data table
+            console.log('Refreshing data table...');
+            populateDataTable(newData, (pmid, isSelected) => {
+                const result = highlightCubeByPmid(pmid, isSelected, selectedCubes, lastSelectedCube);
+                if (result) {
+                    selectedCubes = result.selectedCubes;
+                    lastSelectedCube = result.lastSelectedCube;
+
+                    if (isSelected && result.cube) {
+                        updateTextZone(result.cube.userData);
+                    }
+                }
+            });
+
+            console.log('Delete operation complete');
+        } catch (error) {
+            console.error("Delete failed:", error);
+            showErrorToUser("Failed to delete selected articles");
+        }
+
         console.groupEnd();
     });
-    }
+
+    // DOWNLOAD/EXPORT Button Handler (restored)
+    document.getElementById('download-btn').addEventListener('click', () => {
+        try {
+            const currentData = getData();
+            if (!currentData || !currentData.length) {
+                showErrorToUser("No data available to export");
+                return;
+            }
+            exportFilteredData();
+        } catch (error) {
+            console.error("Export failed:", error);
+            showErrorToUser("Failed to export data");
+        }
+    });
+}
+
 
 function startAnimationLoop() {
     function animate() {
