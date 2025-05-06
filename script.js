@@ -95,20 +95,39 @@ function setupEventHandlers() {
         }
     });
     
-    document.getElementById('download-btn').addEventListener('click', () => {
-        try {
-            const currentData = getData();
-            if (!currentData || !currentData.length) {
-                showErrorToUser("No data available to export");
-                return;
-            }
-            exportFilteredData();
-        } catch (error) {
-            console.error("Export failed:", error);
-            showErrorToUser("Failed to export data");
+    document.getElementById('delete-btn').addEventListener('click', () => {
+        if (selectedCubes.length === 0) return;
+        
+        const pmidsToDelete = selectedCubes.map(c => c.userData.pmid);
+        
+        // Update data
+        deleteSelectedFromData(pmidsToDelete);
+        
+        // Update scene and selection state
+        selectedCubes = deleteSelectedCubes(selectedCubes, sceneObjects.scene);
+        
+        // IMPORTANT: Clear lastSelectedCube if it was deleted
+        if (lastSelectedCube && pmidsToDelete.includes(lastSelectedCube.userData.pmid)) {
+            lastSelectedCube = selectedCubes.length > 0 ? selectedCubes[0] : null;
         }
+        
+        // Refresh UI
+        populateDataTable(getData(), (pmid, isSelected) => {
+            const result = highlightCubeByPmid(pmid, isSelected, selectedCubes, lastSelectedCube);
+            if (result) {
+                selectedCubes = result.selectedCubes;
+                lastSelectedCube = result.lastSelectedCube;
+                
+                // Force text zone update if we have a last selected cube
+                if (lastSelectedCube) {
+                    updateTextZone(lastSelectedCube.userData);
+                } else {
+                    clearTextZone();
+                }
+            }
+        });
     });
-}
+    }
 
 function startAnimationLoop() {
     function animate() {
