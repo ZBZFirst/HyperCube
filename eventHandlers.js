@@ -1,16 +1,18 @@
 // eventHandlers.js
 import { getData, setData } from './dataManager.js';
-import { deleteSelectedCubes, highlightCubeByPmid, centerCameraOnCube } from './cubeManager.js';
+import { deleteSelectedCubes } from './deleteCubes.js';
+import { highlightCubeByPmid, centerCameraOnCube } from './cubeManager.js';
 import { populateDataTable, updateTextZone, clearTextZone, showErrorToUser } from './uiManager.js';
+import * as d3 from 'https://cdn.jsdelivr.net/npm/d3@7/+esm';
 
-export function setupEventHandlers(selectedCubes, lastSelectedCube, updateSelection, refreshUI) {
+export function setupEventHandlers(selectedCubes, lastSelectedCube, updateSelection, refreshUI, scene) {
     document.getElementById('delete-btn').addEventListener('click', () => 
-        handleDelete(selectedCubes, updateSelection, refreshUI));
+        handleDelete(selectedCubes, updateSelection, refreshUI, scene));
     
     document.getElementById('download-btn').addEventListener('click', handleDownload);
 }
 
-export async function handleDelete(selectedCubes, updateSelection, refreshUI) {
+export async function handleDelete(selectedCubes, updateSelection, refreshUI, scene) {
     if (selectedCubes.length === 0) {
         showErrorToUser("Please select at least one article first");
         return;
@@ -20,12 +22,10 @@ export async function handleDelete(selectedCubes, updateSelection, refreshUI) {
         const pmidsToDelete = selectedCubes.map(c => c.userData.pmid);
         
         // Update data
-        const currentData = getData();
-        const newData = currentData.filter(item => !pmidsToDelete.includes(item.PMID));
-        setData(newData);
+        deleteSelectedFromData(pmidsToDelete);
         
         // Update scene
-        deleteSelectedCubes(selectedCubes);
+        selectedCubes = deleteSelectedCubes(selectedCubes, scene);
         
         // Update selection state
         updateSelection([], null);
