@@ -109,30 +109,76 @@ export function populateDataTable(data, onSelect) {
 /* ========== TEXT ZONE FUNCTIONS ========== */
 
 export function updateTextZone(article) {
+    console.groupCollapsed('[updateTextZone] Updating text zone');
+    
+    // Input validation logging
     if (!article || typeof article !== 'object') {
-        console.warn('Invalid article data:', article);
+        console.error('Invalid article data:', article);
+        console.log('Clearing text zone due to invalid input');
+        console.groupEnd();
         clearTextZone();
         return;
     }
     
-    // Ensure required fields exist
-    const safeArticle = {Title: article.Title || 'No title available',PMID: article.PMID || '-',PubYear: article.PubYear || '-',Source: article.Source || '-',DOI: article.DOI || '',PMC_ID: article.PMC_ID || '',Abstract: article.Abstract || 'No abstract available'};
+    console.log('Raw article data:', JSON.parse(JSON.stringify(article)));
     
-    // Update DOM elements
-    document.getElementById('selected-title').textContent = safeArticle.Title;
-    document.getElementById('pmid-text').textContent = safeArticle.PMID;
-    document.getElementById('year-text').textContent = safeArticle.PubYear;
-    document.getElementById('source-text').textContent = safeArticle.Source;
+    // Create safe article data with fallbacks
+    const safeArticle = {
+        Title: article.Title || 'No title available',
+        PMID: article.PMID || '-',
+        PubYear: article.PubYear || '-',
+        Source: article.Source || '-',
+        DOI: article.DOI || '',
+        PMC_ID: article.PMC_ID || '',
+        Abstract: article.Abstract || 'No abstract available'
+    };
     
+    console.log('Processed article data:', safeArticle);
+    
+    // Update DOM elements with logging
+    const updateField = (id, value) => {
+        const element = document.getElementById(id);
+        if (!element) {
+            console.error(`Element with ID ${id} not found`);
+            return;
+        }
+        console.log(`Updating ${id}:`, value);
+        element.textContent = value;
+    };
+    
+    updateField('selected-title', safeArticle.Title);
+    updateField('pmid-text', safeArticle.PMID);
+    updateField('year-text', safeArticle.PubYear);
+    updateField('source-text', safeArticle.Source);
+    updateField('abstract-text', safeArticle.Abstract);
+    
+    // Handle DOI link
     const doiLink = document.getElementById('doi-link');
-    doiLink.textContent = safeArticle.DOI || '-';
-    doiLink.href = safeArticle.DOI ? `https://doi.org/${safeArticle.DOI}` : '#';
+    if (doiLink) {
+        console.log('Updating DOI link:', {
+            text: safeArticle.DOI || '-',
+            href: safeArticle.DOI ? `https://doi.org/${safeArticle.DOI}` : '#'
+        });
+        doiLink.textContent = safeArticle.DOI || '-';
+        doiLink.href = safeArticle.DOI ? `https://doi.org/${safeArticle.DOI}` : '#';
+    } else {
+        console.error('DOI link element not found');
+    }
     
+    // Handle PMC link
     const pmcLink = document.getElementById('pmc-link');
-    pmcLink.textContent = safeArticle.PMC_ID ? `PMC${safeArticle.PMC_ID}` : '-';
-    pmcLink.href = safeArticle.PMC_ID ? `https://www.ncbi.nlm.nih.gov/pmc/articles/PMC${safeArticle.PMC_ID}/` : '#';
+    if (pmcLink) {
+        console.log('Updating PMC link:', {
+            text: safeArticle.PMC_ID ? `PMC${safeArticle.PMC_ID}` : '-',
+            href: safeArticle.PMC_ID ? `https://www.ncbi.nlm.nih.gov/pmc/articles/PMC${safeArticle.PMC_ID}/` : '#'
+        });
+        pmcLink.textContent = safeArticle.PMC_ID ? `PMC${safeArticle.PMC_ID}` : '-';
+        pmcLink.href = safeArticle.PMC_ID ? `https://www.ncbi.nlm.nih.gov/pmc/articles/PMC${safeArticle.PMC_ID}/` : '#';
+    } else {
+        console.error('PMC link element not found');
+    }
     
-    document.getElementById('abstract-text').textContent = safeArticle.Abstract;
+    console.groupEnd();
 }
 
 
