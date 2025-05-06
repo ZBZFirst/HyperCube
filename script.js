@@ -37,8 +37,8 @@ async function init() {
         createCubesFromData(data, sceneObjects.scene);
         
         setupUI(data, selectedCubes, lastSelectedCube, (newSelectedCubes, newLastSelectedCube) => {
-            selectedCubes = result.selectedCubes;
-            lastSelectedCube = result.lastSelectedCube;
+            selectedCubes = newSelectedCubes;
+            lastSelectedCube = newLastSelectedCube;
             console.log("Current selection:", selectedCubes.map(c => c.userData.pmid));
         });
         
