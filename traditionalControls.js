@@ -3,7 +3,7 @@ import { PointerLockControls } from 'three/examples/jsm/controls/PointerLockCont
 import { highlightCubeByPmid } from './cubeManager.js';
 import { updateTextZone } from './dataManager.js';
 
-export function setupTraditionalControls(camera, renderer, scene) {
+export function setupTraditionalControls(camera, renderer, scene, onSelectCallback) {
     const controls = new PointerLockControls(camera, renderer.domElement);
     const velocity = new THREE.Vector3();
     const speed = 5;
@@ -29,12 +29,19 @@ export function setupTraditionalControls(camera, renderer, scene) {
         keysPressed[e.key.toLowerCase()] = false;
     });
 
-    // Lock controls on click
+    // Fix for pointer lock
     renderer.domElement.addEventListener('click', () => {
         if (controls.isLocked) return;
-        controls.lock().catch(e => {
-            console.log("Pointer lock failed:", e);
-        });
+        if (typeof controls.lock === 'function') {
+            controls.lock().catch(e => console.log("Pointer lock failed:", e));
+        } else {
+            // Fallback for older Three.js versions
+            renderer.domElement.requestPointerLock = 
+                renderer.domElement.requestPointerLock || 
+                renderer.domElement.mozRequestPointerLock || 
+                renderer.domElement.webkitRequestPointerLock;
+            renderer.domElement.requestPointerLock();
+        }
     });
 
     function update(delta) {
