@@ -1,6 +1,6 @@
 // pubmedFetcher.js
 const BASE_URL = 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/';
-export const DEFAULT_API_KEY = '3834945c08440921ade60d29a8bdd9553808';
+export const DEFAULT_API_KEY = '3834945c08440921ade60d29a8bdd955380';
 const DEFAULT_SEARCH_TERM = 'Liquid Mechanical Ventilation Life Support Humans';
 const BATCH_SIZE = 50;
 
