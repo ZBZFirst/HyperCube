@@ -108,19 +108,34 @@ async function handleDelete() {
             console.error('No scene reference for deletion');
         }
         
-        // Clear selection
+        // Clear all selections and highlights
+        highlightCubeByPmid(null); // This will clear any visual highlights
+        
+        // Clear selection state
         currentSelectedCubes = [];
         currentLastSelectedCube = null;
         
         // Refresh UI
         clearTextZone();
+        
+        // Recreate the data table with proper selection handling
         populateDataTable(newData, (pmid, isSelected) => {
-            const result = highlightCubeByPmid(pmid, isSelected, currentSelectedCubes, currentLastSelectedCube);
+            const result = highlightCubeByPmid(pmid, isSelected);
             if (result) {
                 currentSelectedCubes = result.selectedCubes;
                 currentLastSelectedCube = result.lastSelectedCube;
+                
+                // Update text zone when new selection is made
+                if (isSelected && result.lastSelectedCube) {
+                    updateTextZone(result.lastSelectedCube.userData);
+                } else if (!isSelected && currentSelectedCubes.length === 0) {
+                    clearTextZone();
+                }
             }
         });
+        
+        // Re-setup event handlers with clean state
+        setupEventHandlers(currentSelectedCubes, currentLastSelectedCube, currentScene);
         
         verifyState('handleDelete-success');
     } catch (error) {
