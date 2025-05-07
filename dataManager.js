@@ -138,7 +138,7 @@ export function populateDataTable(data, onSelect) {
   rows.append('td')
     .text(d => d.combinedKeywords || '')
     .attr('title', d => d.combinedKeywords || '')
-    .classed('keyword-cell', true);
+    .classed('keyword-cell', true);}
 
 /* ========== TEXT ZONE FUNCTIONS ========== */
 
