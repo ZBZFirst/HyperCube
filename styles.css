@@ -50,6 +50,82 @@
   background: #f0f0f0;
 }
 
+/* ========== TABLE STYLES ========== */
+#data-table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+  font-size: 0.9em;
+}
+
+#data-table th, #data-table td {
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  vertical-align: top;
+}
+
+#data-table th {
+  background-color: #2c3e50;
+  color: white;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+/* Column width definitions */
+#data-table colgroup col:nth-child(1) { width: 25%; } /* Title */
+#data-table colgroup col:nth-child(2) { width: 5%; }  /* Select */
+#data-table colgroup col:nth-child(3) { width: 15%; } /* Notes */
+#data-table colgroup col:nth-child(4) { width: 5%; }  /* Rating */
+#data-table colgroup col:nth-child(5) { width: 10%; } /* Tags */
+#data-table colgroup col:nth-child(6) { width: 20%; } /* MeSH Terms */
+#data-table colgroup col:nth-child(7) { width: 20%; } /* Keywords */
+
+/* Cell content handling */
+#data-table td {
+  overflow: hidden;
+}
+
+#data-table td:nth-child(1) { /* Title */
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+#data-table td:nth-child(6), /* MeSH Terms */
+#data-table td:nth-child(7) { /* Keywords */
+  white-space: normal;
+  word-wrap: break-word;
+  max-height: 120px;
+  overflow-y: auto;
+}
+
+/* Input elements */
+#data-table input[type="text"],
+#data-table input[type="checkbox"],
+#data-table select {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+#data-table input[type="checkbox"] {
+  width: auto;
+  margin: 0 auto;
+  display: block;
+}
+
+/* Tooltip effect for truncated cells */
+#data-table td[title]:hover::after {
+  content: attr(title);
+  position: absolute;
+  background: rgba(0,0,0,0.8);
+  color: white;
+  padding: 5px 10px;
+  border-radius: 3px;
+  z-index: 100;
+  margin-top: -25px;
+  margin-left: 10px;
+}
+
 /* ========== SPLITTERS ========== */
 #vertical-splitter {
   grid-area: vsplit;
@@ -84,6 +160,7 @@
   border: none;
   border-radius: 4px;
   cursor: pointer;
+  font-size: 0.9em;
 }
 
 .delete {
@@ -114,6 +191,7 @@
   align-items: center;
   gap: 5px;
   transition: all 0.2s;
+  font-size: 0.85em;
 }
 
 .view-button:hover {
@@ -128,4 +206,23 @@
 .view-button.active {
   background: #3498db;
   box-shadow: 0 0 5px rgba(52, 152, 219, 0.5);
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #555;
 }
