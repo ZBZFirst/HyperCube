@@ -89,7 +89,9 @@ async function handleDelete() {
             return;
         }
 
-        const pmidsToDelete = currentSelectedCubes.map(c => c.userData?.PMID).filter(Boolean);
+        // Create a copy of the current selection before clearing
+        const cubesToDelete = [...currentSelectedCubes];
+        const pmidsToDelete = cubesToDelete.map(c => c.userData?.PMID).filter(Boolean);
         
         if (!pmidsToDelete.length) {
             console.error('No valid PMIDs to delete', currentSelectedCubes);
@@ -101,15 +103,15 @@ async function handleDelete() {
         const newData = deleteSelectedFromData(pmidsToDelete);
         setData(newData);
         
-        // Update scene
+        // Update scene - use the copied array to avoid reference issues
         if (currentScene) {
-            deleteSelectedCubes(currentSelectedCubes, currentScene);
+            deleteSelectedCubes(cubesToDelete, currentScene);
         } else {
             console.error('No scene reference for deletion');
         }
         
         // Clear all selections and highlights
-        highlightCubeByPmid(null); // This will clear any visual highlights
+        highlightCubeByPmid(null, false); // Clear all highlights
         
         // Clear selection state
         currentSelectedCubes = [];
