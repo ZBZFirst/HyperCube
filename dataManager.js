@@ -46,8 +46,31 @@ export function populateDataTable(data, onSelect) {
   const tbody = d3.select('#data-table tbody');
   tbody.selectAll('tr').remove();
 
+  // Process data to combine MeSH and Keyword columns
+  const processedData = data.map(item => {
+    // Combine all MeSH terms (MeSH_1 to MeSH_30)
+    const meshTerms = [];
+    for (let i = 1; i <= 30; i++) {
+      const term = item[`MeSH_${i}`];
+      if (term) meshTerms.push(term);
+    }
+    
+    // Combine all Keywords (Keyword_1 to Keyword_30)
+    const keywords = [];
+    for (let i = 1; i <= 30; i++) {
+      const keyword = item[`Keyword_${i}`];
+      if (keyword) keywords.push(keyword);
+    }
+    
+    return {
+      ...item,
+      combinedMeSH: meshTerms.join('; '),
+      combinedKeywords: keywords.join('; ')
+    };
+  });
+
   const rows = tbody.selectAll('tr')
-    .data(data)
+    .data(processedData)
     .enter()
     .append('tr')
     .attr('data-pmid', d => d.PMID)
@@ -104,6 +127,24 @@ export function populateDataTable(data, onSelect) {
     .on('change', function(event, d) {
       addAnnotation(d.PMID, 'Tags', event.target.value);
     });
+    
+  // MeSH Terms column
+  rows.append('td')
+    .text(d => d.combinedMeSH || '')
+    .attr('title', d => d.combinedMeSH || '')
+    .style('max-width', '200px')
+    .style('overflow', 'hidden')
+    .style('text-overflow', 'ellipsis')
+    .style('white-space', 'nowrap');
+
+  // Keywords column
+  rows.append('td')
+    .text(d => d.combinedKeywords || '')
+    .attr('title', d => d.combinedKeywords || '')
+    .style('max-width', '200px')
+    .style('overflow', 'hidden')
+    .style('text-overflow', 'ellipsis')
+    .style('white-space', 'nowrap');
 }
 
 /* ========== TEXT ZONE FUNCTIONS ========== */
