@@ -67,7 +67,7 @@ function createApiKeyInputGroup() {
     'pubmed-api-key', 
     'text', 
     '', 
-    'Error will occur if key left blank, Sign Up at PubMed.Gov for an API Key'
+    'Error will occur if key left blank, Sign Up at PubMed.Gov for a Free API Key'
   );
 }
 
