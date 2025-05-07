@@ -132,20 +132,13 @@ export function populateDataTable(data, onSelect) {
   rows.append('td')
     .text(d => d.combinedMeSH || '')
     .attr('title', d => d.combinedMeSH || '')
-    .style('max-width', '200px')
-    .style('overflow', 'hidden')
-    .style('text-overflow', 'ellipsis')
-    .style('white-space', 'nowrap');
-
+    .classed('mesh-cell', true);
+  
   // Keywords column
   rows.append('td')
     .text(d => d.combinedKeywords || '')
     .attr('title', d => d.combinedKeywords || '')
-    .style('max-width', '200px')
-    .style('overflow', 'hidden')
-    .style('text-overflow', 'ellipsis')
-    .style('white-space', 'nowrap');
-}
+    .classed('keyword-cell', true);
 
 /* ========== TEXT ZONE FUNCTIONS ========== */
 
