@@ -133,7 +133,6 @@ function createFaceMaterial(color, text, label) {
     
     // Create texture
     const texture = new THREE.CanvasTexture(canvas);
-    texture.anisotropy = renderer.capabilities.getMaxAnisotropy(); // Add this
     
     return new THREE.MeshPhongMaterial({
         map: texture,
