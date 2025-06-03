@@ -76,46 +76,72 @@ function calculatePosition(data, allData) {
     return [x, 0, z];
 }
 
-// Helper function to create face material with text
+// In createCube.js - modify createFaceMaterial function
 function createFaceMaterial(color, text, label) {
+    const canvasSize = 512; // Double the resolution
     const canvas = document.createElement('canvas');
-    canvas.width = 256;
-    canvas.height = 256;
+    canvas.width = canvasSize;
+    canvas.height = canvasSize;
     const context = canvas.getContext('2d');
     
     // Fill with color
     context.fillStyle = `#${color.getHexString()}`;
     context.fillRect(0, 0, canvas.width, canvas.height);
     
-    // Add main text (centered, larger)
-    context.font = 'Bold 60px Arial';
+    // Dynamic font sizing based on text length
+    const baseFontSize = 80;
+    const textLength = String(text).length;
+    const fontSize = Math.max(20, baseFontSize - (textLength * 2));
+    
+    // Main text
+    context.font = `Bold ${fontSize}px Arial`;
     context.textAlign = 'center';
     context.textBaseline = 'middle';
     context.fillStyle = 'white';
     
-    // Split long text into two lines if needed
-    if (String(text).length > 8) {
-        const mid = Math.floor(String(text).length / 2);
-        context.fillText(String(text).substring(0, mid), canvas.width/2, canvas.height/2 - 20);
-        context.fillText(String(text).substring(mid), canvas.width/2, canvas.height/2 + 20);
+    // Smart text wrapping
+    const maxLineLength = 10;
+    if (String(text).length > maxLineLength) {
+        const words = String(text).split(' ');
+        let lines = [];
+        let currentLine = words[0];
+        
+        for (let i = 1; i < words.length; i++) {
+            if (currentLine.length + words[i].length < maxLineLength) {
+                currentLine += ' ' + words[i];
+            } else {
+                lines.push(currentLine);
+                currentLine = words[i];
+            }
+        }
+        lines.push(currentLine);
+        
+        // Render wrapped lines
+        const lineHeight = fontSize * 1.2;
+        const startY = (canvas.height / 2) - ((lines.length - 1) * lineHeight / 2);
+        
+        lines.forEach((line, i) => {
+            context.fillText(line, canvas.width/2, startY + (i * lineHeight));
+        });
     } else {
         context.fillText(String(text), canvas.width/2, canvas.height/2);
     }
     
-    // Add label (smaller, at bottom)
-    context.font = '20px Arial';
-    context.fillText(label, canvas.width/2, canvas.height - 20);
+    // Label (smaller, at bottom)
+    context.font = '24px Arial';
+    context.fillText(label, canvas.width/2, canvas.height - 30);
     
-    // Create texture from canvas
+    // Create texture
     const texture = new THREE.CanvasTexture(canvas);
+    texture.anisotropy = renderer.capabilities.getMaxAnisotropy(); // Add this
     
     return new THREE.MeshPhongMaterial({
         map: texture,
         transparent: true,
         opacity: 0.95,
         shininess: 30,
-        emissive: 0x000000, 
-        emissiveIntensity: 0 
+        emissive: 0x000000,
+        emissiveIntensity: 0
     });
 }
 
