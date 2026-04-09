@@ -315,7 +315,7 @@ function positionAsGrid(cubes) {
     cubes.forEach((cube, i) => {
         targetPositions.set(cube, new THREE.Vector3(
             (i % gridSize - gridSize/2) * 2.5,
-            0,
+            getCubeHeight(cube) / 2,
             Math.floor(i / gridSize - gridSize/2) * 2.5
         ));
     });

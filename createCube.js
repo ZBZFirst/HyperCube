@@ -97,7 +97,8 @@ function calculatePosition(data, allData) {
     const gridSize = Math.ceil(Math.sqrt(allData.length));
     const x = (index % gridSize) * 2 - gridSize;
     const z = Math.floor(index / gridSize) * 2 - gridSize;
-    return [x, 0, z];
+    const y = getGeometryHeight(data) / 2;
+    return [x, y, z];
 }
 
 function getGeometryHeight(data) {
