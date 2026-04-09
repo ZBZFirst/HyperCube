@@ -510,7 +510,7 @@
   top: 88px;
   left: 14px;
   bottom: 14px;
-  width: min(420px, calc(100vw - 28px));
+  width: min(500px, calc(100vw - 28px));
   height: auto;
   border-radius: 24px;
   background: rgba(248, 250, 252, 0.95);
@@ -543,6 +543,37 @@
 #app-container.app-fullscreen #text-container .panel-header,
 #app-container.app-fullscreen #button-container .panel-header {
   margin-bottom: 16px;
+}
+
+#app-container.app-fullscreen #data-container {
+  padding: 12px;
+}
+
+#app-container.app-fullscreen #data-table {
+  font-size: 0.68rem;
+}
+
+#app-container.app-fullscreen #data-table th,
+#app-container.app-fullscreen #data-table td {
+  padding: 5px 6px;
+}
+
+#app-container.app-fullscreen #data-table input[type="text"],
+#app-container.app-fullscreen #data-table select {
+  font-size: 0.68rem;
+  padding: 3px 4px;
+}
+
+#app-container.app-fullscreen #data-table td:nth-child(1),
+#app-container.app-fullscreen #data-table td:nth-child(2),
+#app-container.app-fullscreen #data-table td:nth-child(8),
+#app-container.app-fullscreen #data-table td:nth-child(9) {
+  font-size: 0.64rem;
+  line-height: 1.2;
+}
+
+#app-container.app-fullscreen #data-table th {
+  font-size: 0.66rem;
 }
 
 #app-container.app-fullscreen .controls-header {
@@ -611,7 +642,7 @@
   #app-container.app-fullscreen #data-container {
     top: 74px;
     bottom: 10px;
-    width: min(88vw, 360px);
+    width: min(92vw, 400px);
   }
 
   #app-container.app-fullscreen #text-container {
