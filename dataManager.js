@@ -84,6 +84,16 @@ export function populateDataTable(data, onSelect) {
     .attr('data-pmid', d => d.PMID)
     .classed('complete', d => d.complete);
 
+  // Research question column
+  rows.append('td')
+    .text(d => d.ResearchQuestion || '')
+    .attr('title', d => d.ResearchQuestion || '');
+
+  // Search terms (PubMed query) column
+  rows.append('td')
+    .text(d => d.PubMedQuery || '')
+    .attr('title', d => d.PubMedQuery || '');
+
   // Title column
   rows.append('td')
     .text(d => d.Title?.substring(0, 50) + (d.Title?.length > 50 ? '...' : ''));
@@ -136,11 +146,6 @@ export function populateDataTable(data, onSelect) {
       addAnnotation(d.PMID, 'Tags', event.target.value);
     });
 
-  // Research question column
-  rows.append('td')
-    .text(d => d.ResearchQuestion || '')
-    .attr('title', d => d.ResearchQuestion || '');
-    
   // MeSH Terms column
   rows.append('td')
     .text(d => d.combinedMeSH || '')

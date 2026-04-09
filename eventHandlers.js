@@ -2,7 +2,7 @@ import { getData, setData, clearTextZone, updateTextZone, populateDataTable, app
 import { deleteSelectedCubes, deleteSelectedFromData } from './deleteCubes.js';
 import { highlightCubeByPmid } from './cubeManager.js';
 import { showErrorToUser } from './uiManager.js';
-import * as d3 from 'https://cdn.jsdelivr.net/npm/d3@7/+esm';
+import { exportFilteredData } from './saveCubes.js';
 
 // Store references to current state
 let currentSelectedCubes = [];
@@ -162,28 +162,11 @@ async function handleDownload() {
             return;
         }
 
-        const exportData = getData().map(item => ({
-            ...item,
-            Notes: item.Notes || '',
-            Rating: item.Rating || '',
-            Tags: item.Tags || '',
-            ResearchQuestion: item.ResearchQuestion || '',
-            PubMedQuery: item.PubMedQuery || ''
-        }));
-
-        const blob = new Blob([d3.csvFormat(exportData)], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `pubmed_export_${new Date().toISOString().slice(0,10)}.csv`;
-        document.body.appendChild(link);
-        link.click();
-        
-        setTimeout(() => {
-            document.body.removeChild(link);
-            URL.revokeObjectURL(url);
-            verifyState('handleDownload-cleanup');
-        }, 100);
+        const wasExported = exportFilteredData(getData());
+        if (!wasExported) {
+            showErrorToUser("No data available to export");
+            return;
+        }
         
         verifyState('handleDownload-success');
     } catch (error) {
