@@ -10,11 +10,31 @@ const DATA_MAPPING = {
     TITLE: 'Title'           // Article title
 };
 
+export const GeometryScaleModes = {
+    NONE: 'none',
+    AUTHOR_COUNT: 'author_count',
+    MESH_COUNT: 'mesh_count'
+};
+
+let currentGeometryScaleMode = GeometryScaleModes.NONE;
+
+export function setGeometryScaleMode(mode) {
+    if (Object.values(GeometryScaleModes).includes(mode)) {
+        currentGeometryScaleMode = mode;
+    } else {
+        console.warn(`[GeometryScale] Unknown mode "${mode}", keeping "${currentGeometryScaleMode}"`);
+    }
+}
+
+export function getGeometryScaleMode() {
+    return currentGeometryScaleMode;
+}
+
 export function createCube(data, allData) {
-    // Fixed size since we don't have citations
-    const size = 0.8;
-    
-    const geometry = new THREE.BoxGeometry(size, size, size);
+    const width = 0.8;
+    const depth = 0.8;
+    const height = getGeometryHeight(data);
+    const geometry = new THREE.BoxGeometry(width, height, depth);
     const baseColor = getColorForYear(getField(data, DATA_MAPPING.YEAR));
 
     // Create materials for each face with proper fallbacks
@@ -54,6 +74,8 @@ export function createCube(data, allData) {
     const cube = new THREE.Mesh(geometry, materials);
     cube.position.set(...calculatePosition(data, allData));
     cube.userData = data;
+    cube.userData.geometryHeight = height;
+    cube.userData.geometryScaleMode = currentGeometryScaleMode;
     return cube;
 }
 
@@ -74,6 +96,33 @@ function calculatePosition(data, allData) {
     const x = (index % gridSize) * 2 - gridSize;
     const z = Math.floor(index / gridSize) * 2 - gridSize;
     return [x, 0, z];
+}
+
+function getGeometryHeight(data) {
+    switch (currentGeometryScaleMode) {
+        case GeometryScaleModes.AUTHOR_COUNT: {
+            const authorCount = countFilledSeries(data, 'Author_', 20);
+            return Math.max(1, authorCount);
+        }
+        case GeometryScaleModes.MESH_COUNT: {
+            const meshCount = countFilledSeries(data, 'MeSH_', 30);
+            return Math.max(1, meshCount);
+        }
+        case GeometryScaleModes.NONE:
+        default:
+            return 0.8;
+    }
+}
+
+function countFilledSeries(data, prefix, maxIndex) {
+    let count = 0;
+    for (let i = 1; i <= maxIndex; i++) {
+        const value = data?.[`${prefix}${i}`];
+        if (value && String(value).trim() !== '') {
+            count++;
+        }
+    }
+    return count;
 }
 
 function createFaceMaterial(color, text, label) {
