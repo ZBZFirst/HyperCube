@@ -105,6 +105,9 @@ function positionCubes() {
     animationStartTime = performance.now() / 1000;
     isAnimating = true;
     animateCubes();
+
+    // Ensure environment grows/shrinks with the new layout targets
+    updateEnvironmentBounds(includedCubes);
 }
 
 // Simplify deleteSelectedCube to just handle the cube removal
@@ -306,6 +309,44 @@ function positionAsGrid(cubes) {
             Math.floor(i / gridSize - gridSize/2) * 2.5
         ));
     });
+}
+
+function updateEnvironmentBounds(includedCubes) {
+    if (!scene?.userData?.backgroundSystem?.updateSize) return;
+
+    if (!includedCubes?.length) {
+        scene.userData.backgroundSystem.updateSize(
+            new THREE.Vector3(-20, -5, -20),
+            new THREE.Vector3(20, 15, 20)
+        );
+        return;
+    }
+
+    const minBounds = new THREE.Vector3(Infinity, Infinity, Infinity);
+    const maxBounds = new THREE.Vector3(-Infinity, -Infinity, -Infinity);
+
+    includedCubes.forEach((cube) => {
+        const targetPos = targetPositions.get(cube) || cube.position;
+        const geometry = cube.geometry;
+        const geometryParams = geometry?.parameters || {};
+
+        const halfWidth = (geometryParams.width || 0.8) / 2;
+        const halfHeight = (geometryParams.height || 0.8) / 2;
+        const halfDepth = (geometryParams.depth || 0.8) / 2;
+
+        minBounds.min(new THREE.Vector3(
+            targetPos.x - halfWidth,
+            targetPos.y - halfHeight,
+            targetPos.z - halfDepth
+        ));
+        maxBounds.max(new THREE.Vector3(
+            targetPos.x + halfWidth,
+            targetPos.y + halfHeight,
+            targetPos.z + halfDepth
+        ));
+    });
+
+    scene.userData.backgroundSystem.updateSize(minBounds, maxBounds);
 }
 
 export function centerCameraOnCube(cube) {
