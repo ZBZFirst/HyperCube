@@ -1,0 +1,4 @@
+interface:
+  display_name: "Run PubMed CSV Screening"
+  short_description: "Screen PubMed CSV rows via remote LM Studio"
+  default_prompt: "Use $run-pubmed-csv-screening to run a PubMed CSV through the remote LM Studio screener and summarize the output."
