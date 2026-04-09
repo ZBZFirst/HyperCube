@@ -39,6 +39,14 @@ export function addAnnotation(pmid, field, value) {
   return false;
 }
 
+export function applyResearchQuestionToAll(researchQuestion) {
+  const normalizedQuestion = (researchQuestion || '').trim();
+  data.forEach(item => {
+    item.ResearchQuestion = normalizedQuestion;
+  });
+  return data;
+}
+
 
 /* ========== UI TABLE FUNCTIONS ========== */
 
@@ -127,6 +135,11 @@ export function populateDataTable(data, onSelect) {
     .on('change', function(event, d) {
       addAnnotation(d.PMID, 'Tags', event.target.value);
     });
+
+  // Research question column
+  rows.append('td')
+    .text(d => d.ResearchQuestion || '')
+    .attr('title', d => d.ResearchQuestion || '');
     
   // MeSH Terms column
   rows.append('td')
@@ -263,6 +276,8 @@ function initializeItemFields(item) {
   item.includeArticle = item.includeArticle || "true";
   item.rationale = item.rationale || "";
   item.tags = item.tags || "";
+  item.ResearchQuestion = item.ResearchQuestion || "";
+  item.PubMedQuery = item.PubMedQuery || "";
   return item;
 }
 
