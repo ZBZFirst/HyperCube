@@ -10,10 +10,64 @@ import { deleteSelectedFromData } from './deleteCubes.js';
 import { exportFilteredData } from './saveCubes.js';
 import { setupControls } from './controlsSetup.js';
 import { setupEventHandlers } from './eventHandlers.js';
+import { setGeometryScaleMode, GeometryScaleModes } from './createCube.js';
 
 let sceneObjects = null;
 let selectedCubes = [];
 let lastSelectedCube = null;
+let currentData = [];
+
+function refreshCubesFromCurrentData() {
+    if (!sceneObjects?.scene || !currentData?.length) return;
+    createCubesFromData(currentData, sceneObjects.scene);
+}
+
+function setSortButtonState(activeMode) {
+    document.querySelectorAll('[data-sort-mode]').forEach(button => {
+        button.classList.toggle('active', button.dataset.sortMode === activeMode);
+    });
+}
+
+function setScaleButtonState(activeMode) {
+    document.querySelectorAll('[data-scale-mode]').forEach(button => {
+        button.classList.toggle('active', button.dataset.scaleMode === activeMode);
+    });
+}
+
+function setupControlGroups() {
+    document.addEventListener('click', (event) => {
+        const clickedInsideGroup = event.target.closest('.control-group');
+        if (!clickedInsideGroup) {
+            document.querySelectorAll('.control-options').forEach(group => group.classList.remove('open'));
+        }
+    });
+
+    window.toggleControlGroup = (groupId) => {
+        document.querySelectorAll('.control-options').forEach(group => {
+            if (group.id !== groupId) {
+                group.classList.remove('open');
+            }
+        });
+        const target = document.getElementById(groupId);
+        if (target) target.classList.toggle('open');
+    };
+
+    window.applySortMode = (mode) => {
+        if (!window.PositionModes || !window.setPositionMode) return;
+        const normalized = String(mode || '').toUpperCase();
+        const positionMode = window.PositionModes[normalized];
+        if (!positionMode) return;
+
+        window.setPositionMode(positionMode);
+        setSortButtonState(positionMode);
+    };
+
+    window.applyGeometryScaleMode = (mode) => {
+        setGeometryScaleMode(mode);
+        refreshCubesFromCurrentData();
+        setScaleButtonState(mode);
+    };
+}
 
 async function init() {
     try {
@@ -66,6 +120,7 @@ async function init() {
         console.log("Data loaded, first item:", data?.[0]);
         if (!data?.length) throw new Error("No data loaded");
         setData(data);
+        currentData = data;
         
         // 6. Create cubes
         console.log("6. Creating cubes...");
@@ -91,6 +146,9 @@ async function init() {
         // 8. Setup UI
         console.log("8. Setting up UI...");
         setupUI(data, () => [...selectedCubes], () => lastSelectedCube, onSelectCallback);
+        setupControlGroups();
+        setSortButtonState(window.PositionModes?.GRID || 'grid');
+        setScaleButtonState(GeometryScaleModes.NONE);
         
         // 9. Setup controls
         console.log("9. Setting up controls...");
