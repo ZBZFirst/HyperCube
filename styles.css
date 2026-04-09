@@ -1,4 +1,8 @@
 :root {
+  --page-gap: 14px;
+  --layout-sidebar: 320px;
+  --layout-data: 32vh;
+  --splitter-size: 10px;
   --bg-top: #eff5ff;
   --bg-bottom: #dce9ff;
   --panel: rgba(255, 255, 255, 0.86);
@@ -25,7 +29,7 @@
 html,
 body {
   margin: 0;
-  min-height: 100%;
+  height: 100%;
   color: var(--text);
   font-family: "Avenir Next", "Segoe UI Variable", "Segoe UI", sans-serif;
   background:
@@ -35,26 +39,30 @@ body {
 
 body {
   min-height: 100vh;
+  overflow: hidden;
 }
 
 #app-container {
-  min-height: 100vh;
+  height: 100vh;
   display: grid;
   grid-template-rows: minmax(0, 1fr) auto;
-  gap: 14px;
-  padding: 14px;
+  gap: var(--page-gap);
+  padding: var(--page-gap);
+  overflow: hidden;
 }
 
 #main-content {
+  height: 100%;
   min-height: 0;
   display: grid;
-  grid-template-columns: minmax(280px, 360px) 10px minmax(0, 1fr);
-  grid-template-rows: minmax(320px, 1fr) 10px minmax(240px, 0.72fr);
+  grid-template-columns: minmax(260px, var(--layout-sidebar)) var(--splitter-size) minmax(0, 1fr);
+  grid-template-rows: minmax(240px, calc(100% - var(--layout-data) - var(--splitter-size))) var(--splitter-size) minmax(210px, var(--layout-data));
   grid-template-areas:
     "text vsplit graphics"
     "hsplit hsplit hsplit"
     "data data data";
   gap: 0;
+  overflow: hidden;
 }
 
 #data-container,
@@ -112,6 +120,7 @@ body {
   overflow: auto;
   background: var(--panel);
   min-width: 0;
+  min-height: 0;
 }
 
 .panel-header {
@@ -325,6 +334,8 @@ body {
 #vertical-splitter,
 #horizontal-splitter {
   background: linear-gradient(180deg, rgba(148, 163, 184, 0.6), rgba(148, 163, 184, 0.24));
+  position: relative;
+  z-index: 20;
 }
 
 #vertical-splitter {
@@ -343,8 +354,13 @@ body {
   background: linear-gradient(180deg, rgba(37, 99, 235, 0.7), rgba(96, 165, 250, 0.35));
 }
 
+.splitter.dragging {
+  background: linear-gradient(180deg, rgba(37, 99, 235, 0.88), rgba(96, 165, 250, 0.55));
+}
+
 #button-container {
   min-height: 0;
+  max-height: min(34vh, 280px);
   display: flex;
   align-items: flex-start;
   justify-content: flex-start;

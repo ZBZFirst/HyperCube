@@ -22,6 +22,18 @@ export function createScene(container) {
         // 3. Basic scene setup
         camera.position.set(0, 1.6, 5);
         camera.lookAt(0, 0, 0);
+
+        const updateViewport = () => {
+            const width = Math.max(container.clientWidth, 1);
+            const height = Math.max(container.clientHeight, 1);
+            camera.aspect = width / height;
+            camera.updateProjectionMatrix();
+            renderer.setSize(width, height, false);
+        };
+
+        updateViewport();
+        const resizeObserver = new ResizeObserver(updateViewport);
+        resizeObserver.observe(container);
         
         // 4. Add basic lighting (in case sceneSetup fails)
         if (scene.children.filter(obj => obj.isLight).length === 0) {
@@ -44,7 +56,8 @@ export function createScene(container) {
             scene,
             camera,
             renderer,
-            canvas
+            canvas,
+            resizeObserver
         };
     } catch (error) {
         console.error('Scene creation failed:', error);

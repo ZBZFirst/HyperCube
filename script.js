@@ -267,6 +267,66 @@ function setupFullscreenMode() {
     syncFullscreenState();
 }
 
+function setupResizableLayout() {
+    const appContainer = document.getElementById('app-container');
+    const mainContent = document.getElementById('main-content');
+    const buttonContainer = document.getElementById('button-container');
+    const verticalSplitter = document.getElementById('vertical-splitter');
+    const horizontalSplitter = document.getElementById('horizontal-splitter');
+
+    if (!appContainer || !mainContent || !buttonContainer || !verticalSplitter || !horizontalSplitter) {
+        return;
+    }
+
+    const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
+
+    const applyVerticalSplit = (clientX) => {
+        const rect = mainContent.getBoundingClientRect();
+        const nextWidth = clamp(clientX - rect.left, 260, rect.width - 320);
+        appContainer.style.setProperty('--layout-sidebar', `${Math.round(nextWidth)}px`);
+    };
+
+    const applyHorizontalSplit = (clientY) => {
+        const appRect = appContainer.getBoundingClientRect();
+        const controlsHeight = buttonContainer.getBoundingClientRect().height;
+        const mainRect = mainContent.getBoundingClientRect();
+        const maxDataHeight = Math.max(mainRect.height - 240, 210);
+        const minTop = appRect.top + 240;
+        const maxTop = appRect.bottom - controlsHeight - 210;
+        const splitTop = clamp(clientY, minTop, maxTop);
+        const nextHeight = clamp(mainRect.bottom - splitTop, 210, maxDataHeight);
+        appContainer.style.setProperty('--layout-data', `${Math.round(nextHeight)}px`);
+    };
+
+    const startDrag = (splitter, onMove) => (event) => {
+        if (document.fullscreenElement === appContainer) return;
+        event.preventDefault();
+        splitter.classList.add('dragging');
+
+        const handleMove = (moveEvent) => {
+            onMove(moveEvent);
+            window.dispatchEvent(new Event('resize'));
+        };
+
+        const handleUp = () => {
+            splitter.classList.remove('dragging');
+            window.removeEventListener('pointermove', handleMove);
+            window.removeEventListener('pointerup', handleUp);
+        };
+
+        window.addEventListener('pointermove', handleMove);
+        window.addEventListener('pointerup', handleUp, { once: true });
+    };
+
+    verticalSplitter.addEventListener('pointerdown', startDrag(verticalSplitter, (event) => {
+        applyVerticalSplit(event.clientX);
+    }));
+
+    horizontalSplitter.addEventListener('pointerdown', startDrag(horizontalSplitter, (event) => {
+        applyHorizontalSplit(event.clientY);
+    }));
+}
+
 async function init() {
     try {
         console.groupCollapsed("Initialization started");
@@ -349,6 +409,7 @@ async function init() {
         setupControlGroups();
         setupQueryPanel();
         setupFullscreenMode();
+        setupResizableLayout();
         setSortButtonState(window.PositionModes?.GRID || 'grid');
         setScaleButtonState(GeometryScaleModes.NONE);
         
