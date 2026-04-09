@@ -98,21 +98,53 @@
       <button class="action-button delete" id="delete-btn">Delete</button>
       <button class="action-button" id="download-btn">Download</button>
       <button class="action-button" id="apply-research-question-btn">Apply Research Question to Queries</button>
+
+      <div class="query-panel">
+        <input id="pubmed-search-input" class="query-input query-search" type="text" placeholder="PubMed search term" />
+        <input id="pubmed-api-input" class="query-input query-key" type="password" placeholder="NCBI API key (optional)" />
+        <input id="research-question-input" class="query-input query-rq" type="text" placeholder="Research question (added to CSV)" />
+        <button class="action-button query-run-btn" onclick="runPubMedQueryToCsv()">Run Query → CSV</button>
+        <span id="query-status" class="query-status" aria-live="polite"></span>
+      </div>
       
-      <!-- Add these new view control buttons -->
-      <div class="view-controls">
-        <button class="view-button" onclick="setPositionMode(PositionModes.GRID)">
-          <span class="icon">◼</span> Grid
-        </button>
-        <button class="view-button" onclick="setPositionMode(PositionModes.YEAR)">
-          <span class="icon">📅</span> Year
-        </button>
-        <button class="view-button" onclick="setPositionMode(PositionModes.JOURNAL)">
-          <span class="icon">📚</span> Journal
-        </button>
-        <button class="view-button" onclick="setPositionMode(PositionModes.CITATIONS)">
-          <span class="icon">⭐</span> Citations
-        </button>
+      <!-- Sort & Scale control groups -->
+      <div class="controls-groups">
+        <div class="control-group">
+          <button class="view-button group-toggle" onclick="toggleControlGroup('scale-geometry-options')">
+            <span class="icon">📏</span> Scale geometry by...
+          </button>
+          <div class="control-options" id="scale-geometry-options">
+            <button class="view-button" data-scale-mode="author_count" onclick="applyGeometryScaleMode('author_count')">
+              Author count
+            </button>
+            <button class="view-button" data-scale-mode="mesh_count" onclick="applyGeometryScaleMode('mesh_count')">
+              MeSH count
+            </button>
+            <button class="view-button" data-scale-mode="none" onclick="applyGeometryScaleMode('none')">
+              None
+            </button>
+          </div>
+        </div>
+
+        <div class="control-group">
+          <button class="view-button group-toggle" onclick="toggleControlGroup('sort-by-options')">
+            <span class="icon">↕️</span> Sort by...
+          </button>
+          <div class="control-options" id="sort-by-options">
+            <button class="view-button" data-sort-mode="grid" onclick="applySortMode('GRID')">
+              <span class="icon">◼</span> Grid
+            </button>
+            <button class="view-button" data-sort-mode="year" onclick="applySortMode('YEAR')">
+              <span class="icon">📅</span> Year
+            </button>
+            <button class="view-button" data-sort-mode="journal" onclick="applySortMode('JOURNAL')">
+              <span class="icon">📚</span> Journal
+            </button>
+            <button class="view-button" data-sort-mode="citations" onclick="applySortMode('CITATIONS')">
+              <span class="icon">⭐</span> Citations
+            </button>
+          </div>
+        </div>
       </div>
     </div>
     

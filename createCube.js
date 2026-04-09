@@ -10,11 +10,31 @@ const DATA_MAPPING = {
     TITLE: 'Title'           // Article title
 };
 
+export const GeometryScaleModes = {
+    NONE: 'none',
+    AUTHOR_COUNT: 'author_count',
+    MESH_COUNT: 'mesh_count'
+};
+
+let currentGeometryScaleMode = GeometryScaleModes.NONE;
+
+export function setGeometryScaleMode(mode) {
+    if (Object.values(GeometryScaleModes).includes(mode)) {
+        currentGeometryScaleMode = mode;
+    } else {
+        console.warn(`[GeometryScale] Unknown mode "${mode}", keeping "${currentGeometryScaleMode}"`);
+    }
+}
+
+export function getGeometryScaleMode() {
+    return currentGeometryScaleMode;
+}
+
 export function createCube(data, allData) {
-    // Fixed size since we don't have citations
-    const size = 0.8;
-    
-    const geometry = new THREE.BoxGeometry(size, size, size);
+    const width = 0.8;
+    const depth = 0.8;
+    const height = getGeometryHeight(data);
+    const geometry = new THREE.BoxGeometry(width, height, depth);
     const baseColor = getColorForYear(getField(data, DATA_MAPPING.YEAR));
 
     // Create materials for each face with proper fallbacks
@@ -51,9 +71,13 @@ export function createCube(data, allData) {
         )
     ];
 
+    normalizeFaceTextureAspect(materials, width, height, depth);
+
     const cube = new THREE.Mesh(geometry, materials);
     cube.position.set(...calculatePosition(data, allData));
     cube.userData = data;
+    cube.userData.geometryHeight = height;
+    cube.userData.geometryScaleMode = currentGeometryScaleMode;
     return cube;
 }
 
@@ -74,6 +98,33 @@ function calculatePosition(data, allData) {
     const x = (index % gridSize) * 2 - gridSize;
     const z = Math.floor(index / gridSize) * 2 - gridSize;
     return [x, 0, z];
+}
+
+function getGeometryHeight(data) {
+    switch (currentGeometryScaleMode) {
+        case GeometryScaleModes.AUTHOR_COUNT: {
+            const authorCount = countFilledSeries(data, 'Author_', 20);
+            return Math.max(1, authorCount);
+        }
+        case GeometryScaleModes.MESH_COUNT: {
+            const meshCount = countFilledSeries(data, 'MeSH_', 30);
+            return Math.max(1, meshCount);
+        }
+        case GeometryScaleModes.NONE:
+        default:
+            return 0.8;
+    }
+}
+
+function countFilledSeries(data, prefix, maxIndex) {
+    let count = 0;
+    for (let i = 1; i <= maxIndex; i++) {
+        const value = data?.[`${prefix}${i}`];
+        if (value && String(value).trim() !== '') {
+            count++;
+        }
+    }
+    return count;
 }
 
 function createFaceMaterial(color, text, label) {
@@ -116,6 +167,37 @@ function createFaceMaterial(color, text, label) {
         emissive: 0x000000, 
         emissiveIntensity: 0 
     });
+}
+
+function normalizeFaceTextureAspect(materials, width, height, depth) {
+    if (!Array.isArray(materials)) return;
+
+    const safeAdjust = (material, faceWidth, faceHeight) => {
+        const texture = material?.map;
+        if (!texture) return;
+
+        const ratio = faceWidth / Math.max(faceHeight, 0.0001);
+        const repeatY = Math.min(1, ratio);
+        const repeatX = Math.min(1, 1 / Math.max(ratio, 0.0001));
+
+        texture.wrapS = THREE.RepeatWrapping;
+        texture.wrapT = THREE.RepeatWrapping;
+        texture.center.set(0.5, 0.5);
+        texture.repeat.set(repeatX, repeatY);
+        texture.offset.set((1 - repeatX) / 2, (1 - repeatY) / 2);
+        texture.needsUpdate = true;
+    };
+
+    // BoxGeometry material order: +X, -X, +Y, -Y, +Z, -Z
+    // ±X faces: depth x height
+    safeAdjust(materials[0], depth, height);
+    safeAdjust(materials[1], depth, height);
+    // ±Y faces: width x depth
+    safeAdjust(materials[2], width, depth);
+    safeAdjust(materials[3], width, depth);
+    // ±Z faces: width x height
+    safeAdjust(materials[4], width, height);
+    safeAdjust(materials[5], width, height);
 }
 
 // Color manipulation helpers (unchanged)

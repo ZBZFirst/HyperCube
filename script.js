@@ -3,17 +3,127 @@ import * as THREE from 'three';
 import * as d3 from 'https://cdn.jsdelivr.net/npm/d3@7/+esm';
 import { createScene } from './createScene.js';
 import { createUI, setupUI, showLoadingIndicator, removeLoadingIndicator, showErrorToUser, clearTextZone, createFallbackScene } from './uiManager.js';
-import { loadData, populateDataTable, updateTextZone, attemptPubMedFetch, getData, setData, addAnnotation } from './dataManager.js';
+import { loadData, populateDataTable, updateTextZone, getData, setData, addAnnotation } from './dataManager.js';
 import { createCubesFromData, getCubes, highlightCubeByPmid, centerCameraOnCube, initCubeManager, deleteSelectedCubes } from './cubeManager.js';
 import { hidePubMedFetchOverlay } from './pubmedOverlay.js';
 import { deleteSelectedFromData } from './deleteCubes.js';
 import { exportFilteredData } from './saveCubes.js';
 import { setupControls } from './controlsSetup.js';
 import { setupEventHandlers } from './eventHandlers.js';
+import { setGeometryScaleMode, GeometryScaleModes } from './createCube.js';
+import { fetchPubMedData, DEFAULT_API_KEY } from './pubmedFetcher.js';
 
 let sceneObjects = null;
 let selectedCubes = [];
 let lastSelectedCube = null;
+let currentData = [];
+let selectionHandler = null;
+
+function refreshCubesFromCurrentData() {
+    if (!sceneObjects?.scene || !currentData?.length) return;
+    createCubesFromData(currentData, sceneObjects.scene);
+}
+
+function setSortButtonState(activeMode) {
+    document.querySelectorAll('[data-sort-mode]').forEach(button => {
+        button.classList.toggle('active', button.dataset.sortMode === activeMode);
+    });
+}
+
+function setScaleButtonState(activeMode) {
+    document.querySelectorAll('[data-scale-mode]').forEach(button => {
+        button.classList.toggle('active', button.dataset.scaleMode === activeMode);
+    });
+}
+
+function setupControlGroups() {
+    document.addEventListener('click', (event) => {
+        const clickedInsideGroup = event.target.closest('.control-group');
+        if (!clickedInsideGroup) {
+            document.querySelectorAll('.control-options').forEach(group => group.classList.remove('open'));
+        }
+    });
+
+    window.toggleControlGroup = (groupId) => {
+        document.querySelectorAll('.control-options').forEach(group => {
+            if (group.id !== groupId) {
+                group.classList.remove('open');
+            }
+        });
+        const target = document.getElementById(groupId);
+        if (target) target.classList.toggle('open');
+    };
+
+    window.applySortMode = (mode) => {
+        if (!window.PositionModes || !window.setPositionMode) return;
+        const normalized = String(mode || '').toUpperCase();
+        const positionMode = window.PositionModes[normalized];
+        if (!positionMode) return;
+
+        window.setPositionMode(positionMode);
+        setSortButtonState(positionMode);
+    };
+
+    window.applyGeometryScaleMode = (mode) => {
+        setGeometryScaleMode(mode);
+        refreshCubesFromCurrentData();
+        setScaleButtonState(mode);
+    };
+}
+
+function applyNewDataset(data) {
+    if (!sceneObjects?.scene || !Array.isArray(data)) return;
+    setData(data);
+    currentData = data;
+    selectedCubes = [];
+    lastSelectedCube = null;
+    clearTextZone();
+    createCubesFromData(data, sceneObjects.scene);
+    setupUI(data, () => [...selectedCubes], () => lastSelectedCube, selectionHandler);
+    setupEventHandlers(selectedCubes, lastSelectedCube, sceneObjects.scene);
+}
+
+function setupQueryPanel() {
+    window.runPubMedQueryToCsv = async () => {
+        const searchInput = document.getElementById('pubmed-search-input');
+        const apiKeyInput = document.getElementById('pubmed-api-input');
+        const researchQuestionInput = document.getElementById('research-question-input');
+        const queryStatus = document.getElementById('query-status');
+
+        const searchTerm = searchInput?.value?.trim();
+        const apiKey = apiKeyInput?.value?.trim() || DEFAULT_API_KEY;
+        const researchQuestion = researchQuestionInput?.value?.trim() || '';
+
+        if (!searchTerm) {
+            showErrorToUser('Please enter a PubMed search term.');
+            return;
+        }
+
+        try {
+            if (queryStatus) queryStatus.textContent = 'Fetching PubMed data...';
+            showLoadingIndicator();
+
+            const data = await fetchPubMedData(searchTerm, apiKey);
+            data.forEach(row => {
+                row.ResearchQuestion = researchQuestion;
+                row.PubMedQuery = searchTerm;
+            });
+
+            applyNewDataset(data);
+            exportFilteredData(data);
+
+            if (queryStatus) {
+                queryStatus.textContent = `Done: fetched ${data.length} rows and exported CSV.`;
+            }
+        } catch (error) {
+            console.error('Query-to-CSV failed:', error);
+            showErrorToUser(`PubMed query failed: ${error.message}`);
+            if (queryStatus) queryStatus.textContent = 'Failed. Check API key/search term and try again.';
+        } finally {
+            removeLoadingIndicator();
+        }
+    };
+}
 
 async function init() {
     try {
@@ -61,11 +171,11 @@ async function init() {
         // 5. Load data
         console.log("5. Loading data...");
         let data;
-        const pubmedData = await attemptPubMedFetch();
-        data = pubmedData || await loadData("pubmed_data.csv");
+        data = await loadData("pubmed_data.csv");
         console.log("Data loaded, first item:", data?.[0]);
         if (!data?.length) throw new Error("No data loaded");
         setData(data);
+        currentData = data;
         
         // 6. Create cubes
         console.log("6. Creating cubes...");
@@ -87,10 +197,15 @@ async function init() {
             // Update event handlers with new selection state
             setupEventHandlers(selectedCubes, lastSelectedCube, sceneObjects.scene);
         };
+        selectionHandler = onSelectCallback;
         
         // 8. Setup UI
         console.log("8. Setting up UI...");
         setupUI(data, () => [...selectedCubes], () => lastSelectedCube, onSelectCallback);
+        setupControlGroups();
+        setupQueryPanel();
+        setSortButtonState(window.PositionModes?.GRID || 'grid');
+        setScaleButtonState(GeometryScaleModes.NONE);
         
         // 9. Setup controls
         console.log("9. Setting up controls...");

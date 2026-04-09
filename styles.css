@@ -207,10 +207,11 @@
 
 /* ========== BUTTON ZONE ========== */
 #button-container {
-  height: 60px;
+  min-height: 60px;
   display: flex;
   align-items: center;
   justify-content: flex-end;
+  flex-wrap: wrap;
   gap: 10px;
   padding: 0 20px;
   background: #f8f8f8;
@@ -235,11 +236,78 @@
   color: white;
 }
 
+.query-panel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-right: auto;
+  flex-wrap: wrap;
+}
+
+.query-input {
+  height: 34px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 0 10px;
+  font-size: 0.85rem;
+}
+
+.query-search {
+  width: 250px;
+}
+
+.query-key {
+  width: 210px;
+}
+
+.query-rq {
+  width: 260px;
+}
+
+.query-run-btn {
+  background: #2563eb;
+  color: white;
+}
+
+.query-status {
+  font-size: 0.8rem;
+  color: #334155;
+  min-width: 210px;
+}
+
 /* View controls styling */
-.view-controls {
+.controls-groups {
   display: flex;
   gap: 8px;
   margin-left: auto; /* Pushes to the right */
+  align-items: center;
+}
+
+.control-group {
+  position: relative;
+}
+
+.control-options {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  right: 0;
+  display: none;
+  flex-direction: column;
+  gap: 6px;
+  background: #1f2937;
+  border-radius: 8px;
+  padding: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  z-index: 200;
+  min-width: 170px;
+}
+
+.control-options.open {
+  display: flex;
+}
+
+.group-toggle {
+  background: #111827;
 }
 
 .view-button {
