@@ -114,7 +114,8 @@ async function fetchMeshKeywords(apiKey, pmids) {
     return tagData;
 }
 
-function prepareData(metadata, tagData) {
+function prepareData(metadata, tagData, searchTerm = '') {
+    const normalizedSearchTerm = (searchTerm || '').trim();
     const records = [];
     
     for (const [pmid, meta] of Object.entries(metadata)) {
@@ -124,6 +125,7 @@ function prepareData(metadata, tagData) {
         row['Title'] = meta.title || '';
         row['Source'] = meta.source || '';
         row['Doi'] = meta.doi || '';
+        row['PubMedQuery'] = normalizedSearchTerm;
         
         // Handle authors
         let authorsList = [];
@@ -304,7 +306,7 @@ export async function fetchPubMedData(searchTerm = DEFAULT_SEARCH_TERM, apiKey =
         const tagData = await fetchMeshKeywords(apiKey, pmids);
         
         // Prepare data
-        const records = prepareData(metadata, tagData);
+        const records = prepareData(metadata, tagData, searchTerm);
         
         // Completion message
         const elapsedTime = (Date.now() - startTime) / 1000;

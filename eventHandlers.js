@@ -1,8 +1,8 @@
-import { getData, setData, clearTextZone, updateTextZone, populateDataTable } from './dataManager.js';
+import { getData, setData, clearTextZone, updateTextZone, populateDataTable, applyResearchQuestionToAll } from './dataManager.js';
 import { deleteSelectedCubes, deleteSelectedFromData } from './deleteCubes.js';
 import { highlightCubeByPmid } from './cubeManager.js';
 import { showErrorToUser } from './uiManager.js';
-import * as d3 from 'https://cdn.jsdelivr.net/npm/d3@7/+esm';
+import { exportFilteredData } from './saveCubes.js';
 
 // Store references to current state
 let currentSelectedCubes = [];
@@ -32,7 +32,8 @@ function verifyState(context) {
         },
         domElements: {
             deleteBtn: !!document.getElementById('delete-btn'),
-            downloadBtn: !!document.getElementById('download-btn')
+            downloadBtn: !!document.getElementById('download-btn'),
+            applyResearchQuestionBtn: !!document.getElementById('apply-research-question-btn')
         }
     };
 
@@ -65,6 +66,7 @@ export function setupEventHandlers(selectedCubes, lastSelectedCube, scene) {
     // Clear existing event listeners to avoid duplicates
     const deleteBtn = document.getElementById('delete-btn');
     const downloadBtn = document.getElementById('download-btn');
+    const applyResearchQuestionBtn = document.getElementById('apply-research-question-btn');
     
     if (deleteBtn) {
         deleteBtn.replaceWith(deleteBtn.cloneNode(true));
@@ -72,10 +74,14 @@ export function setupEventHandlers(selectedCubes, lastSelectedCube, scene) {
     if (downloadBtn) {
         downloadBtn.replaceWith(downloadBtn.cloneNode(true));
     }
+    if (applyResearchQuestionBtn) {
+        applyResearchQuestionBtn.replaceWith(applyResearchQuestionBtn.cloneNode(true));
+    }
 
     // Setup new event listeners
     document.getElementById('delete-btn')?.addEventListener('click', handleDelete);
     document.getElementById('download-btn')?.addEventListener('click', handleDownload);
+    document.getElementById('apply-research-question-btn')?.addEventListener('click', handleApplyResearchQuestion);
     
     verifyState('setupEventHandlers-end');
 }
@@ -156,26 +162,11 @@ async function handleDownload() {
             return;
         }
 
-        const exportData = getData().map(item => ({
-            ...item,
-            Notes: item.Notes || '',
-            Rating: item.Rating || '',
-            Tags: item.Tags || ''
-        }));
-
-        const blob = new Blob([d3.csvFormat(exportData)], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `pubmed_export_${new Date().toISOString().slice(0,10)}.csv`;
-        document.body.appendChild(link);
-        link.click();
-        
-        setTimeout(() => {
-            document.body.removeChild(link);
-            URL.revokeObjectURL(url);
-            verifyState('handleDownload-cleanup');
-        }, 100);
+        const wasExported = exportFilteredData(getData());
+        if (!wasExported) {
+            showErrorToUser("No data available to export");
+            return;
+        }
         
         verifyState('handleDownload-success');
     } catch (error) {
@@ -183,4 +174,52 @@ async function handleDownload() {
         verifyState('handleDownload-error');
         showErrorToUser("Failed to export data");
     }
+}
+
+function handleApplyResearchQuestion() {
+    const state = verifyState('handleApplyResearchQuestion-start');
+
+    if (!state.data.count) {
+        showErrorToUser("No data available to update");
+        return;
+    }
+
+    const currentQuestion = getData()[0]?.ResearchQuestion || '';
+    const researchQuestion = prompt('Enter the research question to apply to all rows:', currentQuestion);
+
+    if (researchQuestion === null) {
+        verifyState('handleApplyResearchQuestion-cancelled');
+        return;
+    }
+
+    const updatedData = applyResearchQuestionToAll(researchQuestion);
+    const selectedPmids = new Set(
+        (currentSelectedCubes || [])
+            .map(cube => cube?.userData?.PMID)
+            .filter(Boolean)
+    );
+
+    populateDataTable(updatedData, (pmid, isSelected) => {
+        const result = highlightCubeByPmid(pmid, isSelected);
+        if (result) {
+            currentSelectedCubes = result.selectedCubes;
+            currentLastSelectedCube = result.lastSelectedCube;
+            if (result.lastSelectedCube) {
+                updateTextZone(result.lastSelectedCube.userData);
+            } else if (result.selectedCubes.length === 0) {
+                clearTextZone();
+            }
+        }
+    });
+
+    selectedPmids.forEach((pmid) => {
+        const row = document.querySelector(`tr[data-pmid="${pmid}"]`);
+        const checkbox = row?.querySelector('.select-checkbox');
+        if (checkbox) {
+            checkbox.checked = true;
+            checkbox.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+    });
+
+    verifyState('handleApplyResearchQuestion-success');
 }

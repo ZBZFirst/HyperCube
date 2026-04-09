@@ -23,16 +23,20 @@
         <h2>PubMed Articles</h2>
         <table id="data-table">
           <colgroup>
-            <col style="width: 30%">  <!-- Title -->
+            <col style="width: 14%">  <!-- Research Question -->
+            <col style="width: 12%">  <!-- Search Terms -->
+            <col style="width: 18%">  <!-- Title -->
             <col style="width: 5%">   <!-- Select -->
-            <col style="width: 15%">  <!-- Notes -->
+            <col style="width: 11%">  <!-- Notes -->
             <col style="width: 5%">   <!-- Rating -->
-            <col style="width: 10%">  <!-- Tags -->
-            <col style="width: 20%">  <!-- MeSH Terms -->
-            <col style="width: 15%">  <!-- Keywords -->
+            <col style="width: 8%">   <!-- Tags -->
+            <col style="width: 14%">  <!-- MeSH Terms -->
+            <col style="width: 13%">  <!-- Keywords -->
           </colgroup>
           <thead>
             <tr>
+              <th>Research Question</th>
+              <th>Search Terms</th>
               <th>Title</th>
               <th>Select</th>
               <th>Notes</th>
@@ -92,6 +96,7 @@
       <!-- Existing buttons -->
       <button class="action-button delete" id="delete-btn">Delete</button>
       <button class="action-button" id="download-btn">Download</button>
+      <button class="action-button" id="apply-research-question-btn">Apply Research Question to Queries</button>
       
       <!-- Add these new view control buttons -->
       <div class="view-controls">

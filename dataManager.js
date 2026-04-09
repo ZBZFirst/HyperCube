@@ -39,6 +39,14 @@ export function addAnnotation(pmid, field, value) {
   return false;
 }
 
+export function applyResearchQuestionToAll(researchQuestion) {
+  const normalizedQuestion = (researchQuestion || '').trim();
+  data.forEach(item => {
+    item.ResearchQuestion = normalizedQuestion;
+  });
+  return data;
+}
+
 
 /* ========== UI TABLE FUNCTIONS ========== */
 
@@ -75,6 +83,16 @@ export function populateDataTable(data, onSelect) {
     .append('tr')
     .attr('data-pmid', d => d.PMID)
     .classed('complete', d => d.complete);
+
+  // Research question column
+  rows.append('td')
+    .text(d => d.ResearchQuestion || '')
+    .attr('title', d => d.ResearchQuestion || '');
+
+  // Search terms (PubMed query) column
+  rows.append('td')
+    .text(d => d.PubMedQuery || '')
+    .attr('title', d => d.PubMedQuery || '');
 
   // Title column
   rows.append('td')
@@ -127,7 +145,7 @@ export function populateDataTable(data, onSelect) {
     .on('change', function(event, d) {
       addAnnotation(d.PMID, 'Tags', event.target.value);
     });
-    
+
   // MeSH Terms column
   rows.append('td')
     .text(d => d.combinedMeSH || '')
@@ -263,6 +281,8 @@ function initializeItemFields(item) {
   item.includeArticle = item.includeArticle || "true";
   item.rationale = item.rationale || "";
   item.tags = item.tags || "";
+  item.ResearchQuestion = item.ResearchQuestion || "";
+  item.PubMedQuery = item.PubMedQuery || "";
   return item;
 }
 
