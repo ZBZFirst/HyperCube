@@ -1,6 +1,6 @@
 // cubeManager.js start
 import * as THREE from 'three';
-import { createCube } from './createCube.js';
+import { createCube, getGeometryScaleMode, GeometryScaleModes } from './createCube.js';
 
 
 const PositionModes = {
@@ -23,6 +23,7 @@ let originalPositions = new WeakMap();
 let targetPositions = new WeakMap();
 let currentPositionMode = PositionModes.GRID;
 let customPositioner = null;
+const LAYOUT_ANNOTATIONS_NAME = 'LayoutAnnotations';
 
 // Add this to your init function to ensure animation runs
 export function initCubeManager(mainScene, mainCamera) {
@@ -108,6 +109,7 @@ function positionCubes() {
 
     // Ensure environment grows/shrinks with the new layout targets
     updateEnvironmentBounds(includedCubes);
+    renderLayoutAnnotations(includedCubes);
 }
 
 // Simplify deleteSelectedCube to just handle the cube removal
@@ -260,24 +262,21 @@ function positionByYear(cubes) {
 function positionByJournal(cubes) {
     const cubesByJournal = {};
     cubes.forEach(cube => {
-        const journal = cube.userData.Journal || "Unknown";
+        const journal = cube.userData.Source || "Unknown";
         if (!cubesByJournal[journal]) cubesByJournal[journal] = [];
         cubesByJournal[journal].push(cube);
     });
 
     const journals = Object.keys(cubesByJournal).sort();
-    const radius = Math.max(10, journals.length * 2.2);
-    
     journals.forEach((journal, journalIndex) => {
-        const angle = (journalIndex / journals.length) * Math.PI * 2;
-        const x = Math.cos(angle) * radius;
-        const z = Math.sin(angle) * radius;
-        
-        let stackY = 0;
-        cubesByJournal[journal].forEach((cube) => {
+        const x = journalIndex * 3.2;
+        const stack = cubesByJournal[journal];
+        const zOffset = (stack.length - 1) * 0.6;
+
+        stack.forEach((cube, stackIndex) => {
             const height = getCubeHeight(cube);
-            const y = stackY + height / 2;
-            stackY += height + 0.25;
+            const y = height / 2;
+            const z = stackIndex * 1.2 - zOffset;
 
             targetPositions.set(cube, new THREE.Vector3(x, y, z));
         });
@@ -285,22 +284,29 @@ function positionByJournal(cubes) {
 }
 
 function positionByCitations(cubes) {
-    const sorted = [...cubes].sort((a, b) => 
-        (b.userData.Citations || 0) - (a.userData.Citations || 0));
-    
-    const spiralRadius = 10;
-    const heightScale = 0.1;
-    
-    sorted.forEach((cube, i) => {
-        const angle = i * 0.2;
-        const radius = spiralRadius * (1 - i/sorted.length);
-        const citations = cube.userData.Citations || 0;
-        
-        targetPositions.set(cube, new THREE.Vector3(
-            Math.cos(angle) * radius,
-            citations * heightScale + getCubeHeight(cube) / 2,
-            Math.sin(angle) * radius
-        ));
+    const cubesByCitation = {};
+    cubes.forEach((cube) => {
+        const citations = Number(cube.userData.Citations || 0);
+        if (!cubesByCitation[citations]) cubesByCitation[citations] = [];
+        cubesByCitation[citations].push(cube);
+    });
+
+    const citationValues = Object.keys(cubesByCitation)
+        .map(Number)
+        .sort((a, b) => a - b);
+
+    citationValues.forEach((citationValue, citationIndex) => {
+        const x = citationIndex * 3.1;
+        const stack = cubesByCitation[citationValue];
+        const zOffset = (stack.length - 1) * 0.6;
+
+        stack.forEach((cube, stackIndex) => {
+            const height = getCubeHeight(cube);
+            const y = height / 2;
+            const z = stackIndex * 1.2 - zOffset;
+
+            targetPositions.set(cube, new THREE.Vector3(x, y, z));
+        });
     });
 }
 
@@ -352,6 +358,225 @@ function updateEnvironmentBounds(includedCubes) {
 
     scene.userData.backgroundSystem.updateSize(minBounds, maxBounds);
     updateGridHelper(minBounds, maxBounds);
+}
+
+function renderLayoutAnnotations(includedCubes) {
+    clearLayoutAnnotations();
+    if (!scene || !includedCubes?.length) return;
+
+    const bounds = getTargetBounds(includedCubes);
+    if (!bounds) return;
+
+    const group = new THREE.Group();
+    group.name = LAYOUT_ANNOTATIONS_NAME;
+
+    addAxisGuides(group, bounds);
+
+    switch (currentPositionMode) {
+        case PositionModes.YEAR:
+            addCategoryLabels(group, includedCubes, 'PubYear', 'Publication Year');
+            break;
+        case PositionModes.JOURNAL:
+            addCategoryLabels(group, includedCubes, 'Source', 'Journal');
+            break;
+        case PositionModes.CITATIONS:
+            addNumericLabels(group, includedCubes, 'Citations', 'Citations');
+            break;
+        case PositionModes.GRID:
+        default:
+            addGridLabels(group, bounds);
+            break;
+    }
+
+    addScaleLegend(group, bounds, includedCubes);
+    scene.add(group);
+}
+
+function clearLayoutAnnotations() {
+    const existing = scene?.getObjectByName(LAYOUT_ANNOTATIONS_NAME);
+    if (existing) {
+        scene.remove(existing);
+    }
+}
+
+function getTargetBounds(includedCubes) {
+    if (!includedCubes?.length) return null;
+    const minBounds = new THREE.Vector3(Infinity, Infinity, Infinity);
+    const maxBounds = new THREE.Vector3(-Infinity, -Infinity, -Infinity);
+
+    includedCubes.forEach((cube) => {
+        const targetPos = targetPositions.get(cube) || cube.position;
+        const halfHeight = getCubeHeight(cube) / 2;
+        minBounds.min(new THREE.Vector3(targetPos.x - 0.5, 0, targetPos.z - 0.5));
+        maxBounds.max(new THREE.Vector3(targetPos.x + 0.5, targetPos.y + halfHeight, targetPos.z + 0.5));
+    });
+
+    return { minBounds, maxBounds };
+}
+
+function addAxisGuides(group, bounds) {
+    const { minBounds, maxBounds } = bounds;
+    const baseY = 0.05;
+    const xStart = new THREE.Vector3(minBounds.x - 1.5, baseY, minBounds.z - 1.5);
+    const xEnd = new THREE.Vector3(maxBounds.x + 1.5, baseY, minBounds.z - 1.5);
+    const zEnd = new THREE.Vector3(minBounds.x - 1.5, baseY, maxBounds.z + 1.5);
+    const yEnd = new THREE.Vector3(minBounds.x - 1.5, Math.max(maxBounds.y + 1.6, 4), minBounds.z - 1.5);
+
+    group.add(createLine(xStart, xEnd, 0x2563eb));
+    group.add(createLine(xStart, zEnd, 0x14b8a6));
+    group.add(createLine(xStart, yEnd, 0xf97316));
+
+    group.add(createTextSprite('X', xEnd.clone().add(new THREE.Vector3(0.6, 0.2, 0)), '#2563eb'));
+    group.add(createTextSprite('Z', zEnd.clone().add(new THREE.Vector3(0, 0.2, 0.6)), '#0f766e'));
+    group.add(createTextSprite('Y', yEnd.clone().add(new THREE.Vector3(0, 0.5, 0)), '#ea580c'));
+}
+
+function addCategoryLabels(group, includedCubes, fieldName, axisTitle) {
+    const categories = {};
+    includedCubes.forEach((cube) => {
+        const key = String(cube.userData[fieldName] || 'Unknown');
+        if (!categories[key]) categories[key] = [];
+        categories[key].push(cube);
+    });
+
+    const sortedKeys = Object.keys(categories).sort();
+    const orderedLabels = sortedKeys.length > 12
+        ? sortedKeys.filter((_, index) => index % Math.ceil(sortedKeys.length / 12) === 0)
+        : sortedKeys;
+
+    orderedLabels.forEach((key) => {
+        const sampleCube = categories[key][0];
+        const pos = targetPositions.get(sampleCube) || sampleCube.position;
+        group.add(createTextSprite(shortLabel(key), new THREE.Vector3(pos.x, 0.2, pos.z - 2.2), '#1d4ed8'));
+    });
+
+    const firstCube = categories[sortedKeys[0]]?.[0];
+    if (firstCube) {
+        const pos = targetPositions.get(firstCube) || firstCube.position;
+        group.add(createTextSprite(axisTitle, new THREE.Vector3(pos.x, 0.25, pos.z - 4), '#0f172a', 28));
+    }
+}
+
+function addNumericLabels(group, includedCubes, fieldName, axisTitle) {
+    const categories = {};
+    includedCubes.forEach((cube) => {
+        const key = Number(cube.userData[fieldName] || 0);
+        if (!categories[key]) categories[key] = [];
+        categories[key].push(cube);
+    });
+
+    const sortedKeys = Object.keys(categories).map(Number).sort((a, b) => a - b);
+    const orderedLabels = sortedKeys.length > 10
+        ? sortedKeys.filter((_, index) => index % Math.ceil(sortedKeys.length / 10) === 0)
+        : sortedKeys;
+
+    orderedLabels.forEach((value) => {
+        const sampleCube = categories[value][0];
+        const pos = targetPositions.get(sampleCube) || sampleCube.position;
+        group.add(createTextSprite(String(value), new THREE.Vector3(pos.x, 0.2, pos.z - 2.2), '#1d4ed8'));
+    });
+
+    const firstCube = categories[sortedKeys[0]]?.[0];
+    if (firstCube) {
+        const pos = targetPositions.get(firstCube) || firstCube.position;
+        group.add(createTextSprite(axisTitle, new THREE.Vector3(pos.x, 0.25, pos.z - 4), '#0f172a', 28));
+    }
+}
+
+function addGridLabels(group, bounds) {
+    const { minBounds, maxBounds } = bounds;
+    const xMid = (minBounds.x + maxBounds.x) / 2;
+    const zMid = (minBounds.z + maxBounds.z) / 2;
+    group.add(createTextSprite('Grid X', new THREE.Vector3(xMid, 0.2, minBounds.z - 3), '#1d4ed8', 28));
+    group.add(createTextSprite('Grid Z', new THREE.Vector3(minBounds.x - 3, 0.2, zMid), '#0f766e', 28));
+}
+
+function addScaleLegend(group, bounds, includedCubes) {
+    const scaleMode = getGeometryScaleMode();
+    const { minBounds, maxBounds } = bounds;
+    const axisX = minBounds.x - 1.5;
+    const axisZ = minBounds.z - 1.5;
+
+    let axisTitle = 'Cube Height';
+    if (scaleMode === GeometryScaleModes.AUTHOR_COUNT) {
+        axisTitle = 'Author Count';
+    } else if (scaleMode === GeometryScaleModes.MESH_COUNT) {
+        axisTitle = 'MeSH Count';
+    }
+
+    const maxHeight = Math.max(...includedCubes.map((cube) => Math.ceil(getCubeHeight(cube))), 1);
+    const tickStep = maxHeight > 12 ? 2 : 1;
+
+    for (let tick = 1; tick <= maxHeight; tick += tickStep) {
+        const y = tick;
+        group.add(createLine(
+            new THREE.Vector3(axisX - 0.15, y, axisZ),
+            new THREE.Vector3(axisX + 0.15, y, axisZ),
+            0xf97316
+        ));
+        group.add(createTextSprite(String(tick), new THREE.Vector3(axisX - 0.9, y, axisZ), '#ea580c'));
+    }
+
+    group.add(createTextSprite(axisTitle, new THREE.Vector3(axisX - 0.5, Math.max(maxBounds.y + 1.2, 3), axisZ), '#7c2d12', 28));
+}
+
+function createLine(start, end, color) {
+    const geometry = new THREE.BufferGeometry().setFromPoints([start, end]);
+    const material = new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0.95 });
+    return new THREE.Line(geometry, material);
+}
+
+function createTextSprite(text, position, color = '#0f172a', fontSize = 34) {
+    const canvas = document.createElement('canvas');
+    canvas.width = 512;
+    canvas.height = 160;
+    const context = canvas.getContext('2d');
+
+    context.clearRect(0, 0, canvas.width, canvas.height);
+    context.fillStyle = 'rgba(255,255,255,0.88)';
+    roundRect(context, 8, 18, canvas.width - 16, canvas.height - 36, 22);
+    context.fill();
+    context.strokeStyle = 'rgba(148,163,184,0.45)';
+    context.lineWidth = 3;
+    context.stroke();
+
+    context.fillStyle = color;
+    context.font = `700 ${fontSize}px Arial`;
+    context.textAlign = 'center';
+    context.textBaseline = 'middle';
+    context.fillText(text, canvas.width / 2, canvas.height / 2);
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.needsUpdate = true;
+    const material = new THREE.SpriteMaterial({ map: texture, transparent: true, depthTest: false });
+    const sprite = new THREE.Sprite(material);
+    sprite.position.copy(position);
+    sprite.scale.set(2.3, 0.72, 1);
+    return sprite;
+}
+
+function roundRect(context, x, y, width, height, radius) {
+    context.beginPath();
+    context.moveTo(x + radius, y);
+    context.lineTo(x + width - radius, y);
+    context.quadraticCurveTo(x + width, y, x + width, y + radius);
+    context.lineTo(x + width, y + height - radius);
+    context.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+    context.lineTo(x + radius, y + height);
+    context.quadraticCurveTo(x, y + height, x, y + height - radius);
+    context.lineTo(x, y + radius);
+    context.quadraticCurveTo(x, y, x + radius, y);
+    context.closePath();
+}
+
+function shortLabel(value) {
+    if (!value) return 'Unknown';
+    if (String(value).length <= 14) return String(value);
+    return String(value)
+        .split(' ')
+        .map((part) => part.slice(0, 4))
+        .join(' ')
+        .slice(0, 18);
 }
 
 function updateGridHelper(minBounds, maxBounds) {
