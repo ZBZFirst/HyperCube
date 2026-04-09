@@ -63,10 +63,15 @@
       <div id="graphics-container">
         <canvas id="canvas"></canvas>
         <div id="fullscreen-overlay-controls" aria-label="Fullscreen overlay controls">
-          <button class="overlay-toggle active" data-panel-target="data-container">Articles</button>
-          <button class="overlay-toggle active" data-panel-target="text-container">Details</button>
-          <button class="overlay-toggle active" data-panel-target="button-container">Controls</button>
-          <button class="overlay-toggle overlay-exit" id="overlay-exit-fullscreen-btn">Exit Fullscreen</button>
+          <div class="overlay-topbar">
+            <div class="overlay-brand">HyperCube Viewer</div>
+            <div class="overlay-actions">
+              <button class="overlay-toggle active" data-panel-target="data-container">Browse</button>
+              <button class="overlay-toggle" data-panel-target="text-container">Details</button>
+              <button class="overlay-toggle" data-panel-target="button-container">Controls</button>
+              <button class="overlay-toggle overlay-exit" id="overlay-exit-fullscreen-btn">Exit</button>
+            </div>
+          </div>
         </div>
       </div>
       <div id="pointer-lock-hint" style="position: absolute; top: 200px; left: 900px; transform: translate(-50%, -50%); background: rgba(0,0,0,0.7); color: white; padding: 20px; border-radius: 5px; text-align: center; z-index: 100">

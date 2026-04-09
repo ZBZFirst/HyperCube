@@ -133,18 +133,6 @@ function setupFullscreenMode() {
 
     if (!appContainer || !fullscreenButton) return;
 
-    const updatePanelButtonState = (targetId) => {
-        const target = document.getElementById(targetId);
-        const isCollapsed = target?.classList.contains('panel-collapsed');
-        document.querySelectorAll(`[data-panel-target="${targetId}"]`).forEach(button => {
-            const isOverlayButton = button.classList.contains('overlay-toggle');
-            button.classList.toggle('active', !isCollapsed || !isOverlayButton);
-            button.textContent = isCollapsed
-                ? (isOverlayButton ? button.textContent.replace(/^Show\s+/, '') : 'Show')
-                : (isOverlayButton ? button.textContent.replace(/^Show\s+/, '') : 'Hide');
-        });
-    };
-
     const setPanelCollapsed = (targetId, collapsed) => {
         const target = document.getElementById(targetId);
         if (!target) return;
@@ -158,6 +146,13 @@ function setupFullscreenMode() {
         });
     };
 
+    const setFullscreenFocusPanel = (targetId) => {
+        const panelIds = ['data-container', 'text-container', 'button-container'];
+        panelIds.forEach(panelId => {
+            setPanelCollapsed(panelId, panelId !== targetId);
+        });
+    };
+
     const ensurePanelsVisible = () => {
         ['data-container', 'text-container', 'button-container'].forEach(panelId => {
             setPanelCollapsed(panelId, false);
@@ -168,7 +163,9 @@ function setupFullscreenMode() {
         const isFullscreen = document.fullscreenElement === appContainer;
         appContainer.classList.toggle('app-fullscreen', isFullscreen);
         fullscreenButton.textContent = isFullscreen ? 'Exit Fullscreen' : 'Fullscreen';
-        if (!isFullscreen) {
+        if (isFullscreen) {
+            setFullscreenFocusPanel('data-container');
+        } else {
             ensurePanelsVisible();
         }
     };
@@ -198,10 +195,20 @@ function setupFullscreenMode() {
             const targetId = button.dataset.panelTarget;
             const target = document.getElementById(targetId);
             if (!target) return;
+            const inFullscreen = document.fullscreenElement === appContainer;
+            if (inFullscreen) {
+                const isCollapsed = target.classList.contains('panel-collapsed');
+                if (isCollapsed) {
+                    setFullscreenFocusPanel(targetId);
+                } else {
+                    setPanelCollapsed(targetId, true);
+                }
+                return;
+            }
+
             const shouldCollapse = !target.classList.contains('panel-collapsed');
             setPanelCollapsed(targetId, shouldCollapse);
         });
-        updatePanelButtonState(button.dataset.panelTarget);
     });
 
     document.addEventListener('fullscreenchange', syncFullscreenState);
