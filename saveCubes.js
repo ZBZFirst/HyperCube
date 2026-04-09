@@ -13,7 +13,9 @@ export function exportFilteredData() {
     ...item,
     Notes: item.Notes || '',
     Rating: item.Rating || '',
-    Tags: item.Tags || ''
+    Tags: item.Tags || '',
+    ResearchQuestion: item.ResearchQuestion || '',
+    PubMedQuery: item.PubMedQuery || ''
   }));
 
   const blob = new Blob([d3.csvFormat(exportData)], { type: 'text/csv;charset=utf-8;' });
