@@ -125,6 +125,89 @@ function setupQueryPanel() {
     };
 }
 
+function setupFullscreenMode() {
+    const appContainer = document.getElementById('app-container');
+    const fullscreenButton = document.getElementById('fullscreen-btn');
+    const exitButton = document.getElementById('overlay-exit-fullscreen-btn');
+    const panelButtons = document.querySelectorAll('[data-panel-target]');
+
+    if (!appContainer || !fullscreenButton) return;
+
+    const updatePanelButtonState = (targetId) => {
+        const target = document.getElementById(targetId);
+        const isCollapsed = target?.classList.contains('panel-collapsed');
+        document.querySelectorAll(`[data-panel-target="${targetId}"]`).forEach(button => {
+            const isOverlayButton = button.classList.contains('overlay-toggle');
+            button.classList.toggle('active', !isCollapsed || !isOverlayButton);
+            button.textContent = isCollapsed
+                ? (isOverlayButton ? button.textContent.replace(/^Show\s+/, '') : 'Show')
+                : (isOverlayButton ? button.textContent.replace(/^Show\s+/, '') : 'Hide');
+        });
+    };
+
+    const setPanelCollapsed = (targetId, collapsed) => {
+        const target = document.getElementById(targetId);
+        if (!target) return;
+        target.classList.toggle('panel-collapsed', collapsed);
+        document.querySelectorAll(`[data-panel-target="${targetId}"]`).forEach(button => {
+            if (button.classList.contains('overlay-toggle')) {
+                button.classList.toggle('active', !collapsed);
+            } else {
+                button.textContent = collapsed ? 'Show' : 'Hide';
+            }
+        });
+    };
+
+    const ensurePanelsVisible = () => {
+        ['data-container', 'text-container', 'button-container'].forEach(panelId => {
+            setPanelCollapsed(panelId, false);
+        });
+    };
+
+    const syncFullscreenState = () => {
+        const isFullscreen = document.fullscreenElement === appContainer;
+        appContainer.classList.toggle('app-fullscreen', isFullscreen);
+        fullscreenButton.textContent = isFullscreen ? 'Exit Fullscreen' : 'Fullscreen';
+        if (!isFullscreen) {
+            ensurePanelsVisible();
+        }
+    };
+
+    fullscreenButton.addEventListener('click', async () => {
+        try {
+            if (document.fullscreenElement === appContainer) {
+                await document.exitFullscreen();
+            } else {
+                await appContainer.requestFullscreen();
+            }
+        } catch (error) {
+            console.error('Fullscreen toggle failed:', error);
+            showErrorToUser(`Fullscreen failed: ${error.message}`);
+        }
+    });
+
+    exitButton?.addEventListener('click', async () => {
+        if (document.fullscreenElement === appContainer) {
+            await document.exitFullscreen();
+        }
+    });
+
+    panelButtons.forEach(button => {
+        if (button.id === 'overlay-exit-fullscreen-btn') return;
+        button.addEventListener('click', () => {
+            const targetId = button.dataset.panelTarget;
+            const target = document.getElementById(targetId);
+            if (!target) return;
+            const shouldCollapse = !target.classList.contains('panel-collapsed');
+            setPanelCollapsed(targetId, shouldCollapse);
+        });
+        updatePanelButtonState(button.dataset.panelTarget);
+    });
+
+    document.addEventListener('fullscreenchange', syncFullscreenState);
+    syncFullscreenState();
+}
+
 async function init() {
     try {
         console.groupCollapsed("Initialization started");
@@ -204,6 +287,7 @@ async function init() {
         setupUI(data, () => [...selectedCubes], () => lastSelectedCube, onSelectCallback);
         setupControlGroups();
         setupQueryPanel();
+        setupFullscreenMode();
         setSortButtonState(window.PositionModes?.GRID || 'grid');
         setScaleButtonState(GeometryScaleModes.NONE);
         

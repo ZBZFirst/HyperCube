@@ -20,7 +20,10 @@
     <div id="main-content">
       <!-- Data Table Container -->
       <div id="data-container">
-        <h2>PubMed Articles</h2>
+        <div class="panel-header">
+          <h2>PubMed Articles</h2>
+          <button class="panel-toggle" data-panel-target="data-container" aria-label="Toggle articles panel">Hide</button>
+        </div>
         <table id="data-table">
           <colgroup>
             <col style="width: 14%">  <!-- Research Question -->
@@ -59,6 +62,12 @@
       <!-- Graphics Container -->
       <div id="graphics-container">
         <canvas id="canvas"></canvas>
+        <div id="fullscreen-overlay-controls" aria-label="Fullscreen overlay controls">
+          <button class="overlay-toggle active" data-panel-target="data-container">Articles</button>
+          <button class="overlay-toggle active" data-panel-target="text-container">Details</button>
+          <button class="overlay-toggle active" data-panel-target="button-container">Controls</button>
+          <button class="overlay-toggle overlay-exit" id="overlay-exit-fullscreen-btn">Exit Fullscreen</button>
+        </div>
       </div>
       <div id="pointer-lock-hint" style="position: absolute; top: 200px; left: 900px; transform: translate(-50%, -50%); background: rgba(0,0,0,0.7); color: white; padding: 20px; border-radius: 5px; text-align: center; z-index: 100">
       Click on the 3D view to enable movement controls. (Mouse to Look, WASD to Move, Ctrl for Down, Space for Up, G to Shoot, Esc for Exiting 3D Control Mode)
@@ -67,6 +76,10 @@
       <div id="horizontal-splitter" class="splitter"></div>
     
       <div id="text-container">
+        <div class="panel-header">
+          <h2>Article Details</h2>
+          <button class="panel-toggle" data-panel-target="text-container" aria-label="Toggle details panel">Hide</button>
+        </div>
         <div id="selected-title">No article selected</div>
         <div class="metadata-row">
           <span class="metadata-label">PMID:</span>
@@ -94,10 +107,15 @@
     
     <!-- Button Zone -->
     <div id="button-container">
+      <div class="panel-header controls-header">
+        <h2>Controls</h2>
+        <button class="panel-toggle" data-panel-target="button-container" aria-label="Toggle controls panel">Hide</button>
+      </div>
       <!-- Existing buttons -->
       <button class="action-button delete" id="delete-btn">Delete</button>
       <button class="action-button" id="download-btn">Download</button>
       <button class="action-button" id="apply-research-question-btn">Change Research Question in Table</button>
+      <button class="action-button fullscreen-btn" id="fullscreen-btn">Fullscreen</button>
 
       <div class="query-panel">
         <input id="pubmed-search-input" class="query-input query-search" type="text" placeholder="PubMed search term" />

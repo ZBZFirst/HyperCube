@@ -31,7 +31,9 @@ Data can be exported at any time but data is not saved between reloads of the sc
 
 Good Luck!
 
-zbzfirst.github.io/HyperCube/
+Live viewer:
+
+https://zbzfirst.github.io/HyperCube/
 
 LLM SCREENING
 
