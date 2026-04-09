@@ -149,6 +149,10 @@
   font-size: 0.9em;
 }
 
+#fullscreen-browse-list {
+  display: none;
+}
+
 #data-table th, #data-table td {
   padding: 8px 12px;
   border: 1px solid #ddd;
@@ -550,30 +554,82 @@
 }
 
 #app-container.app-fullscreen #data-table {
+  display: none;
+}
+
+#app-container.app-fullscreen #fullscreen-browse-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  height: calc(100% - 44px);
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.browse-card {
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 12px 12px 10px;
+  cursor: pointer;
+  transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+  text-align: left;
+}
+
+.browse-card:hover {
+  transform: translateY(-1px);
+  border-color: rgba(37, 99, 235, 0.35);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+}
+
+.browse-card.selected {
+  border-color: rgba(37, 99, 235, 0.8);
+  background: rgba(219, 234, 254, 0.9);
+  box-shadow: 0 14px 28px rgba(37, 99, 235, 0.14);
+}
+
+.browse-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.browse-card-title {
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1.35;
+  color: #0f172a;
+}
+
+.browse-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.browse-chip {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  background: #e2e8f0;
+  color: #334155;
+  padding: 4px 8px;
   font-size: 0.68rem;
+  line-height: 1;
 }
 
-#app-container.app-fullscreen #data-table th,
-#app-container.app-fullscreen #data-table td {
-  padding: 5px 6px;
+.browse-chip.selected {
+  background: #2563eb;
+  color: white;
 }
 
-#app-container.app-fullscreen #data-table input[type="text"],
-#app-container.app-fullscreen #data-table select {
-  font-size: 0.68rem;
-  padding: 3px 4px;
-}
-
-#app-container.app-fullscreen #data-table td:nth-child(1),
-#app-container.app-fullscreen #data-table td:nth-child(2),
-#app-container.app-fullscreen #data-table td:nth-child(8),
-#app-container.app-fullscreen #data-table td:nth-child(9) {
-  font-size: 0.64rem;
-  line-height: 1.2;
-}
-
-#app-container.app-fullscreen #data-table th {
-  font-size: 0.66rem;
+.browse-card-abstract {
+  font-size: 0.72rem;
+  line-height: 1.45;
+  color: #334155;
 }
 
 #app-container.app-fullscreen .controls-header {

@@ -19,9 +19,60 @@ let lastSelectedCube = null;
 let currentData = [];
 let selectionHandler = null;
 
+function getBrowseCardSummary(article) {
+    const abstract = String(article?.Abstract || '').trim();
+    if (!abstract) return 'No abstract available.';
+    return abstract.length > 180 ? `${abstract.slice(0, 180)}...` : abstract;
+}
+
+function renderFullscreenBrowseList(data) {
+    const container = document.getElementById('fullscreen-browse-list');
+    if (!container) return;
+
+    container.innerHTML = '';
+
+    data.forEach(article => {
+        const isSelected = selectedCubes.some(cube => cube?.userData?.PMID === article.PMID);
+        const card = document.createElement('button');
+        card.type = 'button';
+        card.className = `browse-card${isSelected ? ' selected' : ''}`;
+
+        const year = article.PubYear || 'Year?';
+        const source = article.Source || 'Unknown source';
+        const pmid = article.PMID || 'No PMID';
+
+        card.innerHTML = `
+            <div class="browse-card-header">
+                <div class="browse-card-title">${article.Title || 'Untitled article'}</div>
+                <span class="browse-chip ${isSelected ? 'selected' : ''}">${isSelected ? 'Selected' : 'Open'}</span>
+            </div>
+            <div class="browse-card-meta">
+                <span class="browse-chip">${year}</span>
+                <span class="browse-chip">${source}</span>
+                <span class="browse-chip">PMID ${pmid}</span>
+            </div>
+            <div class="browse-card-abstract">${getBrowseCardSummary(article)}</div>
+        `;
+
+        card.addEventListener('click', () => {
+            const currentlySelected = selectedCubes.some(cube => cube?.userData?.PMID === article.PMID);
+            const result = highlightCubeByPmid(article.PMID, !currentlySelected, selectedCubes, lastSelectedCube);
+            if (result && selectionHandler) {
+                selectionHandler(result.selectedCubes, result.lastSelectedCube);
+            }
+            if (document.fullscreenElement === document.getElementById('app-container')) {
+                document.querySelector('[data-panel-target="text-container"]')?.click();
+            }
+        });
+
+        container.appendChild(card);
+    });
+}
+
 function refreshCubesFromCurrentData() {
     if (!sceneObjects?.scene || !currentData?.length) return;
     createCubesFromData(currentData, sceneObjects.scene);
+    renderFullscreenBrowseList(currentData);
 }
 
 function setSortButtonState(activeMode) {
@@ -81,6 +132,7 @@ function applyNewDataset(data) {
     createCubesFromData(data, sceneObjects.scene);
     setupUI(data, () => [...selectedCubes], () => lastSelectedCube, selectionHandler);
     setupEventHandlers(selectedCubes, lastSelectedCube, sceneObjects.scene);
+    renderFullscreenBrowseList(data);
 }
 
 function setupQueryPanel() {
@@ -266,6 +318,7 @@ async function init() {
         if (!data?.length) throw new Error("No data loaded");
         setData(data);
         currentData = data;
+        renderFullscreenBrowseList(data);
         
         // 6. Create cubes
         console.log("6. Creating cubes...");
@@ -284,6 +337,7 @@ async function init() {
             if (newLastSelectedCube) {
                 updateTextZone(newLastSelectedCube.userData);
             }
+            renderFullscreenBrowseList(currentData);
             // Update event handlers with new selection state
             setupEventHandlers(selectedCubes, lastSelectedCube, sceneObjects.scene);
         };
