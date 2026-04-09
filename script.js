@@ -18,6 +18,7 @@ let selectedCubes = [];
 let lastSelectedCube = null;
 let currentData = [];
 let selectionHandler = null;
+const PUBMED_KEY_STORAGE_KEY = 'hypercube.pubmedApiKey';
 
 function getBrowseCardSummary(article) {
     const abstract = String(article?.Abstract || '').trim();
@@ -136,6 +137,31 @@ function applyNewDataset(data) {
 }
 
 function setupQueryPanel() {
+    const apiKeyInput = document.getElementById('pubmed-api-input');
+    const rememberKeyCheckbox = document.getElementById('remember-pubmed-key');
+
+    if (apiKeyInput && rememberKeyCheckbox) {
+        const savedApiKey = window.localStorage.getItem(PUBMED_KEY_STORAGE_KEY);
+        if (savedApiKey) {
+            apiKeyInput.value = savedApiKey;
+            rememberKeyCheckbox.checked = true;
+        }
+
+        rememberKeyCheckbox.addEventListener('change', () => {
+            if (rememberKeyCheckbox.checked) {
+                window.localStorage.setItem(PUBMED_KEY_STORAGE_KEY, apiKeyInput.value.trim());
+            } else {
+                window.localStorage.removeItem(PUBMED_KEY_STORAGE_KEY);
+            }
+        });
+
+        apiKeyInput.addEventListener('input', () => {
+            if (rememberKeyCheckbox.checked) {
+                window.localStorage.setItem(PUBMED_KEY_STORAGE_KEY, apiKeyInput.value.trim());
+            }
+        });
+    }
+
     window.runPubMedQueryToCsv = async () => {
         const searchInput = document.getElementById('pubmed-search-input');
         const apiKeyInput = document.getElementById('pubmed-api-input');

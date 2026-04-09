@@ -476,6 +476,20 @@ body {
   min-width: 0;
 }
 
+.remember-key-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 2px;
+  font-size: 0.72rem;
+  color: #475569;
+  cursor: pointer;
+}
+
+.remember-key-toggle input {
+  margin: 0;
+}
+
 .compact-label {
   font-size: 0.68rem;
   font-weight: 700;
