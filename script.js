@@ -267,6 +267,20 @@ function setupFullscreenMode() {
     syncFullscreenState();
 }
 
+function setupQueryPanelToggle() {
+    const queryPanel = document.querySelector('.query-panel');
+    const toggleButton = document.getElementById('query-panel-toggle');
+
+    if (!queryPanel || !toggleButton) return;
+
+    toggleButton.addEventListener('click', () => {
+        const collapsed = queryPanel.classList.toggle('collapsed');
+        toggleButton.textContent = collapsed ? 'Expand' : 'Collapse';
+        toggleButton.setAttribute('aria-expanded', String(!collapsed));
+        window.dispatchEvent(new Event('resize'));
+    });
+}
+
 function setupResizableLayout() {
     const appContainer = document.getElementById('app-container');
     const mainContent = document.getElementById('main-content');
@@ -408,6 +422,7 @@ async function init() {
         setupUI(data, () => [...selectedCubes], () => lastSelectedCube, onSelectCallback);
         setupControlGroups();
         setupQueryPanel();
+        setupQueryPanelToggle();
         setupFullscreenMode();
         setupResizableLayout();
         setSortButtonState(window.PositionModes?.GRID || 'grid');

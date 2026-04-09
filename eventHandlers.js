@@ -184,8 +184,17 @@ function handleApplyResearchQuestion() {
         return;
     }
 
+    const confirmed = window.confirm(
+        `This will change the research question on all ${state.data.count} currently loaded articles. Continue?`
+    );
+
+    if (!confirmed) {
+        verifyState('handleApplyResearchQuestion-cancelled-warning');
+        return;
+    }
+
     const currentQuestion = getData()[0]?.ResearchQuestion || '';
-    const researchQuestion = prompt('Enter the research question to apply to all rows:', currentQuestion);
+    const researchQuestion = prompt('Enter the new research question to apply to all loaded rows:', currentQuestion);
 
     if (researchQuestion === null) {
         verifyState('handleApplyResearchQuestion-cancelled');
