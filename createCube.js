@@ -71,6 +71,8 @@ export function createCube(data, allData) {
         )
     ];
 
+    normalizeFaceTextureAspect(materials, width, height, depth);
+
     const cube = new THREE.Mesh(geometry, materials);
     cube.position.set(...calculatePosition(data, allData));
     cube.userData = data;
@@ -165,6 +167,37 @@ function createFaceMaterial(color, text, label) {
         emissive: 0x000000, 
         emissiveIntensity: 0 
     });
+}
+
+function normalizeFaceTextureAspect(materials, width, height, depth) {
+    if (!Array.isArray(materials)) return;
+
+    const safeAdjust = (material, faceWidth, faceHeight) => {
+        const texture = material?.map;
+        if (!texture) return;
+
+        const ratio = faceWidth / Math.max(faceHeight, 0.0001);
+        const repeatY = Math.min(1, ratio);
+        const repeatX = Math.min(1, 1 / Math.max(ratio, 0.0001));
+
+        texture.wrapS = THREE.RepeatWrapping;
+        texture.wrapT = THREE.RepeatWrapping;
+        texture.center.set(0.5, 0.5);
+        texture.repeat.set(repeatX, repeatY);
+        texture.offset.set((1 - repeatX) / 2, (1 - repeatY) / 2);
+        texture.needsUpdate = true;
+    };
+
+    // BoxGeometry material order: +X, -X, +Y, -Y, +Z, -Z
+    // ±X faces: depth x height
+    safeAdjust(materials[0], depth, height);
+    safeAdjust(materials[1], depth, height);
+    // ±Y faces: width x depth
+    safeAdjust(materials[2], width, depth);
+    safeAdjust(materials[3], width, depth);
+    // ±Z faces: width x height
+    safeAdjust(materials[4], width, height);
+    safeAdjust(materials[5], width, height);
 }
 
 // Color manipulation helpers (unchanged)

@@ -244,12 +244,15 @@ function positionByYear(cubes) {
 
     const years = Object.keys(cubesByYear).sort();
     years.forEach((year, yearIndex) => {
-        cubesByYear[year].forEach((cube, articleIndex) => {
-            targetPositions.set(cube, new THREE.Vector3(
-                yearIndex * 3.0,
-                articleIndex * 1.5,
-                0
-            ));
+        let stackY = 0;
+        const x = yearIndex * 3.0;
+
+        cubesByYear[year].forEach((cube) => {
+            const height = getCubeHeight(cube);
+            const y = stackY + height / 2;
+            stackY += height + 0.3;
+
+            targetPositions.set(cube, new THREE.Vector3(x, y, 0));
         });
     });
 }
@@ -263,19 +266,20 @@ function positionByJournal(cubes) {
     });
 
     const journals = Object.keys(cubesByJournal).sort();
-    const radius = journals.length * 1.5;
+    const radius = Math.max(10, journals.length * 2.2);
     
     journals.forEach((journal, journalIndex) => {
         const angle = (journalIndex / journals.length) * Math.PI * 2;
         const x = Math.cos(angle) * radius;
         const z = Math.sin(angle) * radius;
         
-        cubesByJournal[journal].forEach((cube, articleIndex) => {
-            targetPositions.set(cube, new THREE.Vector3(
-                x + (Math.random() - 0.5) * 2,
-                articleIndex * 0.8,
-                z + (Math.random() - 0.5) * 2
-            ));
+        let stackY = 0;
+        cubesByJournal[journal].forEach((cube) => {
+            const height = getCubeHeight(cube);
+            const y = stackY + height / 2;
+            stackY += height + 0.25;
+
+            targetPositions.set(cube, new THREE.Vector3(x, y, z));
         });
     });
 }
@@ -294,7 +298,7 @@ function positionByCitations(cubes) {
         
         targetPositions.set(cube, new THREE.Vector3(
             Math.cos(angle) * radius,
-            citations * heightScale,
+            citations * heightScale + getCubeHeight(cube) / 2,
             Math.sin(angle) * radius
         ));
     });
@@ -347,6 +351,24 @@ function updateEnvironmentBounds(includedCubes) {
     });
 
     scene.userData.backgroundSystem.updateSize(minBounds, maxBounds);
+    updateGridHelper(minBounds, maxBounds);
+}
+
+function updateGridHelper(minBounds, maxBounds) {
+    const gridHelper = scene?.getObjectByName('MainGridHelper');
+    if (!gridHelper) return;
+
+    const spanX = Math.max(15, maxBounds.x - minBounds.x);
+    const spanZ = Math.max(15, maxBounds.z - minBounds.z);
+    const centerX = (minBounds.x + maxBounds.x) / 2;
+    const centerZ = (minBounds.z + maxBounds.z) / 2;
+
+    gridHelper.scale.set(spanX / 15, 1, spanZ / 15);
+    gridHelper.position.set(centerX, 0, centerZ);
+}
+
+function getCubeHeight(cube) {
+    return cube?.geometry?.parameters?.height || 0.8;
 }
 
 export function centerCameraOnCube(cube) {
