@@ -1,6 +1,6 @@
 // cubeManager.js start
 import * as THREE from 'three';
-import { createCube, getGeometryScaleMode, GeometryScaleModes } from './createCube.js';
+import { createCube, getGeometryScaleMode, GeometryScaleModes, getGeometryHeightForData, BASE_CUBE_HEIGHT } from './createCube.js';
 
 
 const PositionModes = {
@@ -21,6 +21,8 @@ const animationDuration = 4; // seconds
 let isAnimating = false;
 let originalPositions = new WeakMap();
 let targetPositions = new WeakMap();
+let originalScales = new WeakMap();
+let targetScaleY = new WeakMap();
 let currentPositionMode = PositionModes.GRID;
 let customPositioner = null;
 const LAYOUT_ANNOTATIONS_NAME = 'LayoutAnnotations';
@@ -51,6 +53,8 @@ export function createCubesFromData(data, scene) {
         scene.add(cube);
         cubes.push(cube);
         updateCubeVisibility(cube);
+        originalScales.set(cube, cube.scale.y);
+        targetScaleY.set(cube, cube.scale.y);
     });
     
     positionCubes();
@@ -67,12 +71,27 @@ export function setPositionMode(mode, customCallback = null) {
     }
 }
 
+export function updateGeometryScale() {
+    cubes.forEach((cube) => {
+        const nextHeight = getGeometryHeightForData(cube.userData);
+        cube.userData.geometryHeight = nextHeight;
+        cube.userData.geometryScaleMode = getGeometryScaleMode();
+        targetScaleY.set(cube, nextHeight / BASE_CUBE_HEIGHT);
+    });
+    positionCubes();
+}
+
 function positionCubes() {
     const includedCubes = cubes.filter(c => c.userData.includeArticle === "true");
     
     // Store original positions
     cubes.forEach(cube => {
         originalPositions.set(cube, cube.position.clone());
+        originalScales.set(cube, cube.scale.y);
+        const nextHeight = getGeometryHeightForData(cube.userData);
+        cube.userData.geometryHeight = nextHeight;
+        cube.userData.geometryScaleMode = getGeometryScaleMode();
+        targetScaleY.set(cube, nextHeight / BASE_CUBE_HEIGHT);
     });
 
     // Handle visibility immediately
@@ -225,6 +244,10 @@ function animateCubes() {
                     endPos,
                     easedProgress
                 );
+
+                const startScale = originalScales.get(cube) ?? cube.scale.y;
+                const endScale = targetScaleY.get(cube) ?? cube.scale.y;
+                cube.scale.y = THREE.MathUtils.lerp(startScale, endScale, easedProgress);
             }
         }
     });
@@ -593,7 +616,7 @@ function updateGridHelper(minBounds, maxBounds) {
 }
 
 function getCubeHeight(cube) {
-    return cube?.geometry?.parameters?.height || 0.8;
+    return cube?.userData?.geometryHeight || BASE_CUBE_HEIGHT;
 }
 
 export function centerCameraOnCube(cube) {

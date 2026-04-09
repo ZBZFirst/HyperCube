@@ -4,7 +4,7 @@ import * as d3 from 'https://cdn.jsdelivr.net/npm/d3@7/+esm';
 import { createScene } from './createScene.js';
 import { createUI, setupUI, showLoadingIndicator, removeLoadingIndicator, showErrorToUser, clearTextZone, createFallbackScene } from './uiManager.js';
 import { loadData, populateDataTable, updateTextZone, getData, setData, addAnnotation } from './dataManager.js';
-import { createCubesFromData, getCubes, highlightCubeByPmid, centerCameraOnCube, initCubeManager, deleteSelectedCubes } from './cubeManager.js';
+import { createCubesFromData, getCubes, highlightCubeByPmid, centerCameraOnCube, initCubeManager, deleteSelectedCubes, updateGeometryScale } from './cubeManager.js';
 import { hidePubMedFetchOverlay } from './pubmedOverlay.js';
 import { deleteSelectedFromData } from './deleteCubes.js';
 import { exportFilteredData } from './saveCubes.js';
@@ -70,12 +70,6 @@ function renderFullscreenBrowseList(data) {
     });
 }
 
-function refreshCubesFromCurrentData() {
-    if (!sceneObjects?.scene || !currentData?.length) return;
-    createCubesFromData(currentData, sceneObjects.scene);
-    renderFullscreenBrowseList(currentData);
-}
-
 function setSortButtonState(activeMode) {
     document.querySelectorAll('[data-sort-mode]').forEach(button => {
         button.classList.toggle('active', button.dataset.sortMode === activeMode);
@@ -118,7 +112,7 @@ function setupControlGroups() {
 
     window.applyGeometryScaleMode = (mode) => {
         setGeometryScaleMode(mode);
-        refreshCubesFromCurrentData();
+        updateGeometryScale();
         setScaleButtonState(mode);
     };
 }

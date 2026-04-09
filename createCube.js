@@ -16,6 +16,8 @@ export const GeometryScaleModes = {
     MESH_COUNT: 'mesh_count'
 };
 
+export const BASE_CUBE_HEIGHT = 0.8;
+
 let currentGeometryScaleMode = GeometryScaleModes.NONE;
 
 export function setGeometryScaleMode(mode) {
@@ -33,8 +35,8 @@ export function getGeometryScaleMode() {
 export function createCube(data, allData) {
     const width = 0.8;
     const depth = 0.8;
-    const height = getGeometryHeight(data);
-    const geometry = new THREE.BoxGeometry(width, height, depth);
+    const height = getGeometryHeightForData(data);
+    const geometry = new THREE.BoxGeometry(width, BASE_CUBE_HEIGHT, depth);
     const baseColor = getColorForYear(getField(data, DATA_MAPPING.YEAR));
 
     // Create materials for each face with proper fallbacks
@@ -75,6 +77,7 @@ export function createCube(data, allData) {
 
     const cube = new THREE.Mesh(geometry, materials);
     cube.position.set(...calculatePosition(data, allData));
+    cube.scale.y = height / BASE_CUBE_HEIGHT;
     cube.userData = data;
     cube.userData.geometryHeight = height;
     cube.userData.geometryScaleMode = currentGeometryScaleMode;
@@ -97,11 +100,11 @@ function calculatePosition(data, allData) {
     const gridSize = Math.ceil(Math.sqrt(allData.length));
     const x = (index % gridSize) * 2 - gridSize;
     const z = Math.floor(index / gridSize) * 2 - gridSize;
-    const y = getGeometryHeight(data) / 2;
+    const y = getGeometryHeightForData(data) / 2;
     return [x, y, z];
 }
 
-function getGeometryHeight(data) {
+export function getGeometryHeightForData(data) {
     switch (currentGeometryScaleMode) {
         case GeometryScaleModes.AUTHOR_COUNT: {
             const authorCount = countFilledSeries(data, 'Author_', 20);
@@ -113,7 +116,7 @@ function getGeometryHeight(data) {
         }
         case GeometryScaleModes.NONE:
         default:
-            return 0.8;
+            return BASE_CUBE_HEIGHT;
     }
 }
 
