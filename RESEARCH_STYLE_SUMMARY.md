@@ -59,6 +59,18 @@ The core design principle is that screening should operate on explicit structure
 
 This allows the screening step to remain reusable across different topics, provided that the same column structure is maintained.
 
+### Rationale for the Node `.mjs` Screening Script
+
+The screening stage was implemented as a Node ECMAScript module, `screenPubMedCsv.mjs`, rather than as a Python script. This was a deliberate architectural choice rather than an incidental implementation detail.
+
+The first reason is repository continuity. HyperCube already uses JavaScript for its retrieval and interface layers, so keeping the screening stage in the same language reduces cross-language maintenance and keeps the workflow easier to inspect as one coherent system. In practical terms, the same development environment, the same basic runtime family, and the same style of data handling can be used from PubMed retrieval through CSV generation and LLM handoff.
+
+The second reason is deployment simplicity on the LM Studio host. The screening step only needs file I/O, CSV parsing, JSON handling, and HTTP requests to an OpenAI-compatible endpoint. Those needs are well served by a small Node script with no heavy scientific-computing dependencies. On the remote machine, the batch can be launched directly with Node from a Windows command wrapper, which makes unattended execution simpler than maintaining a separate Python environment with version and package requirements.
+
+The third reason is architectural fit with the handoff boundary used in this project. The workflow is intentionally not a numerical-analysis pipeline. It is a structured data transport and controlled inference pipeline: read rows, assemble prompts, submit requests, parse schema-constrained JSON, and append fields back into CSV. That kind of event-driven orchestration maps naturally onto a lightweight JavaScript runtime and does not require Python-specific ecosystem advantages.
+
+For this reason, the benefit of `.mjs` in the present workflow is not that JavaScript is universally superior to Python. The benefit is narrower and more practical: within a JavaScript-based HyperCube codebase and a Node-available LM Studio host, an `.mjs` screening script minimizes environment friction, preserves architectural consistency, and keeps the retrieval-to-screening pipeline easier to run and reproduce across machines.
+
 ### Proposed Use of a Low-Powered Local Model
 
 The method intentionally uses a smaller model from the Qwen family, specifically `qwen2.5-3b-instruct`, for bounded row-level tasks. The model is not asked to perform full academic synthesis. Instead, it is used to:
