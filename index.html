@@ -146,12 +146,14 @@
             <div class="screening-panel-title">Screening Runner</div>
             <div class="screening-controls">
               <label class="compact-field" for="lmstudio-endpoint-input">
-                <span class="compact-label">LM Studio Endpoint</span>
-                <input id="lmstudio-endpoint-input" class="query-input" type="text" placeholder="http://127.0.0.1:1234/v1/chat/completions" />
+                <span class="compact-label">Configured Endpoint</span>
+                <input id="lmstudio-endpoint-input" class="query-input" type="text" placeholder="Use Check for Models" readonly />
               </label>
               <label class="compact-field" for="lmstudio-model-input">
-                <span class="compact-label">Model</span>
-                <input id="lmstudio-model-input" class="query-input" type="text" placeholder="qwen2.5-3b-instruct" />
+                <span class="compact-label">Selected Model</span>
+                <select id="lmstudio-model-input" class="query-input">
+                  <option value="qwen2.5-3b-instruct">qwen2.5-3b-instruct</option>
+                </select>
               </label>
               <div class="button-cluster screening-actions">
                 <button class="action-button" id="check-models-btn" type="button">Check for Models</button>
@@ -220,13 +222,16 @@
     <dialog id="screening-config-dialog" class="screening-dialog">
       <form method="dialog" class="screening-dialog-form">
         <div class="screening-dialog-header">
-          <h3>Screening Configuration</h3>
+          <h3>LM Studio Model Check</h3>
           <button type="submit" class="panel-toggle">Close</button>
+        </div>
+        <div class="screening-config-note">
+          Remote LM Studio worker for this project: <strong>192.168.68.82:1234</strong>. Use <strong>127.0.0.1:1234</strong> when the model is running on this same machine.
         </div>
         <div class="screening-dialog-grid">
           <label class="compact-field" for="lmstudio-host-input">
             <span class="compact-label">LM Studio Host / IP</span>
-            <input id="lmstudio-host-input" class="query-input" type="text" placeholder="127.0.0.1" />
+            <input id="lmstudio-host-input" class="query-input" type="text" placeholder="192.168.68.82" />
           </label>
           <label class="compact-field" for="lmstudio-port-input">
             <span class="compact-label">Port</span>
@@ -238,9 +243,11 @@
           </label>
         </div>
         <div class="button-cluster screening-dialog-actions">
-          <button type="button" class="action-button query-run-btn" id="apply-screening-config-btn">Apply Endpoint</button>
-          <button type="button" class="action-button" id="refresh-screening-preview-btn">Refresh Preview</button>
+          <button type="button" class="action-button" id="check-models-dialog-btn">Check Models at Endpoint</button>
+          <button type="button" class="action-button" id="refresh-screening-preview-btn">Preview First Request</button>
+          <button type="button" class="action-button query-run-btn" id="apply-screening-config-btn">Use Selected Model</button>
         </div>
+        <div id="screening-config-status" class="query-status" aria-live="polite"></div>
         <div class="screening-preview-block">
           <div class="screening-preview-title">First Request Preview</div>
           <textarea id="screening-preview-output" class="screening-preview-output" readonly></textarea>

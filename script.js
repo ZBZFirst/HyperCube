@@ -22,6 +22,7 @@ let selectionHandler = null;
 const PUBMED_KEY_STORAGE_KEY = 'hypercube.pubmedApiKey';
 const DEFAULT_LM_ENDPOINT = 'http://127.0.0.1:1234/v1/chat/completions';
 const DEFAULT_LM_MODEL = 'qwen2.5-3b-instruct';
+const DEFAULT_REMOTE_LM_HOST = '192.168.68.82';
 const SCREENING_HEADERS = [
     'LlmStatus',
     'LlmFitForReview',
@@ -218,8 +219,10 @@ function setupQueryPanel() {
     const lmHostInput = document.getElementById('lmstudio-host-input');
     const lmPortInput = document.getElementById('lmstudio-port-input');
     const lmPathInput = document.getElementById('lmstudio-path-input');
+    const checkModelsDialogBtn = document.getElementById('check-models-dialog-btn');
     const applyScreeningConfigBtn = document.getElementById('apply-screening-config-btn');
     const refreshScreeningPreviewBtn = document.getElementById('refresh-screening-preview-btn');
+    const screeningConfigStatus = document.getElementById('screening-config-status');
     const screeningPreviewOutput = document.getElementById('screening-preview-output');
     const screeningProgressBar = document.getElementById('screening-progress-bar');
     const screeningProgressText = document.getElementById('screening-progress-text');
@@ -246,8 +249,53 @@ function setupQueryPanel() {
         });
     }
 
+    const setConfigStatus = (message) => {
+        if (screeningConfigStatus) screeningConfigStatus.textContent = message;
+    };
+
+    const populateModelOptions = (models, preferredModel) => {
+        if (!modelInput) return;
+
+        const uniqueModels = Array.from(new Set((models || []).filter(Boolean)));
+        const fallbackModel = preferredModel || screeningState.model || DEFAULT_LM_MODEL;
+        const optionValues = uniqueModels.length ? uniqueModels : [fallbackModel];
+
+        modelInput.innerHTML = '';
+        optionValues.forEach((modelId) => {
+            const option = document.createElement('option');
+            option.value = modelId;
+            option.textContent = modelId;
+            modelInput.appendChild(option);
+        });
+
+        const selectedModel = optionValues.includes(fallbackModel) ? fallbackModel : optionValues[0];
+        modelInput.value = selectedModel;
+        screeningState.model = selectedModel;
+    };
+
+    const buildEndpointFromDialog = () => {
+        const host = lmHostInput?.value?.trim() || DEFAULT_REMOTE_LM_HOST;
+        const port = lmPortInput?.value?.trim() || '1234';
+        const path = lmPathInput?.value?.trim() || '/v1/chat/completions';
+        const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+        return `http://${host}:${port}${normalizedPath}`;
+    };
+
+    const fetchAvailableModels = async (endpoint) => {
+        const modelsUrl = deriveModelsUrl(endpoint);
+        const response = await fetch(modelsUrl);
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        const payload = await response.json();
+        const models = Array.isArray(payload?.data)
+            ? payload.data.map((item) => item?.id).filter(Boolean)
+            : [];
+        return { modelsUrl, models };
+    };
+
     if (endpointInput) endpointInput.value = screeningState.endpoint || DEFAULT_LM_ENDPOINT;
-    if (modelInput) modelInput.value = screeningState.model || DEFAULT_LM_MODEL;
+    populateModelOptions([screeningState.model || DEFAULT_LM_MODEL], screeningState.model || DEFAULT_LM_MODEL);
 
     const syncDialogFieldsFromEndpoint = () => {
         const endpoint = endpointInput?.value?.trim() || DEFAULT_LM_ENDPOINT;
@@ -287,49 +335,62 @@ function setupQueryPanel() {
         ].join('\n');
     };
 
-    checkModelsBtn?.addEventListener('click', async () => {
-        syncDialogFieldsFromEndpoint();
+    const runModelCheck = async () => {
+        const endpoint = buildEndpointFromDialog();
+        if (endpointInput) endpointInput.value = endpoint;
+        screeningState.endpoint = endpoint;
+        setConfigStatus(`Checking ${deriveModelsUrl(endpoint)} ...`);
         updateScreeningPreview();
-        const endpoint = endpointInput?.value?.trim() || DEFAULT_LM_ENDPOINT;
-        if (screeningPreviewOutput) {
-            screeningPreviewOutput.value = 'Checking model endpoint...\n';
-        }
+
         try {
-            const modelsUrl = deriveModelsUrl(endpoint);
-            const response = await fetch(modelsUrl);
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}`);
-            }
-            const payload = await response.json();
-            const models = Array.isArray(payload?.data) ? payload.data.map((item) => item.id).join('\n') : 'No models returned.';
-            if (screeningPreviewOutput) {
-                screeningPreviewOutput.value = [
-                    `Models endpoint: ${modelsUrl}`,
-                    '',
-                    models || 'No models returned.'
-                ].join('\n');
-            }
+            const { modelsUrl, models } = await fetchAvailableModels(endpoint);
+            populateModelOptions(models, screeningState.model || DEFAULT_LM_MODEL);
+            updateScreeningPreview();
+            setConfigStatus(
+                models.length
+                    ? `Found ${models.length} model${models.length === 1 ? '' : 's'} at ${modelsUrl}.`
+                    : `No models were returned from ${modelsUrl}.`
+            );
         } catch (error) {
+            setConfigStatus(`Unable to fetch models: ${error.message}`);
             if (screeningPreviewOutput) {
-                screeningPreviewOutput.value = `Unable to fetch models.\n\n${error.message}`;
+                screeningPreviewOutput.value = `Unable to fetch models from ${deriveModelsUrl(endpoint)}.\n\n${error.message}`;
             }
         }
+    };
+
+    checkModelsBtn?.addEventListener('click', () => {
+        syncDialogFieldsFromEndpoint();
+        setConfigStatus('');
+        updateScreeningPreview();
         screeningConfigDialog?.showModal();
     });
 
-    applyScreeningConfigBtn?.addEventListener('click', () => {
-        const host = lmHostInput?.value?.trim() || '127.0.0.1';
-        const port = lmPortInput?.value?.trim() || '1234';
-        const path = lmPathInput?.value?.trim() || '/v1/chat/completions';
-        const normalizedPath = path.startsWith('/') ? path : `/${path}`;
-        if (endpointInput) {
-            endpointInput.value = `http://${host}:${port}${normalizedPath}`;
-        }
-        screeningState.endpoint = endpointInput?.value?.trim() || DEFAULT_LM_ENDPOINT;
+    checkModelsDialogBtn?.addEventListener('click', runModelCheck);
+
+    applyScreeningConfigBtn?.addEventListener('click', async () => {
+        const endpoint = buildEndpointFromDialog();
+        if (endpointInput) endpointInput.value = endpoint;
+        screeningState.endpoint = endpoint;
+        screeningState.model = modelInput?.value?.trim() || DEFAULT_LM_MODEL;
+        updateScreeningPreview();
+        await persistWorkspaceState();
+        setConfigStatus(`Ready to screen with ${screeningState.model} at ${endpoint}.`);
+        screeningConfigDialog?.close();
+    });
+
+    refreshScreeningPreviewBtn?.addEventListener('click', () => {
+        const endpoint = buildEndpointFromDialog();
+        if (endpointInput) endpointInput.value = endpoint;
+        screeningState.endpoint = endpoint;
         updateScreeningPreview();
     });
 
-    refreshScreeningPreviewBtn?.addEventListener('click', updateScreeningPreview);
+    modelInput?.addEventListener('change', async () => {
+        screeningState.model = modelInput.value || DEFAULT_LM_MODEL;
+        updateScreeningPreview();
+        await persistWorkspaceState();
+    });
 
     const updateScreeningControls = () => {
         const running = screeningState.status === 'running';
