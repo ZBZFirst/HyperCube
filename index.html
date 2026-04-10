@@ -115,33 +115,50 @@
         <button class="panel-toggle" data-panel-target="button-container" aria-label="Toggle controls panel">Hide</button>
       </div>
       <div class="controls-shell">
-        <div class="query-panel">
-          <div class="query-panel-header">
-            <div class="query-panel-title">Query Workspace</div>
-            <button class="query-panel-toggle" id="query-panel-toggle" type="button" aria-expanded="true">Collapse</button>
-          </div>
-          <div class="query-stack">
-            <label class="compact-field compact-field-search" for="pubmed-search-input">
-              <span class="compact-label">PubMed Query</span>
-              <input id="pubmed-search-input" class="query-input query-search" type="text" placeholder="Search term or phrase" />
-            </label>
-            <label class="compact-field compact-field-rq" for="research-question-input">
-              <span class="compact-label">Research Question</span>
-              <input id="research-question-input" class="query-input query-rq" type="text" placeholder="Question added to each row" />
-            </label>
-            <label class="compact-field compact-field-key" for="pubmed-api-input">
-              <span class="compact-label">NCBI API Key</span>
-              <input id="pubmed-api-input" class="query-input query-key" type="password" placeholder="Optional" />
-              <label class="remember-key-toggle" for="remember-pubmed-key">
-                <input id="remember-pubmed-key" type="checkbox" />
-                <span>Remember API key on this device</span>
+        <div class="controls-card query-card">
+          <div class="query-panel">
+            <div class="query-panel-header">
+              <div class="query-panel-title">Query Workspace</div>
+              <button class="query-panel-toggle" id="query-panel-toggle" type="button" aria-expanded="true">Collapse</button>
+            </div>
+            <div class="query-stack">
+              <label class="compact-field compact-field-search" for="pubmed-search-input">
+                <span class="compact-label">PubMed Query</span>
+                <input id="pubmed-search-input" class="query-input query-search" type="text" placeholder="Search term or phrase" />
               </label>
-            </label>
+              <label class="compact-field compact-field-rq" for="research-question-input">
+                <span class="compact-label">Research Question</span>
+                <input id="research-question-input" class="query-input query-rq" type="text" placeholder="Question added to each row" />
+              </label>
+              <label class="compact-field compact-field-key" for="pubmed-api-input">
+                <span class="compact-label">NCBI API Key</span>
+                <input id="pubmed-api-input" class="query-input query-key" type="password" placeholder="Optional" />
+                <label class="remember-key-toggle" for="remember-pubmed-key">
+                  <input id="remember-pubmed-key" type="checkbox" />
+                  <span>Remember API key on this device</span>
+                </label>
+              </label>
+            </div>
+            <div class="query-actions">
+              <button class="action-button query-run-btn" onclick="runPubMedQueryToCsv()">Run Query</button>
+              <span id="query-status" class="query-status" aria-live="polite"></span>
+            </div>
           </div>
-          <div class="query-actions">
-            <button class="action-button query-run-btn" onclick="runPubMedQueryToCsv()">Run Query</button>
-            <span id="query-status" class="query-status" aria-live="polite"></span>
+        </div>
+
+        <div class="controls-card actions-card">
+          <div class="controls-card-header">
+            <div class="controls-card-title">Workspace Actions</div>
           </div>
+          <div class="button-cluster primary-actions">
+            <button class="action-button delete" id="delete-btn">Delete</button>
+            <button class="action-button" id="download-btn">Download</button>
+            <button class="action-button" id="apply-research-question-btn">Change Research Question</button>
+            <button class="action-button fullscreen-btn" id="fullscreen-btn">Fullscreen</button>
+          </div>
+        </div>
+
+        <div class="controls-card screening-card">
           <div class="screening-panel">
             <div class="screening-panel-title">Screening Runner</div>
             <div class="screening-controls">
@@ -171,48 +188,46 @@
           </div>
         </div>
 
-        <div class="button-cluster primary-actions">
-          <button class="action-button delete" id="delete-btn">Delete</button>
-          <button class="action-button" id="download-btn">Download</button>
-          <button class="action-button" id="apply-research-question-btn">Change Research Question</button>
-          <button class="action-button fullscreen-btn" id="fullscreen-btn">Fullscreen</button>
-        </div>
-
-        <div class="controls-groups">
-          <div class="control-group">
-            <button class="view-button group-toggle" onclick="toggleControlGroup('scale-geometry-options')">
-              <span class="icon">📏</span> Scale
-            </button>
-            <div class="control-options" id="scale-geometry-options">
-              <button class="view-button" data-scale-mode="author_count" onclick="applyGeometryScaleMode('author_count')">
-                Author count
-              </button>
-              <button class="view-button" data-scale-mode="mesh_count" onclick="applyGeometryScaleMode('mesh_count')">
-                MeSH count
-              </button>
-              <button class="view-button" data-scale-mode="none" onclick="applyGeometryScaleMode('none')">
-                None
-              </button>
-            </div>
+        <div class="controls-card view-card">
+          <div class="controls-card-header">
+            <div class="controls-card-title">View Controls</div>
           </div>
+          <div class="controls-groups">
+            <div class="control-group">
+              <button class="view-button group-toggle" onclick="toggleControlGroup('scale-geometry-options')">
+                <span class="icon">📏</span> Scale
+              </button>
+              <div class="control-options" id="scale-geometry-options">
+                <button class="view-button" data-scale-mode="author_count" onclick="applyGeometryScaleMode('author_count')">
+                  Author count
+                </button>
+                <button class="view-button" data-scale-mode="mesh_count" onclick="applyGeometryScaleMode('mesh_count')">
+                  MeSH count
+                </button>
+                <button class="view-button" data-scale-mode="none" onclick="applyGeometryScaleMode('none')">
+                  None
+                </button>
+              </div>
+            </div>
 
-          <div class="control-group">
-            <button class="view-button group-toggle" onclick="toggleControlGroup('sort-by-options')">
-              <span class="icon">↕️</span> Sort
-            </button>
-            <div class="control-options" id="sort-by-options">
-              <button class="view-button" data-sort-mode="grid" onclick="applySortMode('GRID')">
-                <span class="icon">◼</span> Grid
+            <div class="control-group">
+              <button class="view-button group-toggle" onclick="toggleControlGroup('sort-by-options')">
+                <span class="icon">↕️</span> Sort
               </button>
-              <button class="view-button" data-sort-mode="year" onclick="applySortMode('YEAR')">
-                <span class="icon">📅</span> Year
-              </button>
-              <button class="view-button" data-sort-mode="journal" onclick="applySortMode('JOURNAL')">
-                <span class="icon">📚</span> Journal
-              </button>
-              <button class="view-button" data-sort-mode="citations" onclick="applySortMode('CITATIONS')">
-                <span class="icon">⭐</span> Citations
-              </button>
+              <div class="control-options" id="sort-by-options">
+                <button class="view-button" data-sort-mode="grid" onclick="applySortMode('GRID')">
+                  <span class="icon">◼</span> Grid
+                </button>
+                <button class="view-button" data-sort-mode="year" onclick="applySortMode('YEAR')">
+                  <span class="icon">📅</span> Year
+                </button>
+                <button class="view-button" data-sort-mode="journal" onclick="applySortMode('JOURNAL')">
+                  <span class="icon">📚</span> Journal
+                </button>
+                <button class="view-button" data-sort-mode="citations" onclick="applySortMode('CITATIONS')">
+                  <span class="icon">⭐</span> Citations
+                </button>
+              </div>
             </div>
           </div>
         </div>

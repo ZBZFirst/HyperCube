@@ -409,10 +409,54 @@ body {
 
 .controls-shell {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 7fr) minmax(260px, 3fr);
+  grid-template-areas:
+    "query actions"
+    "screening view";
   gap: 12px;
   align-items: start;
   overflow: visible;
+}
+
+.controls-card {
+  min-width: 0;
+  padding: 12px;
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(248, 250, 252, 0.94), rgba(241, 245, 249, 0.9));
+  border: 1px solid rgba(203, 213, 225, 0.8);
+  box-shadow: var(--shadow-card);
+}
+
+.query-card {
+  grid-area: query;
+}
+
+.actions-card {
+  grid-area: actions;
+}
+
+.screening-card {
+  grid-area: screening;
+}
+
+.view-card {
+  grid-area: view;
+}
+
+.controls-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.controls-card-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #475569;
 }
 
 .controls-header {
@@ -464,10 +508,10 @@ body {
   gap: 10px;
   align-items: stretch;
   min-width: 0;
-  padding: 10px;
-  border-radius: 16px;
-  background: linear-gradient(180deg, rgba(241, 245, 249, 0.92), rgba(226, 232, 240, 0.88));
-  border: 1px solid rgba(203, 213, 225, 0.72);
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  border: none;
 }
 
 .query-panel-header {
@@ -597,17 +641,14 @@ select.query-input {
 }
 
 .query-panel.collapsed .query-stack,
-.query-panel.collapsed .query-actions,
-.query-panel.collapsed .screening-panel {
+.query-panel.collapsed .query-actions {
   display: none;
 }
 
 .screening-panel {
-  grid-column: 1 / -1;
   display: grid;
   gap: 8px;
-  padding-top: 4px;
-  border-top: 1px solid rgba(203, 213, 225, 0.72);
+  min-width: 0;
 }
 
 .screening-panel-title {
@@ -716,6 +757,11 @@ select.query-input {
 
 .primary-actions {
   justify-content: flex-start;
+  align-items: stretch;
+}
+
+.primary-actions .action-button {
+  flex: 1 1 140px;
 }
 
 .controls-groups {
@@ -1072,6 +1118,7 @@ select.query-input {
 
   .controls-shell {
     grid-template-columns: 1fr;
+    grid-template-areas: none;
   }
 
   .query-panel {
@@ -1148,17 +1195,23 @@ select.query-input {
     flex-wrap: wrap;
   }
 
+  .controls-shell,
   .query-panel,
   .query-stack,
   .screening-controls,
   .screening-dialog-grid {
     grid-template-columns: 1fr;
+    grid-template-areas: none;
   }
 
   .query-actions {
     grid-template-columns: 1fr;
     grid-template-rows: auto auto;
     justify-items: stretch;
+  }
+
+  .controls-card {
+    padding: 10px;
   }
 
   .query-status {

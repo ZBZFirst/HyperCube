@@ -23,6 +23,7 @@ const PUBMED_KEY_STORAGE_KEY = 'hypercube.pubmedApiKey';
 const DEFAULT_LM_ENDPOINT = 'http://127.0.0.1:1234/v1/chat/completions';
 const DEFAULT_LM_MODEL = 'qwen2.5-3b-instruct';
 const DEFAULT_REMOTE_LM_HOST = '192.168.68.82';
+const LM_PROXY_BASE = '/api/lmstudio';
 const SCREENING_HEADERS = [
     'LlmStatus',
     'LlmFitForReview',
@@ -280,7 +281,7 @@ function setupQueryPanel() {
     };
 
     const fetchAvailableModels = async (endpoint) => {
-        const modelsUrl = deriveModelsUrl(endpoint);
+        const modelsUrl = getModelsRequestUrl(endpoint);
         const response = await fetch(modelsUrl);
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}`);
@@ -313,7 +314,7 @@ function setupQueryPanel() {
         const endpoint = buildEndpointFromDialog();
         if (endpointInput) endpointInput.value = endpoint;
         screeningState.endpoint = endpoint;
-        setConfigStatus(`Checking ${deriveModelsUrl(endpoint)} ...`);
+        setConfigStatus(`Checking ${getModelsRequestUrl(endpoint)} ...`);
 
         try {
             const { modelsUrl, models } = await fetchAvailableModels(endpoint);
@@ -327,7 +328,9 @@ function setupQueryPanel() {
             const isNetworkStyleError = /networkerror|failed to fetch|load failed/i.test(String(error?.message || ''));
             if (isNetworkStyleError) {
                 setConfigStatus(
-                    `Browser request blocked while checking ${deriveModelsUrl(endpoint)}. The endpoint is likely reachable, but this page cannot fetch it because LM Studio is not allowing cross-origin browser requests from HyperCube.`
+                    canUseLocalLmProxy()
+                        ? 'Unable to reach the local HyperCube LM Studio proxy. Start this project with server.py and open HyperCube from that server.'
+                        : `Browser request blocked while checking ${deriveModelsUrl(endpoint)}. Serve HyperCube through the local server.py helper so the browser can use the same-origin LM Studio proxy.`
                 );
             } else {
                 setConfigStatus(`Unable to fetch models: ${error.message}`);
@@ -459,6 +462,23 @@ function deriveModelsUrl(endpoint) {
     return url.toString();
 }
 
+function canUseLocalLmProxy() {
+    const protocol = window.location?.protocol || '';
+    const hostname = window.location?.hostname || '';
+    if (!/^https?:$/.test(protocol)) return false;
+    return !hostname.endsWith('github.io');
+}
+
+function getModelsRequestUrl(endpoint) {
+    return canUseLocalLmProxy()
+        ? `${LM_PROXY_BASE}/models?target=${encodeURIComponent(endpoint)}`
+        : deriveModelsUrl(endpoint);
+}
+
+function getChatRequestUrl() {
+    return canUseLocalLmProxy() ? `${LM_PROXY_BASE}/chat` : null;
+}
+
 function ensureScreeningColumns(row) {
     SCREENING_HEADERS.forEach((header) => {
         if (!(header in row)) {
@@ -575,10 +595,16 @@ async function screenRow(row, options) {
     }
 
     try {
-        const response = await fetch(options.endpoint, {
+        const payload = buildScreeningPayload(row, options);
+        const proxyUrl = getChatRequestUrl();
+        const response = await fetch(proxyUrl || options.endpoint, proxyUrl ? {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(buildScreeningPayload(row, options))
+            body: JSON.stringify({ target: options.endpoint, payload })
+        } : {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
         });
 
         if (!response.ok) {
