@@ -221,9 +221,7 @@ function setupQueryPanel() {
     const lmPathInput = document.getElementById('lmstudio-path-input');
     const checkModelsDialogBtn = document.getElementById('check-models-dialog-btn');
     const applyScreeningConfigBtn = document.getElementById('apply-screening-config-btn');
-    const refreshScreeningPreviewBtn = document.getElementById('refresh-screening-preview-btn');
     const screeningConfigStatus = document.getElementById('screening-config-status');
-    const screeningPreviewOutput = document.getElementById('screening-preview-output');
     const screeningProgressBar = document.getElementById('screening-progress-bar');
     const screeningProgressText = document.getElementById('screening-progress-text');
 
@@ -311,50 +309,28 @@ function setupQueryPanel() {
         }
     };
 
-    const updateScreeningPreview = () => {
-        if (!screeningPreviewOutput) return;
-        const row = currentData?.[0];
-        if (!row) {
-            screeningPreviewOutput.value = 'No dataset loaded. Fetch or load articles first to preview the first screening request.';
-            return;
-        }
-
-        const endpoint = endpointInput?.value?.trim() || DEFAULT_LM_ENDPOINT;
-        const model = modelInput?.value?.trim() || DEFAULT_LM_MODEL;
-        const payload = buildScreeningPayload(row, { endpoint, model });
-
-        screeningPreviewOutput.value = [
-            `Endpoint: ${endpoint}`,
-            `Model: ${model}`,
-            '',
-            'System Prompt:',
-            payload.messages[0].content,
-            '',
-            'User Message:',
-            payload.messages[1].content
-        ].join('\n');
-    };
-
     const runModelCheck = async () => {
         const endpoint = buildEndpointFromDialog();
         if (endpointInput) endpointInput.value = endpoint;
         screeningState.endpoint = endpoint;
         setConfigStatus(`Checking ${deriveModelsUrl(endpoint)} ...`);
-        updateScreeningPreview();
 
         try {
             const { modelsUrl, models } = await fetchAvailableModels(endpoint);
             populateModelOptions(models, screeningState.model || DEFAULT_LM_MODEL);
-            updateScreeningPreview();
             setConfigStatus(
                 models.length
                     ? `Found ${models.length} model${models.length === 1 ? '' : 's'} at ${modelsUrl}.`
                     : `No models were returned from ${modelsUrl}.`
             );
         } catch (error) {
-            setConfigStatus(`Unable to fetch models: ${error.message}`);
-            if (screeningPreviewOutput) {
-                screeningPreviewOutput.value = `Unable to fetch models from ${deriveModelsUrl(endpoint)}.\n\n${error.message}`;
+            const isNetworkStyleError = /networkerror|failed to fetch|load failed/i.test(String(error?.message || ''));
+            if (isNetworkStyleError) {
+                setConfigStatus(
+                    `Browser request blocked while checking ${deriveModelsUrl(endpoint)}. The endpoint is likely reachable, but this page cannot fetch it because LM Studio is not allowing cross-origin browser requests from HyperCube.`
+                );
+            } else {
+                setConfigStatus(`Unable to fetch models: ${error.message}`);
             }
         }
     };
@@ -362,7 +338,6 @@ function setupQueryPanel() {
     checkModelsBtn?.addEventListener('click', () => {
         syncDialogFieldsFromEndpoint();
         setConfigStatus('');
-        updateScreeningPreview();
         screeningConfigDialog?.showModal();
     });
 
@@ -373,22 +348,13 @@ function setupQueryPanel() {
         if (endpointInput) endpointInput.value = endpoint;
         screeningState.endpoint = endpoint;
         screeningState.model = modelInput?.value?.trim() || DEFAULT_LM_MODEL;
-        updateScreeningPreview();
         await persistWorkspaceState();
         setConfigStatus(`Ready to screen with ${screeningState.model} at ${endpoint}.`);
         screeningConfigDialog?.close();
     });
 
-    refreshScreeningPreviewBtn?.addEventListener('click', () => {
-        const endpoint = buildEndpointFromDialog();
-        if (endpointInput) endpointInput.value = endpoint;
-        screeningState.endpoint = endpoint;
-        updateScreeningPreview();
-    });
-
     modelInput?.addEventListener('change', async () => {
         screeningState.model = modelInput.value || DEFAULT_LM_MODEL;
-        updateScreeningPreview();
         await persistWorkspaceState();
     });
 

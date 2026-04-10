@@ -707,31 +707,6 @@ select.query-input {
   justify-content: flex-start;
 }
 
-.screening-preview-block {
-  display: grid;
-  gap: 8px;
-}
-
-.screening-preview-title {
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: #475569;
-}
-
-.screening-preview-output {
-  width: 100%;
-  min-height: 280px;
-  resize: vertical;
-  border: 1px solid rgba(148, 163, 184, 0.35);
-  border-radius: 14px;
-  padding: 12px;
-  background: #f8fafc;
-  color: #0f172a;
-  font: 0.78rem/1.45 "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
-}
-
 .button-cluster {
   display: flex;
   flex-wrap: wrap;
