@@ -12,6 +12,7 @@ import { setupControls } from './controlsSetup.js';
 import { setupEventHandlers } from './eventHandlers.js';
 import { setGeometryScaleMode, GeometryScaleModes } from './createCube.js';
 import { fetchPubMedData, DEFAULT_API_KEY } from './pubmedFetcher.js';
+import { saveWorkspaceSnapshot, loadWorkspaceSnapshot, clearWorkspaceSnapshot } from './screeningStorage.js';
 
 let sceneObjects = null;
 let selectedCubes = [];
@@ -19,6 +20,78 @@ let lastSelectedCube = null;
 let currentData = [];
 let selectionHandler = null;
 const PUBMED_KEY_STORAGE_KEY = 'hypercube.pubmedApiKey';
+const DEFAULT_LM_ENDPOINT = 'http://127.0.0.1:1234/v1/chat/completions';
+const DEFAULT_LM_MODEL = 'qwen2.5-3b-instruct';
+const SCREENING_HEADERS = [
+    'LlmStatus',
+    'LlmFitForReview',
+    'LlmSummary256',
+    'LlmReason',
+    'LlmInvalidKind',
+    'LlmReceivedText',
+    'LlmModel',
+    'LlmEndpoint',
+    'LlmScreenedAt',
+    'LlmError'
+];
+const SYSTEM_PROMPT = [
+    'You are performing first-pass eligibility screening for a literature review.',
+    'The input article was already retrieved upstream by search terms; retrieval overlap is not evidence for inclusion.',
+    'Use the research question as a restrictive filter, not as a broad thematic guide.',
+    'Each concept in the research question narrows the candidate set. Added specificity subtracts from eligibility rather than expanding it.',
+    'Use only explicit evidence from the title and abstract.',
+    'Do not infer relevance from loose association, neighboring topics, shared vocabulary, analogy, or speculative reasoning.',
+    'If the input is article-like and includes a title and/or abstract, return screened_article.',
+    'Set fit_for_review to true only when the title and abstract clearly satisfy the research question as written.',
+    'If support is incomplete, indirect, uncertain, or off-topic, return screened_article with fit_for_review set to false.',
+    'Use invalid_input only for greetings, commands, empty input, or text that is not reasonably article-like.',
+    'Return only JSON matching the provided schema.'
+].join(' ');
+const RESPONSE_SCHEMA = {
+    type: 'json_schema',
+    json_schema: {
+        name: 'article_screening',
+        strict: true,
+        schema: {
+            oneOf: [
+                {
+                    type: 'object',
+                    properties: {
+                        status: { type: 'string', const: 'screened_article' },
+                        summary_256: { type: 'string', maxLength: 256 },
+                        fit_for_review: { type: 'boolean' },
+                        reason: { type: 'string' }
+                    },
+                    required: ['status', 'summary_256', 'fit_for_review', 'reason'],
+                    additionalProperties: false
+                },
+                {
+                    type: 'object',
+                    properties: {
+                        status: { type: 'string', const: 'invalid_input' },
+                        invalid_kind: {
+                            type: 'string',
+                            enum: ['greeting', 'casual_chat', 'question', 'command', 'empty_input', 'incomplete_article', 'non_article_text', 'other']
+                        },
+                        received_text: { type: 'string' },
+                        reason: { type: 'string' }
+                    },
+                    required: ['status', 'invalid_kind', 'received_text', 'reason'],
+                    additionalProperties: false
+                }
+            ]
+        }
+    }
+};
+let screeningState = {
+    status: 'idle',
+    currentIndex: 0,
+    totalRows: 0,
+    endpoint: DEFAULT_LM_ENDPOINT,
+    model: DEFAULT_LM_MODEL,
+    updatedAt: null
+};
+let stopScreeningRequested = false;
 
 function getBrowseCardSummary(article) {
     const abstract = String(article?.Abstract || '').trim();
@@ -128,11 +201,27 @@ function applyNewDataset(data) {
     setupUI(data, () => [...selectedCubes], () => lastSelectedCube, selectionHandler);
     setupEventHandlers(selectedCubes, lastSelectedCube, sceneObjects.scene);
     renderFullscreenBrowseList(data);
+    persistWorkspaceState();
 }
 
 function setupQueryPanel() {
     const apiKeyInput = document.getElementById('pubmed-api-input');
     const rememberKeyCheckbox = document.getElementById('remember-pubmed-key');
+    const endpointInput = document.getElementById('lmstudio-endpoint-input');
+    const modelInput = document.getElementById('lmstudio-model-input');
+    const screeningStatus = document.getElementById('screening-status');
+    const screeningStartBtn = document.getElementById('screening-start-btn');
+    const screeningResumeBtn = document.getElementById('screening-resume-btn');
+    const screeningStopBtn = document.getElementById('screening-stop-btn');
+    const screeningClearBtn = document.getElementById('screening-clear-btn');
+    const screeningConfigBtn = document.getElementById('screening-config-btn');
+    const screeningConfigDialog = document.getElementById('screening-config-dialog');
+    const lmHostInput = document.getElementById('lmstudio-host-input');
+    const lmPortInput = document.getElementById('lmstudio-port-input');
+    const lmPathInput = document.getElementById('lmstudio-path-input');
+    const applyScreeningConfigBtn = document.getElementById('apply-screening-config-btn');
+    const refreshScreeningPreviewBtn = document.getElementById('refresh-screening-preview-btn');
+    const screeningPreviewOutput = document.getElementById('screening-preview-output');
 
     if (apiKeyInput && rememberKeyCheckbox) {
         const savedApiKey = window.localStorage.getItem(PUBMED_KEY_STORAGE_KEY);
@@ -155,6 +244,87 @@ function setupQueryPanel() {
             }
         });
     }
+
+    if (endpointInput) endpointInput.value = screeningState.endpoint || DEFAULT_LM_ENDPOINT;
+    if (modelInput) modelInput.value = screeningState.model || DEFAULT_LM_MODEL;
+
+    const syncDialogFieldsFromEndpoint = () => {
+        const endpoint = endpointInput?.value?.trim() || DEFAULT_LM_ENDPOINT;
+        try {
+            const url = new URL(endpoint);
+            if (lmHostInput) lmHostInput.value = url.hostname;
+            if (lmPortInput) lmPortInput.value = url.port || '1234';
+            if (lmPathInput) lmPathInput.value = url.pathname || '/v1/chat/completions';
+        } catch {
+            if (lmHostInput) lmHostInput.value = '127.0.0.1';
+            if (lmPortInput) lmPortInput.value = '1234';
+            if (lmPathInput) lmPathInput.value = '/v1/chat/completions';
+        }
+    };
+
+    const updateScreeningPreview = () => {
+        if (!screeningPreviewOutput) return;
+        const row = currentData?.[0];
+        if (!row) {
+            screeningPreviewOutput.value = 'No dataset loaded. Fetch or load articles first to preview the first screening request.';
+            return;
+        }
+
+        const endpoint = endpointInput?.value?.trim() || DEFAULT_LM_ENDPOINT;
+        const model = modelInput?.value?.trim() || DEFAULT_LM_MODEL;
+        const payload = buildScreeningPayload(row, { endpoint, model });
+
+        screeningPreviewOutput.value = [
+            `Endpoint: ${endpoint}`,
+            `Model: ${model}`,
+            '',
+            'System Prompt:',
+            payload.messages[0].content,
+            '',
+            'User Message:',
+            payload.messages[1].content
+        ].join('\n');
+    };
+
+    screeningConfigBtn?.addEventListener('click', () => {
+        syncDialogFieldsFromEndpoint();
+        updateScreeningPreview();
+        screeningConfigDialog?.showModal();
+    });
+
+    applyScreeningConfigBtn?.addEventListener('click', () => {
+        const host = lmHostInput?.value?.trim() || '127.0.0.1';
+        const port = lmPortInput?.value?.trim() || '1234';
+        const path = lmPathInput?.value?.trim() || '/v1/chat/completions';
+        const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+        if (endpointInput) {
+            endpointInput.value = `http://${host}:${port}${normalizedPath}`;
+        }
+        screeningState.endpoint = endpointInput?.value?.trim() || DEFAULT_LM_ENDPOINT;
+        updateScreeningPreview();
+    });
+
+    refreshScreeningPreviewBtn?.addEventListener('click', updateScreeningPreview);
+
+    screeningStartBtn?.addEventListener('click', () => startScreeningRun({ resumeExisting: false }));
+    screeningResumeBtn?.addEventListener('click', () => startScreeningRun({ resumeExisting: true }));
+    screeningStopBtn?.addEventListener('click', () => {
+        stopScreeningRequested = true;
+        setScreeningStatus('Stop requested. Current row will finish before the runner pauses.');
+    });
+    screeningClearBtn?.addEventListener('click', async () => {
+        stopScreeningRequested = true;
+        screeningState = {
+            status: 'idle',
+            currentIndex: 0,
+            totalRows: currentData.length,
+            endpoint: endpointInput?.value?.trim() || DEFAULT_LM_ENDPOINT,
+            model: modelInput?.value?.trim() || DEFAULT_LM_MODEL,
+            updatedAt: new Date().toISOString()
+        };
+        await clearWorkspaceSnapshot();
+        setScreeningStatus('Saved browser run cleared.');
+    });
 
     window.runPubMedQueryToCsv = async () => {
         const searchInput = document.getElementById('pubmed-search-input');
@@ -187,6 +357,11 @@ function setupQueryPanel() {
             if (queryStatus) {
                 queryStatus.textContent = `Done: fetched ${data.length} rows and exported CSV.`;
             }
+            screeningState.totalRows = data.length;
+            screeningState.status = 'idle';
+            screeningState.currentIndex = 0;
+            screeningState.updatedAt = new Date().toISOString();
+            setScreeningStatus('Dataset ready for screening.');
         } catch (error) {
             console.error('Query-to-CSV failed:', error);
             showErrorToUser(`PubMed query failed: ${error.message}`);
@@ -194,6 +369,229 @@ function setupQueryPanel() {
         } finally {
             removeLoadingIndicator();
         }
+    };
+
+    if (screeningStatus && screeningState.updatedAt && screeningState.status !== 'idle') {
+        setScreeningStatus(`Restored saved run: ${screeningState.status} at row ${Math.min(screeningState.currentIndex + 1, screeningState.totalRows || 0)}.`);
+    }
+}
+
+function setScreeningStatus(message) {
+    const screeningStatus = document.getElementById('screening-status');
+    if (screeningStatus) screeningStatus.textContent = message;
+}
+
+async function persistWorkspaceState() {
+    try {
+        await saveWorkspaceSnapshot({
+            data: currentData,
+            screeningState: {
+                ...screeningState,
+                updatedAt: new Date().toISOString()
+            }
+        });
+    } catch (error) {
+        console.error('Failed to persist workspace state:', error);
+    }
+}
+
+function ensureScreeningColumns(row) {
+    SCREENING_HEADERS.forEach((header) => {
+        if (!(header in row)) {
+            row[header] = '';
+        }
+    });
+    return row;
+}
+
+function getScreenableRowIndices({ resumeExisting }) {
+    const rows = currentData || [];
+    if (!resumeExisting) {
+        return rows.map((_, index) => index);
+    }
+    return rows
+        .map((row, index) => ({ row, index }))
+        .filter(({ row }) => !String(row.LlmScreenedAt || '').trim())
+        .map(({ index }) => index);
+}
+
+async function startScreeningRun({ resumeExisting }) {
+    if (!currentData.length) {
+        showErrorToUser('No dataset loaded for screening.');
+        return;
+    }
+
+    const endpoint = document.getElementById('lmstudio-endpoint-input')?.value?.trim() || DEFAULT_LM_ENDPOINT;
+    const model = document.getElementById('lmstudio-model-input')?.value?.trim() || DEFAULT_LM_MODEL;
+    const targetIndices = getScreenableRowIndices({ resumeExisting });
+
+    if (!targetIndices.length) {
+        setScreeningStatus('No rows require screening.');
+        return;
+    }
+
+    stopScreeningRequested = false;
+    screeningState = {
+        status: 'running',
+        currentIndex: 0,
+        totalRows: targetIndices.length,
+        endpoint,
+        model,
+        updatedAt: new Date().toISOString()
+    };
+    setScreeningStatus(`Starting screening run for ${targetIndices.length} rows...`);
+    await persistWorkspaceState();
+
+    for (let runIndex = 0; runIndex < targetIndices.length; runIndex += 1) {
+        if (stopScreeningRequested) {
+            screeningState.status = 'paused';
+            screeningState.currentIndex = runIndex;
+            await persistWorkspaceState();
+            setScreeningStatus(`Run paused after ${runIndex} of ${targetIndices.length} rows.`);
+            return;
+        }
+
+        const rowIndex = targetIndices[runIndex];
+        const row = ensureScreeningColumns(currentData[rowIndex]);
+        screeningState.currentIndex = runIndex;
+        screeningState.totalRows = targetIndices.length;
+        setScreeningStatus(`Screening row ${runIndex + 1} of ${targetIndices.length}: PMID ${row.PMID || '(none)'}`);
+
+        const result = await screenRow(row, { endpoint, model });
+        currentData[rowIndex] = { ...row, ...result };
+        setData(currentData);
+        screeningState.updatedAt = new Date().toISOString();
+        await persistWorkspaceState();
+    }
+
+    screeningState.status = 'completed';
+    screeningState.currentIndex = targetIndices.length;
+    screeningState.updatedAt = new Date().toISOString();
+    await persistWorkspaceState();
+    setScreeningStatus(`Screening complete. Processed ${targetIndices.length} rows.`);
+}
+
+async function screenRow(row, options) {
+    const title = String(row.Title || '').trim();
+    const abstract = String(row.Abstract || '').trim();
+    const researchQuestion = String(row.ResearchQuestion || '').trim();
+
+    if (!researchQuestion) {
+        return mapScreeningError('Missing ResearchQuestion', options, title || abstract, 'other', 'Missing ResearchQuestion in row.');
+    }
+
+    if (!title && !abstract) {
+        return mapScreeningError('Missing Title and Abstract', options, '', 'empty_input', 'Missing Title and Abstract in row.');
+    }
+
+    try {
+        const response = await fetch(options.endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(buildScreeningPayload(row, options))
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+        }
+
+        const data = await response.json();
+        const content = data?.choices?.[0]?.message?.content;
+        const parsed = parseModelContent(content);
+        return mapScreeningResponse(parsed, options);
+    } catch (error) {
+        return {
+            LlmStatus: '',
+            LlmFitForReview: '',
+            LlmSummary256: '',
+            LlmReason: '',
+            LlmInvalidKind: '',
+            LlmReceivedText: '',
+            LlmModel: options.model,
+            LlmEndpoint: options.endpoint,
+            LlmScreenedAt: new Date().toISOString(),
+            LlmError: error.message
+        };
+    }
+}
+
+function buildScreeningPayload(row, options) {
+    return {
+        model: options.model,
+        messages: [
+            { role: 'system', content: SYSTEM_PROMPT },
+            {
+                role: 'user',
+                content: [
+                    `ResearchQuestion: ${String(row.ResearchQuestion || '').trim()}`,
+                    `Title: ${String(row.Title || '').trim()}`,
+                    `Abstract: ${String(row.Abstract || '').trim()}`
+                ].join('\n\n')
+            }
+        ],
+        response_format: RESPONSE_SCHEMA,
+        temperature: 0,
+        stream: false
+    };
+}
+
+function parseModelContent(content) {
+    if (typeof content === 'object' && content !== null) {
+        return content;
+    }
+    if (typeof content !== 'string') {
+        throw new Error(`Unexpected content type: ${typeof content}`);
+    }
+    return JSON.parse(content);
+}
+
+function mapScreeningResponse(parsed, options) {
+    const now = new Date().toISOString();
+    if (parsed.status === 'screened_article') {
+        return {
+            LlmStatus: parsed.status,
+            LlmFitForReview: String(parsed.fit_for_review),
+            LlmSummary256: parsed.summary_256 || '',
+            LlmReason: parsed.reason || '',
+            LlmInvalidKind: '',
+            LlmReceivedText: '',
+            LlmModel: options.model,
+            LlmEndpoint: options.endpoint,
+            LlmScreenedAt: now,
+            LlmError: ''
+        };
+    }
+
+    if (parsed.status === 'invalid_input') {
+        return {
+            LlmStatus: parsed.status,
+            LlmFitForReview: '',
+            LlmSummary256: '',
+            LlmReason: parsed.reason || '',
+            LlmInvalidKind: parsed.invalid_kind || '',
+            LlmReceivedText: parsed.received_text || '',
+            LlmModel: options.model,
+            LlmEndpoint: options.endpoint,
+            LlmScreenedAt: now,
+            LlmError: ''
+        };
+    }
+
+    throw new Error(`Unexpected screening status: ${parsed.status}`);
+}
+
+function mapScreeningError(errorMessage, options, receivedText, invalidKind, reason) {
+    return {
+        LlmStatus: 'invalid_input',
+        LlmFitForReview: '',
+        LlmSummary256: '',
+        LlmReason: reason,
+        LlmInvalidKind: invalidKind,
+        LlmReceivedText: receivedText,
+        LlmModel: options.model,
+        LlmEndpoint: options.endpoint,
+        LlmScreenedAt: new Date().toISOString(),
+        LlmError: errorMessage
     };
 }
 
@@ -406,8 +804,20 @@ async function init() {
         
         // 5. Load data
         console.log("5. Loading data...");
+        const savedWorkspace = await loadWorkspaceSnapshot();
         let data;
-        data = await loadData("pubmed_data.csv");
+        if (savedWorkspace?.data?.length) {
+            data = savedWorkspace.data;
+            screeningState = {
+                ...screeningState,
+                ...(savedWorkspace.screeningState || {})
+            };
+            setData(data);
+            currentData = data;
+        } else {
+            data = await loadData("pubmed_data.csv");
+            screeningState.totalRows = data.length;
+        }
         console.log("Data loaded, first item:", data?.[0]);
         if (!data?.length) throw new Error("No data loaded");
         setData(data);

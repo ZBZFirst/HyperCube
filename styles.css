@@ -543,8 +543,103 @@ body {
 }
 
 .query-panel.collapsed .query-stack,
-.query-panel.collapsed .query-actions {
+.query-panel.collapsed .query-actions,
+.query-panel.collapsed .screening-panel {
   display: none;
+}
+
+.screening-panel {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 8px;
+  padding-top: 4px;
+  border-top: 1px solid rgba(203, 213, 225, 0.72);
+}
+
+.screening-panel-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #475569;
+}
+
+.screening-controls {
+  display: grid;
+  grid-template-columns: minmax(260px, 1.2fr) minmax(180px, 0.8fr) auto;
+  gap: 8px;
+  align-items: end;
+}
+
+.screening-actions {
+  align-self: end;
+}
+
+.screening-dialog {
+  width: min(860px, calc(100vw - 40px));
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  border-radius: 24px;
+  padding: 0;
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.22);
+}
+
+.screening-dialog::backdrop {
+  background: rgba(15, 23, 42, 0.45);
+}
+
+.screening-dialog-form {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+}
+
+.screening-dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.screening-dialog-header h3 {
+  margin: 0;
+  font-size: 1rem;
+  color: #0f172a;
+}
+
+.screening-dialog-grid {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) minmax(120px, 0.4fr) minmax(220px, 1fr);
+  gap: 10px;
+}
+
+.screening-dialog-actions {
+  justify-content: flex-start;
+}
+
+.screening-preview-block {
+  display: grid;
+  gap: 8px;
+}
+
+.screening-preview-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #475569;
+}
+
+.screening-preview-output {
+  width: 100%;
+  min-height: 280px;
+  resize: vertical;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  border-radius: 14px;
+  padding: 12px;
+  background: #f8fafc;
+  color: #0f172a;
+  font: 0.78rem/1.45 "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
 }
 
 .button-cluster {
@@ -921,6 +1016,18 @@ body {
     grid-template-columns: repeat(2, minmax(200px, 1fr));
   }
 
+  .screening-controls {
+    grid-template-columns: repeat(2, minmax(200px, 1fr));
+  }
+
+  .screening-dialog-grid {
+    grid-template-columns: repeat(2, minmax(200px, 1fr));
+  }
+
+  .screening-actions {
+    grid-column: 1 / -1;
+  }
+
   .query-actions {
     grid-template-columns: auto 1fr;
     grid-template-rows: 1fr;
@@ -971,7 +1078,9 @@ body {
   }
 
   .query-panel,
-  .query-stack {
+  .query-stack,
+  .screening-controls,
+  .screening-dialog-grid {
     grid-template-columns: 1fr;
   }
 
