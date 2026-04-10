@@ -108,43 +108,22 @@ export function populateDataTable(data, onSelect) {
       onSelect(pmid, event.target.checked);
     });
 
-  // Notes column
+  // Include / screening verdict column
   rows.append('td')
-    .append('input')
-    .attr('type', 'text')
-    .attr('class', 'notes-input')
-    .attr('value', d => d.Notes || '')
-    .on('change', function(event, d) {
-      addAnnotation(d.PMID, 'Notes', event.target.value);
+    .append('span')
+    .attr('class', d => `screening-pill ${String(d.LlmFitForReview || '').toLowerCase() === 'true' ? 'include-yes' : String(d.LlmFitForReview || '').toLowerCase() === 'false' ? 'include-no' : 'include-pending'}`)
+    .text(d => {
+      const verdict = String(d.LlmFitForReview || '').toLowerCase();
+      if (verdict === 'true') return 'Include';
+      if (verdict === 'false') return 'Exclude';
+      return 'Pending';
     });
 
-  // Rating column
-  const ratingSelect = rows.append('td')
-    .append('select')
-    .attr('class', 'rating-select');
-    
-  ratingSelect.selectAll('option')
-    .data([...Array(6).keys()].slice(1))
-    .enter()
-    .append('option')
-    .attr('value', d => d)
-    .text(d => d)
-    .filter((d, i, nodes) => d === nodes[i].__data__.Rating)
-    .attr('selected', true);
-    
-  ratingSelect.on('change', function(event, d) {
-    addAnnotation(d.PMID, 'Rating', event.target.value);
-  });
-
-  // Tags column
+  // Rationale column
   rows.append('td')
-    .append('input')
-    .attr('type', 'text')
-    .attr('class', 'tags-input')
-    .attr('value', d => d.Tags || '')
-    .on('change', function(event, d) {
-      addAnnotation(d.PMID, 'Tags', event.target.value);
-    });
+    .text(d => d.LlmReason || '')
+    .attr('title', d => d.LlmReason || '')
+    .classed('rationale-cell', true);
 
   // MeSH Terms column
   rows.append('td')

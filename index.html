@@ -31,11 +31,10 @@
             <col style="width: 12%">  <!-- Search Terms -->
             <col style="width: 18%">  <!-- Title -->
             <col style="width: 5%">   <!-- Select -->
-            <col style="width: 11%">  <!-- Notes -->
-            <col style="width: 5%">   <!-- Rating -->
-            <col style="width: 8%">   <!-- Tags -->
-            <col style="width: 14%">  <!-- MeSH Terms -->
-            <col style="width: 13%">  <!-- Keywords -->
+            <col style="width: 8%">   <!-- Include -->
+            <col style="width: 18%">  <!-- Rationale -->
+            <col style="width: 13%">  <!-- MeSH Terms -->
+            <col style="width: 12%">  <!-- Keywords -->
           </colgroup>
           <thead>
             <tr>
@@ -43,9 +42,8 @@
               <th>Search Terms</th>
               <th>Title</th>
               <th>Select</th>
-              <th>Notes</th>
-              <th>Rating</th>
-              <th>Tags</th>
+              <th>Include?</th>
+              <th>Rationale For Inclusion</th>
               <th>MeSH Terms</th>
               <th>Keywords</th>
             </tr>
@@ -156,12 +154,16 @@
                 <input id="lmstudio-model-input" class="query-input" type="text" placeholder="qwen2.5-3b-instruct" />
               </label>
               <div class="button-cluster screening-actions">
-                <button class="action-button" id="screening-config-btn" type="button">Screening Config</button>
-                <button class="action-button query-run-btn" id="screening-start-btn" type="button">Start Screening</button>
-                <button class="action-button" id="screening-resume-btn" type="button">Resume Unscreened</button>
-                <button class="action-button" id="screening-stop-btn" type="button">Stop</button>
-                <button class="action-button" id="screening-clear-btn" type="button">Clear Saved Run</button>
+                <button class="action-button" id="check-models-btn" type="button">Check for Models</button>
+                <button class="action-button query-run-btn" id="start-screening-btn" type="button">Start Screening</button>
+                <button class="action-button" id="stop-screening-btn" type="button">Stop Screening</button>
+                <button class="action-button" id="save-current-output-btn" type="button">Save Current Output</button>
               </div>
+            </div>
+            <div class="screening-progress-row">
+              <label class="screening-progress-label" for="screening-progress-bar">Progress</label>
+              <progress id="screening-progress-bar" class="screening-progress-bar" value="0" max="1"></progress>
+              <span id="screening-progress-text" class="screening-progress-text">0 / 0</span>
             </div>
             <div id="screening-status" class="query-status" aria-live="polite">No screening run started.</div>
           </div>

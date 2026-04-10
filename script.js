@@ -210,11 +210,10 @@ function setupQueryPanel() {
     const endpointInput = document.getElementById('lmstudio-endpoint-input');
     const modelInput = document.getElementById('lmstudio-model-input');
     const screeningStatus = document.getElementById('screening-status');
-    const screeningStartBtn = document.getElementById('screening-start-btn');
-    const screeningResumeBtn = document.getElementById('screening-resume-btn');
-    const screeningStopBtn = document.getElementById('screening-stop-btn');
-    const screeningClearBtn = document.getElementById('screening-clear-btn');
-    const screeningConfigBtn = document.getElementById('screening-config-btn');
+    const startScreeningBtn = document.getElementById('start-screening-btn');
+    const stopScreeningBtn = document.getElementById('stop-screening-btn');
+    const saveCurrentOutputBtn = document.getElementById('save-current-output-btn');
+    const checkModelsBtn = document.getElementById('check-models-btn');
     const screeningConfigDialog = document.getElementById('screening-config-dialog');
     const lmHostInput = document.getElementById('lmstudio-host-input');
     const lmPortInput = document.getElementById('lmstudio-port-input');
@@ -222,6 +221,8 @@ function setupQueryPanel() {
     const applyScreeningConfigBtn = document.getElementById('apply-screening-config-btn');
     const refreshScreeningPreviewBtn = document.getElementById('refresh-screening-preview-btn');
     const screeningPreviewOutput = document.getElementById('screening-preview-output');
+    const screeningProgressBar = document.getElementById('screening-progress-bar');
+    const screeningProgressText = document.getElementById('screening-progress-text');
 
     if (apiKeyInput && rememberKeyCheckbox) {
         const savedApiKey = window.localStorage.getItem(PUBMED_KEY_STORAGE_KEY);
@@ -286,9 +287,33 @@ function setupQueryPanel() {
         ].join('\n');
     };
 
-    screeningConfigBtn?.addEventListener('click', () => {
+    checkModelsBtn?.addEventListener('click', async () => {
         syncDialogFieldsFromEndpoint();
         updateScreeningPreview();
+        const endpoint = endpointInput?.value?.trim() || DEFAULT_LM_ENDPOINT;
+        if (screeningPreviewOutput) {
+            screeningPreviewOutput.value = 'Checking model endpoint...\n';
+        }
+        try {
+            const modelsUrl = deriveModelsUrl(endpoint);
+            const response = await fetch(modelsUrl);
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+            const payload = await response.json();
+            const models = Array.isArray(payload?.data) ? payload.data.map((item) => item.id).join('\n') : 'No models returned.';
+            if (screeningPreviewOutput) {
+                screeningPreviewOutput.value = [
+                    `Models endpoint: ${modelsUrl}`,
+                    '',
+                    models || 'No models returned.'
+                ].join('\n');
+            }
+        } catch (error) {
+            if (screeningPreviewOutput) {
+                screeningPreviewOutput.value = `Unable to fetch models.\n\n${error.message}`;
+            }
+        }
         screeningConfigDialog?.showModal();
     });
 
@@ -306,24 +331,28 @@ function setupQueryPanel() {
 
     refreshScreeningPreviewBtn?.addEventListener('click', updateScreeningPreview);
 
-    screeningStartBtn?.addEventListener('click', () => startScreeningRun({ resumeExisting: false }));
-    screeningResumeBtn?.addEventListener('click', () => startScreeningRun({ resumeExisting: true }));
-    screeningStopBtn?.addEventListener('click', () => {
+    const updateScreeningControls = () => {
+        const running = screeningState.status === 'running';
+        if (startScreeningBtn) startScreeningBtn.disabled = running;
+        if (stopScreeningBtn) stopScreeningBtn.disabled = !running;
+        if (screeningProgressBar) {
+            screeningProgressBar.max = Math.max(screeningState.totalRows || 1, 1);
+            screeningProgressBar.value = Math.min(screeningState.currentIndex || 0, screeningProgressBar.max);
+        }
+        if (screeningProgressText) {
+            screeningProgressText.textContent = `${Math.min(screeningState.currentIndex || 0, screeningState.totalRows || 0)} / ${screeningState.totalRows || 0}`;
+        }
+    };
+
+    startScreeningBtn?.addEventListener('click', () => startScreeningRun({ resumeExisting: false }));
+    stopScreeningBtn?.addEventListener('click', () => {
         stopScreeningRequested = true;
         setScreeningStatus('Stop requested. Current row will finish before the runner pauses.');
+        updateScreeningControls();
     });
-    screeningClearBtn?.addEventListener('click', async () => {
-        stopScreeningRequested = true;
-        screeningState = {
-            status: 'idle',
-            currentIndex: 0,
-            totalRows: currentData.length,
-            endpoint: endpointInput?.value?.trim() || DEFAULT_LM_ENDPOINT,
-            model: modelInput?.value?.trim() || DEFAULT_LM_MODEL,
-            updatedAt: new Date().toISOString()
-        };
-        await clearWorkspaceSnapshot();
-        setScreeningStatus('Saved browser run cleared.');
+    saveCurrentOutputBtn?.addEventListener('click', () => {
+        exportFilteredData(currentData);
+        setScreeningStatus('Current dataset exported.');
     });
 
     window.runPubMedQueryToCsv = async () => {
@@ -374,6 +403,7 @@ function setupQueryPanel() {
     if (screeningStatus && screeningState.updatedAt && screeningState.status !== 'idle') {
         setScreeningStatus(`Restored saved run: ${screeningState.status} at row ${Math.min(screeningState.currentIndex + 1, screeningState.totalRows || 0)}.`);
     }
+    updateScreeningControls();
 }
 
 function setScreeningStatus(message) {
@@ -393,6 +423,13 @@ async function persistWorkspaceState() {
     } catch (error) {
         console.error('Failed to persist workspace state:', error);
     }
+}
+
+function deriveModelsUrl(endpoint) {
+    const url = new URL(endpoint);
+    url.pathname = '/v1/models';
+    url.search = '';
+    return url.toString();
 }
 
 function ensureScreeningColumns(row) {
@@ -440,6 +477,7 @@ async function startScreeningRun({ resumeExisting }) {
         updatedAt: new Date().toISOString()
     };
     setScreeningStatus(`Starting screening run for ${targetIndices.length} rows...`);
+    syncScreeningProgress(0, targetIndices.length);
     await persistWorkspaceState();
 
     for (let runIndex = 0; runIndex < targetIndices.length; runIndex += 1) {
@@ -447,6 +485,7 @@ async function startScreeningRun({ resumeExisting }) {
             screeningState.status = 'paused';
             screeningState.currentIndex = runIndex;
             await persistWorkspaceState();
+            syncScreeningProgress(runIndex, targetIndices.length);
             setScreeningStatus(`Run paused after ${runIndex} of ${targetIndices.length} rows.`);
             return;
         }
@@ -455,20 +494,44 @@ async function startScreeningRun({ resumeExisting }) {
         const row = ensureScreeningColumns(currentData[rowIndex]);
         screeningState.currentIndex = runIndex;
         screeningState.totalRows = targetIndices.length;
+        syncScreeningProgress(runIndex, targetIndices.length);
         setScreeningStatus(`Screening row ${runIndex + 1} of ${targetIndices.length}: PMID ${row.PMID || '(none)'}`);
 
         const result = await screenRow(row, { endpoint, model });
         currentData[rowIndex] = { ...row, ...result };
         setData(currentData);
+        screeningState.currentIndex = runIndex + 1;
         screeningState.updatedAt = new Date().toISOString();
+        syncScreeningProgress(runIndex + 1, targetIndices.length);
         await persistWorkspaceState();
     }
 
     screeningState.status = 'completed';
     screeningState.currentIndex = targetIndices.length;
     screeningState.updatedAt = new Date().toISOString();
+    syncScreeningProgress(targetIndices.length, targetIndices.length);
     await persistWorkspaceState();
     setScreeningStatus(`Screening complete. Processed ${targetIndices.length} rows.`);
+}
+
+function syncScreeningProgress(current, total) {
+    screeningState.currentIndex = current;
+    screeningState.totalRows = total;
+    const progressBar = document.getElementById('screening-progress-bar');
+    const progressText = document.getElementById('screening-progress-text');
+    const startBtn = document.getElementById('start-screening-btn');
+    const stopBtn = document.getElementById('stop-screening-btn');
+    const running = screeningState.status === 'running';
+
+    if (progressBar) {
+        progressBar.max = Math.max(total || 1, 1);
+        progressBar.value = Math.min(current, progressBar.max);
+    }
+    if (progressText) {
+        progressText.textContent = `${current} / ${total}`;
+    }
+    if (startBtn) startBtn.disabled = running;
+    if (stopBtn) stopBtn.disabled = !running;
 }
 
 async function screenRow(row, options) {
