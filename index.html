@@ -22,7 +22,6 @@
       <div id="data-container">
         <div class="panel-header">
           <h2>PubMed Articles</h2>
-          <button class="panel-toggle" data-panel-target="data-container" aria-label="Toggle articles panel">Hide</button>
         </div>
         <div id="fullscreen-browse-list" aria-label="Fullscreen article browser"></div>
         <table id="data-table">
@@ -81,7 +80,6 @@
       <div id="text-container">
         <div class="panel-header">
           <h2>Article Details</h2>
-          <button class="panel-toggle" data-panel-target="text-container" aria-label="Toggle details panel">Hide</button>
         </div>
         <div id="selected-title">No article selected</div>
         <div class="metadata-row">
@@ -112,14 +110,12 @@
     <div id="button-container">
       <div class="panel-header controls-header">
         <h2>Controls</h2>
-        <button class="panel-toggle" data-panel-target="button-container" aria-label="Toggle controls panel">Hide</button>
       </div>
       <div class="controls-shell">
         <div class="controls-card query-card">
           <div class="query-panel">
             <div class="query-panel-header">
               <div class="query-panel-title">Query Workspace</div>
-              <button class="query-panel-toggle" id="query-panel-toggle" type="button" aria-expanded="true">Collapse</button>
             </div>
             <div class="query-stack">
               <label class="compact-field compact-field-search" for="pubmed-search-input">
@@ -155,36 +151,6 @@
             <button class="action-button" id="download-btn">Download</button>
             <button class="action-button" id="apply-research-question-btn">Change Research Question</button>
             <button class="action-button fullscreen-btn" id="fullscreen-btn">Fullscreen</button>
-          </div>
-        </div>
-
-        <div class="controls-card screening-card">
-          <div class="screening-panel">
-            <div class="screening-panel-title">Screening Runner</div>
-            <div class="screening-controls">
-              <label class="compact-field" for="lmstudio-endpoint-input">
-                <span class="compact-label">Configured Endpoint</span>
-                <input id="lmstudio-endpoint-input" class="query-input" type="text" placeholder="Use Check for Models" readonly />
-              </label>
-              <label class="compact-field" for="lmstudio-model-input">
-                <span class="compact-label">Selected Model</span>
-                <select id="lmstudio-model-input" class="query-input">
-                  <option value="qwen2.5-3b-instruct">qwen2.5-3b-instruct</option>
-                </select>
-              </label>
-              <div class="button-cluster screening-actions">
-                <button class="action-button" id="check-models-btn" type="button">Check for Models</button>
-                <button class="action-button query-run-btn" id="start-screening-btn" type="button">Start Screening</button>
-                <button class="action-button" id="stop-screening-btn" type="button">Stop Screening</button>
-                <button class="action-button" id="save-current-output-btn" type="button">Save Current Output</button>
-              </div>
-            </div>
-            <div class="screening-progress-row">
-              <label class="screening-progress-label" for="screening-progress-bar">Progress</label>
-              <progress id="screening-progress-bar" class="screening-progress-bar" value="0" max="1"></progress>
-              <span id="screening-progress-text" class="screening-progress-text">0 / 0</span>
-            </div>
-            <div id="screening-status" class="query-status" aria-live="polite">No screening run started.</div>
           </div>
         </div>
 
@@ -233,37 +199,6 @@
         </div>
       </div>
     </div>
-
-    <dialog id="screening-config-dialog" class="screening-dialog">
-      <form method="dialog" class="screening-dialog-form">
-        <div class="screening-dialog-header">
-          <h3>LM Studio Model Check</h3>
-          <button type="submit" class="panel-toggle">Close</button>
-        </div>
-        <div class="screening-config-note">
-          Remote LM Studio worker for this project: <strong>192.168.68.82:1234</strong>. Use <strong>127.0.0.1:1234</strong> when the model is running on this same machine.
-        </div>
-        <div class="screening-dialog-grid">
-          <label class="compact-field" for="lmstudio-host-input">
-            <span class="compact-label">LM Studio Host / IP</span>
-            <input id="lmstudio-host-input" class="query-input" type="text" placeholder="192.168.68.82" />
-          </label>
-          <label class="compact-field" for="lmstudio-port-input">
-            <span class="compact-label">Port</span>
-            <input id="lmstudio-port-input" class="query-input" type="number" placeholder="1234" />
-          </label>
-          <label class="compact-field" for="lmstudio-path-input">
-            <span class="compact-label">Path</span>
-            <input id="lmstudio-path-input" class="query-input" type="text" placeholder="/v1/chat/completions" />
-          </label>
-        </div>
-        <div class="button-cluster screening-dialog-actions">
-          <button type="button" class="action-button" id="check-models-dialog-btn">Check Models at Endpoint</button>
-          <button type="button" class="action-button query-run-btn" id="apply-screening-config-btn">Use Selected Model</button>
-        </div>
-        <div id="screening-config-status" class="query-status" aria-live="polite"></div>
-      </form>
-    </dialog>
     
     <script type="module" src="script.js"></script>
   </div>

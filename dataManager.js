@@ -86,13 +86,11 @@ export function populateDataTable(data, onSelect) {
 
   // Research question column
   rows.append('td')
-    .text(d => d.ResearchQuestion || '')
-    .attr('title', d => d.ResearchQuestion || '');
+    .text(d => d.ResearchQuestion || '');
 
   // Search terms (PubMed query) column
   rows.append('td')
-    .text(d => d.PubMedQuery || '')
-    .attr('title', d => d.PubMedQuery || '');
+    .text(d => d.PubMedQuery || '');
 
   // Title column
   rows.append('td')
@@ -122,19 +120,16 @@ export function populateDataTable(data, onSelect) {
   // Rationale column
   rows.append('td')
     .text(d => d.LlmReason || '')
-    .attr('title', d => d.LlmReason || '')
     .classed('rationale-cell', true);
 
   // MeSH Terms column
   rows.append('td')
     .text(d => d.combinedMeSH || '')
-    .attr('title', d => d.combinedMeSH || '')
     .classed('mesh-cell', true);
   
   // Keywords column
   rows.append('td')
     .text(d => d.combinedKeywords || '')
-    .attr('title', d => d.combinedKeywords || '')
     .classed('keyword-cell', true);}
 
 /* ========== TEXT ZONE FUNCTIONS ========== */

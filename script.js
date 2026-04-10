@@ -12,7 +12,6 @@ import { setupControls } from './controlsSetup.js';
 import { setupEventHandlers } from './eventHandlers.js';
 import { setGeometryScaleMode, GeometryScaleModes } from './createCube.js';
 import { fetchPubMedData, DEFAULT_API_KEY } from './pubmedFetcher.js';
-import { saveWorkspaceSnapshot, loadWorkspaceSnapshot, clearWorkspaceSnapshot } from './screeningStorage.js';
 
 let sceneObjects = null;
 let selectedCubes = [];
@@ -20,80 +19,6 @@ let lastSelectedCube = null;
 let currentData = [];
 let selectionHandler = null;
 const PUBMED_KEY_STORAGE_KEY = 'hypercube.pubmedApiKey';
-const DEFAULT_LM_ENDPOINT = 'http://127.0.0.1:1234/v1/chat/completions';
-const DEFAULT_LM_MODEL = 'qwen2.5-3b-instruct';
-const DEFAULT_REMOTE_LM_HOST = '192.168.68.82';
-const LM_PROXY_BASE = '/api/lmstudio';
-const SCREENING_HEADERS = [
-    'LlmStatus',
-    'LlmFitForReview',
-    'LlmSummary256',
-    'LlmReason',
-    'LlmInvalidKind',
-    'LlmReceivedText',
-    'LlmModel',
-    'LlmEndpoint',
-    'LlmScreenedAt',
-    'LlmError'
-];
-const SYSTEM_PROMPT = [
-    'You are performing first-pass eligibility screening for a literature review.',
-    'The input article was already retrieved upstream by search terms; retrieval overlap is not evidence for inclusion.',
-    'Use the research question as a restrictive filter, not as a broad thematic guide.',
-    'Each concept in the research question narrows the candidate set. Added specificity subtracts from eligibility rather than expanding it.',
-    'Use only explicit evidence from the title and abstract.',
-    'Do not infer relevance from loose association, neighboring topics, shared vocabulary, analogy, or speculative reasoning.',
-    'If the input is article-like and includes a title and/or abstract, return screened_article.',
-    'Set fit_for_review to true only when the title and abstract clearly satisfy the research question as written.',
-    'If support is incomplete, indirect, uncertain, or off-topic, return screened_article with fit_for_review set to false.',
-    'Use invalid_input only for greetings, commands, empty input, or text that is not reasonably article-like.',
-    'Return only JSON matching the provided schema.'
-].join(' ');
-const RESPONSE_SCHEMA = {
-    type: 'json_schema',
-    json_schema: {
-        name: 'article_screening',
-        strict: true,
-        schema: {
-            oneOf: [
-                {
-                    type: 'object',
-                    properties: {
-                        status: { type: 'string', const: 'screened_article' },
-                        summary_256: { type: 'string', maxLength: 256 },
-                        fit_for_review: { type: 'boolean' },
-                        reason: { type: 'string' }
-                    },
-                    required: ['status', 'summary_256', 'fit_for_review', 'reason'],
-                    additionalProperties: false
-                },
-                {
-                    type: 'object',
-                    properties: {
-                        status: { type: 'string', const: 'invalid_input' },
-                        invalid_kind: {
-                            type: 'string',
-                            enum: ['greeting', 'casual_chat', 'question', 'command', 'empty_input', 'incomplete_article', 'non_article_text', 'other']
-                        },
-                        received_text: { type: 'string' },
-                        reason: { type: 'string' }
-                    },
-                    required: ['status', 'invalid_kind', 'received_text', 'reason'],
-                    additionalProperties: false
-                }
-            ]
-        }
-    }
-};
-let screeningState = {
-    status: 'idle',
-    currentIndex: 0,
-    totalRows: 0,
-    endpoint: DEFAULT_LM_ENDPOINT,
-    model: DEFAULT_LM_MODEL,
-    updatedAt: null
-};
-let stopScreeningRequested = false;
 
 function getBrowseCardSummary(article) {
     const abstract = String(article?.Abstract || '').trim();
@@ -203,28 +128,11 @@ function applyNewDataset(data) {
     setupUI(data, () => [...selectedCubes], () => lastSelectedCube, selectionHandler);
     setupEventHandlers(selectedCubes, lastSelectedCube, sceneObjects.scene);
     renderFullscreenBrowseList(data);
-    persistWorkspaceState();
 }
 
 function setupQueryPanel() {
     const apiKeyInput = document.getElementById('pubmed-api-input');
     const rememberKeyCheckbox = document.getElementById('remember-pubmed-key');
-    const endpointInput = document.getElementById('lmstudio-endpoint-input');
-    const modelInput = document.getElementById('lmstudio-model-input');
-    const screeningStatus = document.getElementById('screening-status');
-    const startScreeningBtn = document.getElementById('start-screening-btn');
-    const stopScreeningBtn = document.getElementById('stop-screening-btn');
-    const saveCurrentOutputBtn = document.getElementById('save-current-output-btn');
-    const checkModelsBtn = document.getElementById('check-models-btn');
-    const screeningConfigDialog = document.getElementById('screening-config-dialog');
-    const lmHostInput = document.getElementById('lmstudio-host-input');
-    const lmPortInput = document.getElementById('lmstudio-port-input');
-    const lmPathInput = document.getElementById('lmstudio-path-input');
-    const checkModelsDialogBtn = document.getElementById('check-models-dialog-btn');
-    const applyScreeningConfigBtn = document.getElementById('apply-screening-config-btn');
-    const screeningConfigStatus = document.getElementById('screening-config-status');
-    const screeningProgressBar = document.getElementById('screening-progress-bar');
-    const screeningProgressText = document.getElementById('screening-progress-text');
 
     if (apiKeyInput && rememberKeyCheckbox) {
         const savedApiKey = window.localStorage.getItem(PUBMED_KEY_STORAGE_KEY);
@@ -247,143 +155,6 @@ function setupQueryPanel() {
             }
         });
     }
-
-    const setConfigStatus = (message) => {
-        if (screeningConfigStatus) screeningConfigStatus.textContent = message;
-    };
-
-    const populateModelOptions = (models, preferredModel) => {
-        if (!modelInput) return;
-
-        const uniqueModels = Array.from(new Set((models || []).filter(Boolean)));
-        const fallbackModel = preferredModel || screeningState.model || DEFAULT_LM_MODEL;
-        const optionValues = uniqueModels.length ? uniqueModels : [fallbackModel];
-
-        modelInput.innerHTML = '';
-        optionValues.forEach((modelId) => {
-            const option = document.createElement('option');
-            option.value = modelId;
-            option.textContent = modelId;
-            modelInput.appendChild(option);
-        });
-
-        const selectedModel = optionValues.includes(fallbackModel) ? fallbackModel : optionValues[0];
-        modelInput.value = selectedModel;
-        screeningState.model = selectedModel;
-    };
-
-    const buildEndpointFromDialog = () => {
-        const host = lmHostInput?.value?.trim() || DEFAULT_REMOTE_LM_HOST;
-        const port = lmPortInput?.value?.trim() || '1234';
-        const path = lmPathInput?.value?.trim() || '/v1/chat/completions';
-        const normalizedPath = path.startsWith('/') ? path : `/${path}`;
-        return `http://${host}:${port}${normalizedPath}`;
-    };
-
-    const fetchAvailableModels = async (endpoint) => {
-        const modelsUrl = getModelsRequestUrl(endpoint);
-        const response = await fetch(modelsUrl);
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}`);
-        }
-        const payload = await response.json();
-        const models = Array.isArray(payload?.data)
-            ? payload.data.map((item) => item?.id).filter(Boolean)
-            : [];
-        return { modelsUrl, models };
-    };
-
-    if (endpointInput) endpointInput.value = screeningState.endpoint || DEFAULT_LM_ENDPOINT;
-    populateModelOptions([screeningState.model || DEFAULT_LM_MODEL], screeningState.model || DEFAULT_LM_MODEL);
-
-    const syncDialogFieldsFromEndpoint = () => {
-        const endpoint = endpointInput?.value?.trim() || DEFAULT_LM_ENDPOINT;
-        try {
-            const url = new URL(endpoint);
-            if (lmHostInput) lmHostInput.value = url.hostname;
-            if (lmPortInput) lmPortInput.value = url.port || '1234';
-            if (lmPathInput) lmPathInput.value = url.pathname || '/v1/chat/completions';
-        } catch {
-            if (lmHostInput) lmHostInput.value = '127.0.0.1';
-            if (lmPortInput) lmPortInput.value = '1234';
-            if (lmPathInput) lmPathInput.value = '/v1/chat/completions';
-        }
-    };
-
-    const runModelCheck = async () => {
-        const endpoint = buildEndpointFromDialog();
-        if (endpointInput) endpointInput.value = endpoint;
-        screeningState.endpoint = endpoint;
-        setConfigStatus(`Checking ${getModelsRequestUrl(endpoint)} ...`);
-
-        try {
-            const { modelsUrl, models } = await fetchAvailableModels(endpoint);
-            populateModelOptions(models, screeningState.model || DEFAULT_LM_MODEL);
-            setConfigStatus(
-                models.length
-                    ? `Found ${models.length} model${models.length === 1 ? '' : 's'} at ${modelsUrl}.`
-                    : `No models were returned from ${modelsUrl}.`
-            );
-        } catch (error) {
-            const isNetworkStyleError = /networkerror|failed to fetch|load failed/i.test(String(error?.message || ''));
-            if (isNetworkStyleError) {
-                setConfigStatus(
-                    canUseLocalLmProxy()
-                        ? 'Unable to reach the local HyperCube LM Studio proxy. Start this project with server.py and open HyperCube from that server.'
-                        : `Browser request blocked while checking ${deriveModelsUrl(endpoint)}. Serve HyperCube through the local server.py helper so the browser can use the same-origin LM Studio proxy.`
-                );
-            } else {
-                setConfigStatus(`Unable to fetch models: ${error.message}`);
-            }
-        }
-    };
-
-    checkModelsBtn?.addEventListener('click', () => {
-        syncDialogFieldsFromEndpoint();
-        setConfigStatus('');
-        screeningConfigDialog?.showModal();
-    });
-
-    checkModelsDialogBtn?.addEventListener('click', runModelCheck);
-
-    applyScreeningConfigBtn?.addEventListener('click', async () => {
-        const endpoint = buildEndpointFromDialog();
-        if (endpointInput) endpointInput.value = endpoint;
-        screeningState.endpoint = endpoint;
-        screeningState.model = modelInput?.value?.trim() || DEFAULT_LM_MODEL;
-        await persistWorkspaceState();
-        setConfigStatus(`Ready to screen with ${screeningState.model} at ${endpoint}.`);
-        screeningConfigDialog?.close();
-    });
-
-    modelInput?.addEventListener('change', async () => {
-        screeningState.model = modelInput.value || DEFAULT_LM_MODEL;
-        await persistWorkspaceState();
-    });
-
-    const updateScreeningControls = () => {
-        const running = screeningState.status === 'running';
-        if (startScreeningBtn) startScreeningBtn.disabled = running;
-        if (stopScreeningBtn) stopScreeningBtn.disabled = !running;
-        if (screeningProgressBar) {
-            screeningProgressBar.max = Math.max(screeningState.totalRows || 1, 1);
-            screeningProgressBar.value = Math.min(screeningState.currentIndex || 0, screeningProgressBar.max);
-        }
-        if (screeningProgressText) {
-            screeningProgressText.textContent = `${Math.min(screeningState.currentIndex || 0, screeningState.totalRows || 0)} / ${screeningState.totalRows || 0}`;
-        }
-    };
-
-    startScreeningBtn?.addEventListener('click', () => startScreeningRun({ resumeExisting: false }));
-    stopScreeningBtn?.addEventListener('click', () => {
-        stopScreeningRequested = true;
-        setScreeningStatus('Stop requested. Current row will finish before the runner pauses.');
-        updateScreeningControls();
-    });
-    saveCurrentOutputBtn?.addEventListener('click', () => {
-        exportFilteredData(currentData);
-        setScreeningStatus('Current dataset exported.');
-    });
 
     window.runPubMedQueryToCsv = async () => {
         const searchInput = document.getElementById('pubmed-search-input');
@@ -416,11 +187,6 @@ function setupQueryPanel() {
             if (queryStatus) {
                 queryStatus.textContent = `Done: fetched ${data.length} rows and exported CSV.`;
             }
-            screeningState.totalRows = data.length;
-            screeningState.status = 'idle';
-            screeningState.currentIndex = 0;
-            screeningState.updatedAt = new Date().toISOString();
-            setScreeningStatus('Dataset ready for screening.');
         } catch (error) {
             console.error('Query-to-CSV failed:', error);
             showErrorToUser(`PubMed query failed: ${error.message}`);
@@ -429,286 +195,7 @@ function setupQueryPanel() {
             removeLoadingIndicator();
         }
     };
-
-    if (screeningStatus && screeningState.updatedAt && screeningState.status !== 'idle') {
-        setScreeningStatus(`Restored saved run: ${screeningState.status} at row ${Math.min(screeningState.currentIndex + 1, screeningState.totalRows || 0)}.`);
-    }
-    updateScreeningControls();
 }
-
-function setScreeningStatus(message) {
-    const screeningStatus = document.getElementById('screening-status');
-    if (screeningStatus) screeningStatus.textContent = message;
-}
-
-async function persistWorkspaceState() {
-    try {
-        await saveWorkspaceSnapshot({
-            data: currentData,
-            screeningState: {
-                ...screeningState,
-                updatedAt: new Date().toISOString()
-            }
-        });
-    } catch (error) {
-        console.error('Failed to persist workspace state:', error);
-    }
-}
-
-function deriveModelsUrl(endpoint) {
-    const url = new URL(endpoint);
-    url.pathname = '/v1/models';
-    url.search = '';
-    return url.toString();
-}
-
-function canUseLocalLmProxy() {
-    const protocol = window.location?.protocol || '';
-    const hostname = window.location?.hostname || '';
-    if (!/^https?:$/.test(protocol)) return false;
-    return !hostname.endsWith('github.io');
-}
-
-function getModelsRequestUrl(endpoint) {
-    return canUseLocalLmProxy()
-        ? `${LM_PROXY_BASE}/models?target=${encodeURIComponent(endpoint)}`
-        : deriveModelsUrl(endpoint);
-}
-
-function getChatRequestUrl() {
-    return canUseLocalLmProxy() ? `${LM_PROXY_BASE}/chat` : null;
-}
-
-function ensureScreeningColumns(row) {
-    SCREENING_HEADERS.forEach((header) => {
-        if (!(header in row)) {
-            row[header] = '';
-        }
-    });
-    return row;
-}
-
-function getScreenableRowIndices({ resumeExisting }) {
-    const rows = currentData || [];
-    if (!resumeExisting) {
-        return rows.map((_, index) => index);
-    }
-    return rows
-        .map((row, index) => ({ row, index }))
-        .filter(({ row }) => !String(row.LlmScreenedAt || '').trim())
-        .map(({ index }) => index);
-}
-
-async function startScreeningRun({ resumeExisting }) {
-    if (!currentData.length) {
-        showErrorToUser('No dataset loaded for screening.');
-        return;
-    }
-
-    const endpoint = document.getElementById('lmstudio-endpoint-input')?.value?.trim() || DEFAULT_LM_ENDPOINT;
-    const model = document.getElementById('lmstudio-model-input')?.value?.trim() || DEFAULT_LM_MODEL;
-    const targetIndices = getScreenableRowIndices({ resumeExisting });
-
-    if (!targetIndices.length) {
-        setScreeningStatus('No rows require screening.');
-        return;
-    }
-
-    stopScreeningRequested = false;
-    screeningState = {
-        status: 'running',
-        currentIndex: 0,
-        totalRows: targetIndices.length,
-        endpoint,
-        model,
-        updatedAt: new Date().toISOString()
-    };
-    setScreeningStatus(`Starting screening run for ${targetIndices.length} rows...`);
-    syncScreeningProgress(0, targetIndices.length);
-    await persistWorkspaceState();
-
-    for (let runIndex = 0; runIndex < targetIndices.length; runIndex += 1) {
-        if (stopScreeningRequested) {
-            screeningState.status = 'paused';
-            screeningState.currentIndex = runIndex;
-            await persistWorkspaceState();
-            syncScreeningProgress(runIndex, targetIndices.length);
-            setScreeningStatus(`Run paused after ${runIndex} of ${targetIndices.length} rows.`);
-            return;
-        }
-
-        const rowIndex = targetIndices[runIndex];
-        const row = ensureScreeningColumns(currentData[rowIndex]);
-        screeningState.currentIndex = runIndex;
-        screeningState.totalRows = targetIndices.length;
-        syncScreeningProgress(runIndex, targetIndices.length);
-        setScreeningStatus(`Screening row ${runIndex + 1} of ${targetIndices.length}: PMID ${row.PMID || '(none)'}`);
-
-        const result = await screenRow(row, { endpoint, model });
-        currentData[rowIndex] = { ...row, ...result };
-        setData(currentData);
-        screeningState.currentIndex = runIndex + 1;
-        screeningState.updatedAt = new Date().toISOString();
-        syncScreeningProgress(runIndex + 1, targetIndices.length);
-        await persistWorkspaceState();
-    }
-
-    screeningState.status = 'completed';
-    screeningState.currentIndex = targetIndices.length;
-    screeningState.updatedAt = new Date().toISOString();
-    syncScreeningProgress(targetIndices.length, targetIndices.length);
-    await persistWorkspaceState();
-    setScreeningStatus(`Screening complete. Processed ${targetIndices.length} rows.`);
-}
-
-function syncScreeningProgress(current, total) {
-    screeningState.currentIndex = current;
-    screeningState.totalRows = total;
-    const progressBar = document.getElementById('screening-progress-bar');
-    const progressText = document.getElementById('screening-progress-text');
-    const startBtn = document.getElementById('start-screening-btn');
-    const stopBtn = document.getElementById('stop-screening-btn');
-    const running = screeningState.status === 'running';
-
-    if (progressBar) {
-        progressBar.max = Math.max(total || 1, 1);
-        progressBar.value = Math.min(current, progressBar.max);
-    }
-    if (progressText) {
-        progressText.textContent = `${current} / ${total}`;
-    }
-    if (startBtn) startBtn.disabled = running;
-    if (stopBtn) stopBtn.disabled = !running;
-}
-
-async function screenRow(row, options) {
-    const title = String(row.Title || '').trim();
-    const abstract = String(row.Abstract || '').trim();
-    const researchQuestion = String(row.ResearchQuestion || '').trim();
-
-    if (!researchQuestion) {
-        return mapScreeningError('Missing ResearchQuestion', options, title || abstract, 'other', 'Missing ResearchQuestion in row.');
-    }
-
-    if (!title && !abstract) {
-        return mapScreeningError('Missing Title and Abstract', options, '', 'empty_input', 'Missing Title and Abstract in row.');
-    }
-
-    try {
-        const payload = buildScreeningPayload(row, options);
-        const proxyUrl = getChatRequestUrl();
-        const response = await fetch(proxyUrl || options.endpoint, proxyUrl ? {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ target: options.endpoint, payload })
-        } : {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${await response.text()}`);
-        }
-
-        const data = await response.json();
-        const content = data?.choices?.[0]?.message?.content;
-        const parsed = parseModelContent(content);
-        return mapScreeningResponse(parsed, options);
-    } catch (error) {
-        return {
-            LlmStatus: '',
-            LlmFitForReview: '',
-            LlmSummary256: '',
-            LlmReason: '',
-            LlmInvalidKind: '',
-            LlmReceivedText: '',
-            LlmModel: options.model,
-            LlmEndpoint: options.endpoint,
-            LlmScreenedAt: new Date().toISOString(),
-            LlmError: error.message
-        };
-    }
-}
-
-function buildScreeningPayload(row, options) {
-    return {
-        model: options.model,
-        messages: [
-            { role: 'system', content: SYSTEM_PROMPT },
-            {
-                role: 'user',
-                content: [
-                    `ResearchQuestion: ${String(row.ResearchQuestion || '').trim()}`,
-                    `Title: ${String(row.Title || '').trim()}`,
-                    `Abstract: ${String(row.Abstract || '').trim()}`
-                ].join('\n\n')
-            }
-        ],
-        response_format: RESPONSE_SCHEMA,
-        temperature: 0,
-        stream: false
-    };
-}
-
-function parseModelContent(content) {
-    if (typeof content === 'object' && content !== null) {
-        return content;
-    }
-    if (typeof content !== 'string') {
-        throw new Error(`Unexpected content type: ${typeof content}`);
-    }
-    return JSON.parse(content);
-}
-
-function mapScreeningResponse(parsed, options) {
-    const now = new Date().toISOString();
-    if (parsed.status === 'screened_article') {
-        return {
-            LlmStatus: parsed.status,
-            LlmFitForReview: String(parsed.fit_for_review),
-            LlmSummary256: parsed.summary_256 || '',
-            LlmReason: parsed.reason || '',
-            LlmInvalidKind: '',
-            LlmReceivedText: '',
-            LlmModel: options.model,
-            LlmEndpoint: options.endpoint,
-            LlmScreenedAt: now,
-            LlmError: ''
-        };
-    }
-
-    if (parsed.status === 'invalid_input') {
-        return {
-            LlmStatus: parsed.status,
-            LlmFitForReview: '',
-            LlmSummary256: '',
-            LlmReason: parsed.reason || '',
-            LlmInvalidKind: parsed.invalid_kind || '',
-            LlmReceivedText: parsed.received_text || '',
-            LlmModel: options.model,
-            LlmEndpoint: options.endpoint,
-            LlmScreenedAt: now,
-            LlmError: ''
-        };
-    }
-
-    throw new Error(`Unexpected screening status: ${parsed.status}`);
-}
-
-function mapScreeningError(errorMessage, options, receivedText, invalidKind, reason) {
-    return {
-        LlmStatus: 'invalid_input',
-        LlmFitForReview: '',
-        LlmSummary256: '',
-        LlmReason: reason,
-        LlmInvalidKind: invalidKind,
-        LlmReceivedText: receivedText,
-        LlmModel: options.model,
-        LlmEndpoint: options.endpoint,
-        LlmScreenedAt: new Date().toISOString(),
-        LlmError: errorMessage
-    };
 }
 
 function setupFullscreenMode() {
@@ -799,20 +286,6 @@ function setupFullscreenMode() {
 
     document.addEventListener('fullscreenchange', syncFullscreenState);
     syncFullscreenState();
-}
-
-function setupQueryPanelToggle() {
-    const queryPanel = document.querySelector('.query-panel');
-    const toggleButton = document.getElementById('query-panel-toggle');
-
-    if (!queryPanel || !toggleButton) return;
-
-    toggleButton.addEventListener('click', () => {
-        const collapsed = queryPanel.classList.toggle('collapsed');
-        toggleButton.textContent = collapsed ? 'Expand' : 'Collapse';
-        toggleButton.setAttribute('aria-expanded', String(!collapsed));
-        window.dispatchEvent(new Event('resize'));
-    });
 }
 
 function setupResizableLayout() {
@@ -920,20 +393,7 @@ async function init() {
         
         // 5. Load data
         console.log("5. Loading data...");
-        const savedWorkspace = await loadWorkspaceSnapshot();
-        let data;
-        if (savedWorkspace?.data?.length) {
-            data = savedWorkspace.data;
-            screeningState = {
-                ...screeningState,
-                ...(savedWorkspace.screeningState || {})
-            };
-            setData(data);
-            currentData = data;
-        } else {
-            data = await loadData("pubmed_data.csv");
-            screeningState.totalRows = data.length;
-        }
+        const data = await loadData("pubmed_data.csv");
         console.log("Data loaded, first item:", data?.[0]);
         if (!data?.length) throw new Error("No data loaded");
         setData(data);
@@ -968,7 +428,6 @@ async function init() {
         setupUI(data, () => [...selectedCubes], () => lastSelectedCube, onSelectCallback);
         setupControlGroups();
         setupQueryPanel();
-        setupQueryPanelToggle();
         setupFullscreenMode();
         setupResizableLayout();
         setSortButtonState(window.PositionModes?.GRID || 'grid');

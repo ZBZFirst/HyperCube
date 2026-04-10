@@ -35,18 +35,6 @@ Live viewer:
 
 https://zbzfirst.github.io/HyperCube/
 
-LOCAL SCREENING SERVER
-
-For the in-browser LM Studio screening controls, serve HyperCube through the local helper server instead of opening the HTML file directly:
-
-`python3 server.py`
-
-Then open:
-
-`http://127.0.0.1:8000`
-
-This server also provides a same-origin LM Studio proxy so `Check for Models` and browser-side screening can call remote endpoints without browser CORS failures.
-
 LLM SCREENING
 
 `pubmed_data.csv` can now be used as the basis for first-pass eligibility screening against a local or remote LM Studio model.
