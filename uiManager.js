@@ -61,17 +61,32 @@ export function setupUI(data, getSelectedCubes, getLastSelectedCube, onSelectCal
 
 
 export function showLoadingIndicator() {
-    const loader = document.createElement('div');
-    loader.id = 'loading-indicator';
-    loader.style.position = 'fixed';
-    loader.style.top = '20px';
-    loader.style.right = '20px';
-    loader.style.padding = '10px';
-    loader.style.background = 'rgba(0,0,0,0.7)';
-    loader.style.color = 'white';
-    loader.style.borderRadius = '5px';
+    let loader = document.getElementById('loading-indicator');
+    if (!loader) {
+        loader = document.createElement('div');
+        loader.id = 'loading-indicator';
+        loader.style.position = 'fixed';
+        loader.style.top = '20px';
+        loader.style.right = '20px';
+        loader.style.maxWidth = '380px';
+        loader.style.padding = '10px 12px';
+        loader.style.background = 'rgba(0,0,0,0.78)';
+        loader.style.color = 'white';
+        loader.style.borderRadius = '8px';
+        loader.style.boxShadow = '0 10px 24px rgba(0,0,0,0.22)';
+        loader.style.fontSize = '0.9rem';
+        loader.style.lineHeight = '1.4';
+        loader.style.zIndex = '5000';
+        document.body.appendChild(loader);
+    }
     loader.textContent = 'Loading...';
-    document.body.appendChild(loader);
+}
+
+export function updateLoadingIndicator(message) {
+    const loader = document.getElementById('loading-indicator');
+    if (loader) {
+        loader.textContent = message;
+    }
 }
 
 export function removeLoadingIndicator() {

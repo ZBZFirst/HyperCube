@@ -5,17 +5,23 @@ const DEFAULT_SEARCH_TERM = 'Liquid Mechanical Ventilation Life Support Humans';
 const BATCH_SIZE = 50;
 
 // Private helper functions
-async function searchPmids(apiKey, searchTerm) {
-    console.log(`Searching PubMed for: '${searchTerm}'...`);
+async function searchPmids(apiKey, searchTerm, onProgress = () => {}) {
+    const message = `Searching PubMed for: '${searchTerm}'...`;
+    console.log(message);
+    onProgress(message);
     const response = await fetch(`${BASE_URL}esearch.fcgi?db=pubmed&term=${encodeURIComponent(searchTerm)}&retmax=100000&retmode=json&api_key=${apiKey}`);
     const data = await response.json();
     const idlist = data.esearchresult.idlist;
-    console.log(`Found ${idlist.length} articles`);
+    const foundMessage = `Found ${idlist.length} articles`;
+    console.log(foundMessage);
+    onProgress(foundMessage);
     return idlist;
 }
 
-async function fetchMetadata(apiKey, pmids) {
-    console.log(`Fetching metadata for ${pmids.length} articles...`);
+async function fetchMetadata(apiKey, pmids, onProgress = () => {}) {
+    const startMessage = `Fetching metadata for ${pmids.length} articles...`;
+    console.log(startMessage);
+    onProgress(startMessage);
     const allData = {};
     
     for (let i = 0; i < pmids.length; i += BATCH_SIZE) {
@@ -33,7 +39,9 @@ async function fetchMetadata(apiKey, pmids) {
         
         // Progress indicator
         if ((i / BATCH_SIZE) % 5 === 0) {
-            console.log(`Processed ${Math.min(i + BATCH_SIZE, pmids.length)}/${pmids.length} records...`);
+            const progressMessage = `Metadata processed ${Math.min(i + BATCH_SIZE, pmids.length)}/${pmids.length} records...`;
+            console.log(progressMessage);
+            onProgress(progressMessage);
         }
         
         await new Promise(resolve => setTimeout(resolve, 400));
@@ -42,8 +50,10 @@ async function fetchMetadata(apiKey, pmids) {
     return allData;
 }
 
-async function fetchMeshKeywords(apiKey, pmids) {
-    console.log(`Fetching detailed data (abstracts, MeSH terms, etc.)...`);
+async function fetchMeshKeywords(apiKey, pmids, onProgress = () => {}) {
+    const startMessage = `Fetching detailed data (abstracts, MeSH terms, etc.)...`;
+    console.log(startMessage);
+    onProgress(startMessage);
     const tagData = {};
 
     for (let i = 0; i < pmids.length; i += BATCH_SIZE) {
@@ -105,7 +115,9 @@ async function fetchMeshKeywords(apiKey, pmids) {
 
         // Progress indicator
         if ((i / BATCH_SIZE) % 5 === 0) {
-            console.log(`Processed ${Math.min(i + BATCH_SIZE, pmids.length)}/${pmids.length} records...`);
+            const progressMessage = `Details processed ${Math.min(i + BATCH_SIZE, pmids.length)}/${pmids.length} records...`;
+            console.log(progressMessage);
+            onProgress(progressMessage);
         }
         
         await new Promise(resolve => setTimeout(resolve, 400));
@@ -296,16 +308,17 @@ export function hidePubMedFetchOverlay() {
 }
 
 // In pubmedFetcher.js, modify the fetchPubMedData function:
-export async function fetchPubMedData(searchTerm = DEFAULT_SEARCH_TERM, apiKey = DEFAULT_API_KEY) {
+export async function fetchPubMedData(searchTerm = DEFAULT_SEARCH_TERM, apiKey = DEFAULT_API_KEY, onProgress = () => {}) {
     const startTime = Date.now();
     
     try {
         // Fetch data from PubMed
-        const pmids = await searchPmids(apiKey, searchTerm);
-        const metadata = await fetchMetadata(apiKey, pmids);
-        const tagData = await fetchMeshKeywords(apiKey, pmids);
+        const pmids = await searchPmids(apiKey, searchTerm, onProgress);
+        const metadata = await fetchMetadata(apiKey, pmids, onProgress);
+        const tagData = await fetchMeshKeywords(apiKey, pmids, onProgress);
         
         // Prepare data
+        onProgress('Preparing final article dataset...');
         const records = prepareData(metadata, tagData, searchTerm);
         
         // Completion message
@@ -314,10 +327,12 @@ export async function fetchPubMedData(searchTerm = DEFAULT_SEARCH_TERM, apiKey =
         console.log(`Successfully processed ${records.length} articles`);
         console.log(`Total execution time: ${elapsedTime.toFixed(2)} seconds`);
         console.log(`==================================================`);
+        onProgress(`Done: processed ${records.length} articles in ${elapsedTime.toFixed(2)} seconds.`);
         
         return records;
     } catch (error) {
         console.error('Error fetching PubMed data:', error);
+        onProgress(`Fetch failed: ${error.message}`);
         throw error;
     }
 }
