@@ -196,7 +196,6 @@ function setupQueryPanel() {
         }
     };
 }
-}
 
 function setupFullscreenMode() {
     const appContainer = document.getElementById('app-container');
